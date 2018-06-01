@@ -7,22 +7,54 @@
 <ion-header>
 
   <ion-navbar>
-    <ion-title>Reservas</ion-title>
+    <ion-row>
+      <ion-col>
+        <ion-title>Reservas</ion-title>
+      </ion-col>
+      <ion-col>
+        <ion-toolbar darkergraytoolbar class="toolbarPlan">
+          <span ion-datepicker (ionChanged)="setDate($event);" [max]="maxDate" [min]="initDate2" [value]="initDate" [showMaxAndMin]="true"
+            [disabledDates]="disabledDates" clear class="ScheduleDate" [localeStrings]="localeStrings">
+            <span>{{initDate | date}}
+              <ion-icon name="clipboard" item-left></ion-icon>
+            </span>
+          </span>
+        </ion-toolbar>
+      </ion-col>
+    </ion-row>
   </ion-navbar>
-
 </ion-header>
 
 
 <ion-content padding>
-  <ion-list>
-    <button ion-item *ngFor="let reserva of reservas" (click)="itemSelected(item)">
-      {{ item }}
-    </button>
-  </ion-list>
+  <ion-list #scheduleList>
 
-  <ion-fab right bottom>
-    <button ion-fab (tap)="nuevo()">
-      <ion-icon name="add"></ion-icon>
-    </button>
-  </ion-fab>
+    <ion-item-group *ngFor="let disponibilidad of horario">
+
+      <ion-item-divider sticky>
+        <ion-label>
+          {{disponibilidad.fechaInicio | date: 'hh:mm a'}}
+        </ion-label>
+      </ion-item-divider>
+
+      <ion-item-sliding #slidingItem [attr.track]="disponibilidad.estado | lowercase" >
+
+        <button ion-item>
+          <h3>{{disponibilidad.estado}}</h3>
+          <p>
+            {{disponibilidad.fechaInicio | date: 'hh:mm a'}} &mdash; {{disponibilidad.fechaFin | date: 'hh:mm a'}}: {{'Gato'}}
+          </p>
+        </button>
+
+        <ion-item-options>
+          <button ion-button color="favorite" (click)="addFavorite(slidingItem, session)" *ngIf="segment === 'all'">
+            Favorite
+          </button>
+          <button ion-button color="danger" (click)="removeFavorite(slidingItem, session, 'Remove Favorite')" *ngIf="segment === 'favorites'">
+            Remove
+          </button>
+        </ion-item-options>
+      </ion-item-sliding>
+    </ion-item-group>
+  </ion-list>
 </ion-content>

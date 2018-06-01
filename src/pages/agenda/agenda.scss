@@ -1,3 +1,19 @@
-page-agenda {
+$categories: (
+    disponible: #3BC7C4,
+    reservado: #FD8B2D,
+    finalizado: #69BB7B,
+    ejecutando: #FE4C52
+);
+    
+@function auxiliary-categories() {
+    @return map-remove($categories);
+}
 
+page-agenda {
+    @each $track, $value in auxiliary-categories() {
+        ion-item-sliding[track=#{$track}] ion-label {
+            border-left: 2px solid $value;
+            padding-left: 10px;
+        }
+    }
 }

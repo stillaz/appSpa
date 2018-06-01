@@ -1,5 +1,7 @@
 import { Component } from '@angular/core';
-import { IonicPage, NavController, NavParams } from 'ionic-angular';
+import { IonicPage, NavController } from 'ionic-angular';
+import { ReservaOptions } from '../../interfaces/reserva-options';
+import moment from 'moment';
 
 /**
  * Generated class for the ReservaPage page.
@@ -13,19 +15,8 @@ import { IonicPage, NavController, NavParams } from 'ionic-angular';
   selector: 'page-reserva',
   templateUrl: 'reserva.html',
 })
+
 export class ReservaPage {
 
-
-
-  constructor(public navCtrl: NavController, public navParams: NavParams) {
-  }
-
-  ionViewDidLoad() {
-    console.log('ionViewDidLoad ReservaPage');
-  }
-
-  nuevo() {
-    this.navCtrl.push('CalendarioPage');
-  }
 
 }
