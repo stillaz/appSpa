@@ -24,10 +24,10 @@
       <form [formGroup]="todo">
         <ion-item>
           <ion-label floating>Identificación:</ion-label>
-          <ion-input type="number" formControlName="idpersona" (change)="getPersona()"></ion-input>
+          <ion-input type="number" formControlName="identificacion" (change)="getPersona()"></ion-input>
         </ion-item>
 
-        <ion-item color="danger" *ngIf="todo.controls.idpersona.errors && todo.controls.idpersona.touched">
+        <ion-item color="danger" *ngIf="todo.controls.identificacion.errors && todo.controls.identificacion.touched">
           <p>El número de identificación de la persona no es válido</p>
         </ion-item>
 

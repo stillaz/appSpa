@@ -1,8 +1,9 @@
 import { Component, ViewChild } from '@angular/core';
-import { Content, IonicPage, NavController } from 'ionic-angular';
+import { AlertController, Content, IonicPage, ModalController, NavController } from 'ionic-angular';
 import moment from 'moment';
 
 import { ReservaOptions } from '../../interfaces/reserva-options';
+import { UsuarioOptions } from '../../interfaces/usuario-options';
 
 /**
  * Generated class for the AgendaPage page.
@@ -22,13 +23,14 @@ export class AgendaPage {
 
   public localeStrings: any = {
     monday: false,
-    weekdays: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+    weekdays: ['Dom.', 'Lun.', 'Mar.', 'Mié.', 'Jue.', 'Vie.', 'Sáb.'],
     months: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
   };
 
   public evento: any = ['actual', 'otro'];
+  public usuario: UsuarioOptions = { id: 123, nombre: 'El Barbero' };
 
-  public localDate: Date = new Date();
+  public actual: Date = new Date();
   public initDate: Date = new Date();
   public initDate2: Date = new Date();
   public disabledDates: Date[] = [];
@@ -43,7 +45,7 @@ export class AgendaPage {
 
   private estadoDisponibilidad: String[] = ['Disponible', 'Reservado', 'Finalizado', 'Ejecutando'];
 
-  constructor(public navCtrl: NavController) {
+  constructor(public navCtrl: NavController, public modalCtrl: ModalController, public alertCtrl: AlertController) {
   }
 
   ionViewDidLoad() {
@@ -58,10 +60,6 @@ export class AgendaPage {
     console.log(stuff);
   }
 
-  public event(data: Date): void {
-    this.localDate = data;
-  }
-
   setDate(date: Date) {
     this.initDate = date;
     this.updateHorarios();
@@ -74,20 +72,20 @@ export class AgendaPage {
     while (fechaInicio.isBefore(fechaFin.toDate())) {
       let fechaInicioReserva = fechaInicio.toDate();
       let fechaFinReserva = moment(fechaInicio).add(this.tiempoServicio, 'minutes').toDate();
-      let eventoActual = moment(new Date()).isBetween(fechaInicioReserva, fechaFinReserva);
+      let eventoActual = moment(this.actual).isBetween(fechaInicioReserva, fechaFinReserva);
       let alet = Math.round(Math.random() * 1);
       let reserva: ReservaOptions = {
         fechaInicio: fechaInicioReserva,
         fechaFin: fechaFinReserva,
         estado: this.estadoDisponibilidad[alet],
         evento: this.evento[1],
-        cliente: { id: null, nombre: null, telefono: null },
-        usuario: null
+        cliente: { identificacion: null, nombre: null, telefono: null, correoelectronico: null },
+        usuario: this.usuario
       };
 
       let esReserva = reserva.estado === this.estadoDisponibilidad[1];
       if (esReserva) {
-        reserva.cliente = { id: 123, nombre: 'Pedro Perez', telefono: '4527474' };
+        reserva.cliente = { identificacion: 123, nombre: 'Pedro Perez', telefono: '4527474', correoelectronico: null };
       }
 
       if (eventoActual) {
@@ -104,7 +102,54 @@ export class AgendaPage {
 
   scrollTo(element: string) {
     let yOffset = document.getElementById(element).offsetTop;
-    this.content.scrollTo(0, yOffset, 500)
+    this.content.scrollTo(0, yOffset - 10, 500)
+  }
+
+  reservar(reserva: ReservaOptions) {
+    let clienteModal = this.modalCtrl.create('DetallePersonaPage');
+    clienteModal.onDidDismiss(data => {
+      if (moment(new Date()).isBefore(reserva.fechaFin) && data) {
+        reserva.cliente = data;
+        reserva.estado = this.estadoDisponibilidad[1];
+      }
+    });
+    clienteModal.present();
+  }
+
+  genericAlert(titulo: string, mensaje: string) {
+    let mensajeAlert = this.alertCtrl.create({
+      title: titulo,
+      message: mensaje,
+      buttons: ['OK']
+    });
+
+    mensajeAlert.present();
+  }
+
+  cancelar(reserva: ReservaOptions) {
+    let fechaInicio = moment(reserva.fechaInicio).locale("es").format("dddd, DD [de] MMMM [de] YYYY");
+    let horaInicio = moment(reserva.fechaInicio).format("hh:mm a");
+    let nombreCliente = reserva.cliente.nombre;
+    let cancelarAlert = this.alertCtrl.create({
+      title: 'Cancelar cita',
+      message: 'Desea cancelar la cita el día: ' + fechaInicio + ' a las ' + horaInicio,
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'OK',
+          handler: () => {
+            reserva.cliente = { identificacion: null, nombre: null, telefono: null, correoelectronico: null };
+            reserva.estado = this.estadoDisponibilidad[0];
+            this.genericAlert('Cita cancelada', 'La cita con '+ nombreCliente +' ha sido cancelada');
+          }
+        }
+      ],
+    });
+
+    cancelarAlert.present();
   }
 
 }

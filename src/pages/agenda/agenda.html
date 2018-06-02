@@ -9,7 +9,7 @@
   <ion-navbar>
     <ion-row>
       <ion-col>
-        <ion-title>Agenda</ion-title>
+        <ion-title>Agenda {{usuario.nombre}}</ion-title>
       </ion-col>
       <ion-col>
         <ion-toolbar darkergraytoolbar class="toolbarPlan">
@@ -31,7 +31,7 @@
 
     <ion-item-group *ngFor="let disponibilidad of horario" [id]="disponibilidad.evento">
 
-      <ion-item-divider sticky>
+      <ion-item-divider sticky color="light">
         <ion-label>
           {{disponibilidad.fechaInicio | date: 'hh:mm a'}}
         </ion-label>
@@ -44,14 +44,14 @@
           <p>
             {{disponibilidad.fechaInicio | date: 'hh:mm a'}} &mdash; {{disponibilidad.fechaFin | date: 'hh:mm a'}}: {{disponibilidad.cliente.nombre}}
           </p>
+
+          <button ion-button [hidden]="disponibilidad.estado !== 'Disponible' || disponibilidad.fechaFin < actual" clear item-end (click)="reservar(disponibilidad)">Reservar</button>
+          <button ion-button [hidden]="disponibilidad.estado !== 'Ejecutando'" color="danger" clear item-end>Terminar</button>
         </button>
 
         <ion-item-options>
-          <button ion-button color="favorite" (click)="addFavorite(slidingItem, session)" *ngIf="segment === 'all'">
-            Favorite
-          </button>
-          <button ion-button color="danger" (click)="removeFavorite(slidingItem, session, 'Remove Favorite')" *ngIf="segment === 'favorites'">
-            Remove
+          <button ion-button color="danger" (click)="cancelar(disponibilidad)" *ngIf="disponibilidad.estado === 'Reservado'">
+            Cancelar cita
           </button>
         </ion-item-options>
       </ion-item-sliding>

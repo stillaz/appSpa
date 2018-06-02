@@ -1,6 +1,7 @@
 
 export interface ClienteOptions {
-    id: Number,
+    identificacion: Number,
     nombre: String,
-    telefono: String
+    telefono: String,
+    correoelectronico: String
 }
