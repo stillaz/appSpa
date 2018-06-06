@@ -4,8 +4,8 @@ import { UsuarioOptions } from "./usuario-options";
 export interface ReservaOptions {
   fechaInicio: Date,
   fechaFin: Date,
-  estado: String,
-  evento: String,
+  estado: string,
+  evento: string,
   cliente: ClienteOptions,
   usuario: UsuarioOptions
 }
