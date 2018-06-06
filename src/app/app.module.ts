@@ -7,7 +7,6 @@ import { IonicApp, IonicModule, IonicErrorHandler } from 'ionic-angular';
 import { MyApp } from './app.component';
 
 import { AgendaPage } from '../pages/agenda/agenda';
-import { ReservaPage } from '../pages/reserva/reserva';
 import { TabsPage } from '../pages/tabs/tabs';
 
 import { StatusBar } from '@ionic-native/status-bar';
@@ -18,7 +17,6 @@ import { PersonaProvider } from '../providers/persona/persona';
   declarations: [
     MyApp,
     AgendaPage,
-    ReservaPage,
     TabsPage
   ],
   imports: [
@@ -30,7 +28,6 @@ import { PersonaProvider } from '../providers/persona/persona';
   entryComponents: [
     MyApp,
     AgendaPage,
-    ReservaPage,
     TabsPage
   ],
   providers: [

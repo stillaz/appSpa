@@ -39,11 +39,11 @@ export class AgendaPage {
 
   public horaInicio = 7;
   public horaFin = 19;
-  public tiempoServicio = 40;
+  public tiempoServicio = 10;
 
   public horario: ReservaOptions[];
 
-  private estadoDisponibilidad: String[] = ['Disponible', 'Reservado', 'Finalizado', 'Ejecutando'];
+  private estadoDisponibilidad: string[] = ['Disponible', 'Reservado', 'Finalizado', 'Ejecutando'];
 
   constructor(public navCtrl: NavController, public modalCtrl: ModalController, public alertCtrl: AlertController) {
   }
@@ -53,11 +53,7 @@ export class AgendaPage {
   }
 
   ionViewDidEnter() {
-    this.scrollTo(this.evento[0]);
-  }
-
-  public Log(stuff): void {
-    console.log(stuff);
+    //this.scrollTo(this.evento[0]);
   }
 
   setDate(date: Date) {
@@ -102,7 +98,7 @@ export class AgendaPage {
 
   scrollTo(element: string) {
     let yOffset = document.getElementById(element).offsetTop;
-    this.content.scrollTo(0, yOffset - 10, 500)
+    this.content.scrollTo(0, yOffset - 10, 1000)
   }
 
   reservar(reserva: ReservaOptions) {
@@ -111,6 +107,7 @@ export class AgendaPage {
       if (moment(new Date()).isBefore(reserva.fechaFin) && data) {
         reserva.cliente = data;
         reserva.estado = this.estadoDisponibilidad[1];
+        this.navCtrl.push('ReservaPage');
       }
     });
     clienteModal.present();

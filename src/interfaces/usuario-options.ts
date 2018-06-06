@@ -1,5 +1,5 @@
 
 export interface UsuarioOptions {
-    id: Number,
-    nombre: String
+    id: number,
+    nombre: string
 }

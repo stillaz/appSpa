@@ -7,54 +7,29 @@
 <ion-header>
 
   <ion-navbar>
-    <ion-row>
-      <ion-col>
-        <ion-title>Reservas</ion-title>
-      </ion-col>
-      <ion-col>
-        <ion-toolbar darkergraytoolbar class="toolbarPlan">
-          <span ion-datepicker (ionChanged)="setDate($event);" [max]="maxDate" [min]="initDate2" [value]="initDate" [showMaxAndMin]="true"
-            [disabledDates]="disabledDates" clear class="ScheduleDate" [localeStrings]="localeStrings">
-            <span>{{initDate | date}}
-              <ion-icon name="clipboard" item-left></ion-icon>
-            </span>
-          </span>
-        </ion-toolbar>
-      </ion-col>
-    </ion-row>
+    <ion-title>Reservas</ion-title>
   </ion-navbar>
 </ion-header>
 
 
 <ion-content padding>
-  <ion-list #scheduleList>
-
-    <ion-item-group *ngFor="let disponibilidad of horario">
-
-      <ion-item-divider sticky>
-        <ion-label>
-          {{disponibilidad.fechaInicio | date: 'hh:mm a'}}
-        </ion-label>
-      </ion-item-divider>
-
-      <ion-item-sliding #slidingItem [attr.track]="disponibilidad.estado | lowercase" >
-
-        <button ion-item>
-          <h3>{{disponibilidad.estado}}</h3>
-          <p>
-            {{disponibilidad.fechaInicio | date: 'hh:mm a'}} &mdash; {{disponibilidad.fechaFin | date: 'hh:mm a'}}: {{'Gato'}}
-          </p>
-        </button>
-
-        <ion-item-options>
-          <button ion-button color="favorite" (click)="addFavorite(slidingItem, session)" *ngIf="segment === 'all'">
-            Favorite
-          </button>
-          <button ion-button color="danger" (click)="removeFavorite(slidingItem, session, 'Remove Favorite')" *ngIf="segment === 'favorites'">
-            Remove
-          </button>
-        </ion-item-options>
-      </ion-item-sliding>
+  <ion-list class="grid-full">
+    <ion-item-group *ngFor="let item of servicios">
+      <ion-item-divider color="light">{{item.grupo}}</ion-item-divider>
+      <ion-row>
+        <ion-col #item *ngFor="let servicio of item.servicios" class="cell-1">
+          <img *ngIf="servicio.imagen" [src]="servicio.imagen">
+          <ion-note style="margin-left: '2px'">{{servicio.descripcion}}</ion-note>
+          <ion-item>
+            <strong>{{servicio.valor| currency : USD: symbol: '4.0' }}</strong>
+          </ion-item>
+          <ion-item>
+            <button ion-button small outline item-end (tap)="agregar(producto)">
+              Agregar
+            </button>
+          </ion-item>
+        </ion-col>
+      </ion-row>
     </ion-item-group>
   </ion-list>
 </ion-content>
