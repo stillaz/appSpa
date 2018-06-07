@@ -4,6 +4,8 @@ import moment from 'moment';
 
 import { ReservaOptions } from '../../interfaces/reserva-options';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
+import { ClienteOptions } from '../../interfaces/cliente-options';
+import { ServicioOptions } from '../../interfaces/servicio-options';
 
 /**
  * Generated class for the AgendaPage page.
@@ -21,14 +23,10 @@ export class AgendaPage {
 
   @ViewChild(Content) content: Content;
 
-  public localeStrings: any = {
-    monday: false,
-    weekdays: ['Dom.', 'Lun.', 'Mar.', 'Mié.', 'Jue.', 'Vie.', 'Sáb.'],
-    months: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
-  };
+  public horaInicio = 7;
+  public horaFin = 24;
+  public tiempoServicio = 10;
 
-  public evento: any = ['actual', 'otro'];
-  public usuario: UsuarioOptions = { id: 123, nombre: 'El Barbero' };
   public actual: Date = new Date();
   public initDate: Date = new Date();
   public initDate2: Date = new Date();
@@ -36,9 +34,17 @@ export class AgendaPage {
   public maxDate: Date = new Date(new Date().setDate(new Date().getDate() + 30));
   public min: Date = new Date();
 
-  public horaInicio = 7;
-  public horaFin = 24;
-  public tiempoServicio = 10;
+  public evento = ['actual', 'otro'];
+
+  public localeStrings = {
+    monday: false,
+    weekdays: ['Dom.', 'Lun.', 'Mar.', 'Mié.', 'Jue.', 'Vie.', 'Sáb.'],
+    months: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+  };
+
+  public cliente: ClienteOptions = { identificacion: null, nombre: null, telefono: null, correoelectronico: null };
+  public servicio: ServicioOptions = { id: null, nombre: null, descripcion: null, grupo: null, valor: null, duracion_MIN: null, activo: null, imagen: null }
+  public usuario: UsuarioOptions = { id: 123, nombre: 'El Barbero' };
 
   public horarios: any[];
 
@@ -79,9 +85,9 @@ export class AgendaPage {
         fechaFin: fechaFinReserva,
         estado: this.estadoDisponibilidad[0],
         evento: this.evento[1],
-        cliente: { identificacion: null, nombre: null, telefono: null, correoelectronico: null },
+        cliente: this.cliente,
         usuario: this.usuario,
-        servicio: { id: null, nombre: null, descripcion: null, grupo: null, valor: null, duracion_MIN: null, activo: null, imagen: null }
+        servicio: this.servicio
       };
 
       if (eventoActual) {
@@ -142,7 +148,7 @@ export class AgendaPage {
       this.horario = data;
       this.updateHorarios();
       this.events.unsubscribe('actualizar-agenda'); // unsubscribe this event
-  })
+    })
 
     this.navCtrl.push('ReservaPage', {
       disponibilidad: reserva,
@@ -175,8 +181,40 @@ export class AgendaPage {
         {
           text: 'OK',
           handler: () => {
-            reserva.cliente = { identificacion: null, nombre: null, telefono: null, correoelectronico: null };
-            reserva.estado = this.estadoDisponibilidad[0];
+            let ultimoHorario = reserva.fechaInicio;
+            for (let i = 0; i <= reserva.servicio.duracion_MIN / 10 - 1; i++) {
+              let inicio = moment(ultimoHorario).add(i * this.tiempoServicio, 'minutes').toDate();
+              let fin = moment(horaInicio).add(this.tiempoServicio, 'minutes').toDate();
+              let disponibilidad: ReservaOptions = {
+                fechaInicio: inicio,
+                fechaFin: fin,
+                estado: this.estadoDisponibilidad[0],
+                evento: this.evento[1],
+                cliente: this.cliente,
+                servicio: this.servicio,
+                usuario: this.usuario
+              }
+
+              this.horario.push(disponibilidad);
+
+              ultimoHorario = fin;
+            }
+
+            let item = this.horario.indexOf(reserva);
+            this.horario.splice(item, 1);
+
+            this.horario.sort(function (a, b) {
+              if (a.fechaInicio > b.fechaInicio) {
+                return 1;
+              }
+              if (a.fechaInicio < b.fechaInicio) {
+                return -1;
+              }
+              return 0;
+            });
+
+            this.updateHorarios();
+
             this.genericAlert('Cita cancelada', 'La cita con ' + nombreCliente + ' ha sido cancelada');
           }
         }

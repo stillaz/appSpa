@@ -197,12 +197,22 @@ export class ReservaPage {
       this.horario.push(reservaNueva);
     });
 
-    this.disponibilidadBloquear.forEach((bloquear,index) => {
+    this.disponibilidadBloquear.forEach((bloquear, index) => {
       let item = this.horario.indexOf(bloquear);
       this.horario.splice(item, 1);
     });
-    
-    this.navCtrl.pop().then(() =>{
+
+    this.horario.sort(function (a, b) {
+      if (a.fechaInicio > b.fechaInicio) {
+        return 1;
+      }
+      if (a.fechaInicio < b.fechaInicio) {
+        return -1;
+      }
+      return 0;
+    });
+
+    this.navCtrl.pop().then(() => {
       this.events.publish('actualizar-agenda', this.horario);
     });
   }
