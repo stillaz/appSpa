@@ -28,21 +28,21 @@
 
 <ion-content padding>
   <ion-list #scheduleList>
-
-    <ion-item-group *ngFor="let disponibilidad of horario" [id]="disponibilidad.evento">
+    <ion-item-group *ngFor="let horario of horarios">
 
       <ion-item-divider sticky color="light">
         <ion-label>
-          {{disponibilidad.fechaInicio | date: 'hh:mm a'}}
+          {{horario.grupo}}
         </ion-label>
       </ion-item-divider>
 
-      <ion-item-sliding #slidingItem [attr.track]="disponibilidad.estado | lowercase">
+      <ion-item-sliding *ngFor="let disponibilidad of horario.disponibilidad" #slidingItem [attr.track]="disponibilidad.estado | lowercase"
+        [id]="disponibilidad.evento">
 
         <button ion-item>
           <h3>{{disponibilidad.estado}}</h3>
           <p>
-            {{disponibilidad.fechaInicio | date: 'hh:mm a'}} &mdash; {{disponibilidad.fechaFin | date: 'hh:mm a'}}: {{disponibilidad.cliente.nombre}}
+            {{disponibilidad.fechaInicio | date: 'hh:mm a'}} &mdash; {{disponibilidad.fechaFin | date: 'hh:mm a'}}: {{disponibilidad.cliente.nombre}} : {{disponibilidad.servicio.nombre}}
           </p>
 
           <button ion-button [hidden]="disponibilidad.estado !== 'Disponible' || disponibilidad.fechaFin < actual" clear item-end (click)="reservar(disponibilidad)">Reservar</button>
@@ -50,7 +50,7 @@
         </button>
 
         <ion-item-options>
-          <button ion-button color="danger" (click)="cancelar(disponibilidad)" *ngIf="disponibilidad.estado === 'Reservado'">
+          <button ion-button color="danger" (click)="cancelar(slidingItem, disponibilidad)" *ngIf="disponibilidad.estado === 'Reservado'">
             Cancelar cita
           </button>
         </ion-item-options>

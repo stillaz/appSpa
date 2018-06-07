@@ -1,0 +1,18 @@
+<ion-list>
+  <ion-item *ngFor="let carrito of servicios">
+    <h3>{{carrito.servicio.nombre}}</h3>
+    <p>
+      De {{carrito.horaDesde | date: 'hh:mm a'}} a {{carrito.horaHasta | date: 'hh:mm a'}}
+      <br/>{{carrito.servicio.valor | currency : USD: symbol: '4.0' }}
+    </p>
+
+    <button ion-button item-end color="danger" (click)="eliminar(carrito)">
+      <ion-icon name="close"></ion-icon>
+    </button>
+  </ion-item>
+</ion-list>
+<p ion-item item-end>Total servicios: {{total | currency : USD: symbol: '4.0'}}</p>
+<button ion-button full icon-left color="secondary" (click)="guardar()">
+  <ion-icon name="fastforward"></ion-icon>
+  Continuar
+</button>

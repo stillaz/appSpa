@@ -5,29 +5,39 @@
   Ionic pages and navigation.
 -->
 <ion-header>
-
   <ion-navbar>
-    <ion-title>Reservas</ion-title>
+    <ion-row>
+      <ion-col>
+        <ion-title>Reservar para {{cliente.nombre}}
+          <br/> {{disponibilidadSeleccionada.fechaInicio | date: 'dd/MM/yyyy'}}</ion-title>
+      </ion-col>
+      <ion-col>
+        <button ion-button icon-right color="danger" clear float-right [hidden]="cantidad === 0" (tap)="ver($event)">
+          {{cantidad}}
+          <ion-icon name="list" item-end></ion-icon>
+        </button>
+      </ion-col>
+    </ion-row>
   </ion-navbar>
 </ion-header>
-
 
 <ion-content padding>
   <ion-list class="grid-full">
     <ion-item-group *ngFor="let item of servicios">
-      <ion-item-divider color="light">{{item.grupo}}</ion-item-divider>
+      <ion-item-divider color="light" sticky>{{item.grupo}}</ion-item-divider>
       <ion-row>
         <ion-col #item *ngFor="let servicio of item.servicios" class="cell-1">
-          <img *ngIf="servicio.imagen" [src]="servicio.imagen">
-          <ion-note style="margin-left: '2px'">{{servicio.descripcion}}</ion-note>
-          <ion-item>
-            <strong>{{servicio.valor| currency : USD: symbol: '4.0' }}</strong>
-          </ion-item>
-          <ion-item>
-            <button ion-button small outline item-end (tap)="agregar(producto)">
-              Agregar
-            </button>
-          </ion-item>
+          <ion-card>
+            <img *ngIf="servicio.imagen" [src]="servicio.imagen">
+            <div class="card-title">{{servicio.nombre}}</div>
+            <div class="card-subtitle">{{servicio.descripcion}}. Duración: {{servicio.duracion_MIN}} minutos.</div>
+            <ion-item>
+              <strong>{{servicio.valor| currency : USD: symbol: '4.0' }}</strong>
+              <button ion-button small outline item-end (tap)="agregar(servicio)" [disabled]="!servicio.activo">
+                Agregar
+              </button>
+            </ion-item>
+          </ion-card>
         </ion-col>
       </ion-row>
     </ion-item-group>

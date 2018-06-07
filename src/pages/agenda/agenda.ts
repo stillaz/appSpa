@@ -1,5 +1,5 @@
 import { Component, ViewChild } from '@angular/core';
-import { AlertController, Content, IonicPage, ModalController, NavController } from 'ionic-angular';
+import { AlertController, Content, IonicPage, ItemSliding, NavController } from 'ionic-angular';
 import moment from 'moment';
 
 import { ReservaOptions } from '../../interfaces/reserva-options';
@@ -29,7 +29,6 @@ export class AgendaPage {
 
   public evento: any = ['actual', 'otro'];
   public usuario: UsuarioOptions = { id: 123, nombre: 'El Barbero' };
-
   public actual: Date = new Date();
   public initDate: Date = new Date();
   public initDate2: Date = new Date();
@@ -38,14 +37,16 @@ export class AgendaPage {
   public min: Date = new Date();
 
   public horaInicio = 7;
-  public horaFin = 19;
+  public horaFin = 24;
   public tiempoServicio = 10;
+
+  public horarios: any[];
 
   public horario: ReservaOptions[];
 
   private estadoDisponibilidad: string[] = ['Disponible', 'Reservado', 'Finalizado', 'Ejecutando'];
 
-  constructor(public navCtrl: NavController, public modalCtrl: ModalController, public alertCtrl: AlertController) {
+  constructor(public navCtrl: NavController, public alertCtrl: AlertController) {
   }
 
   ionViewDidLoad() {
@@ -53,7 +54,7 @@ export class AgendaPage {
   }
 
   ionViewDidEnter() {
-    //this.scrollTo(this.evento[0]);
+    this.scrollTo(this.evento[0]);
   }
 
   setDate(date: Date) {
@@ -63,54 +64,62 @@ export class AgendaPage {
 
   updateHorarios() {
     this.horario = [];
+    this.horarios = [];
+    let grupos = [];
     let fechaInicio = moment(this.initDate).startOf('day').hours(this.horaInicio);
     let fechaFin = moment(this.initDate).hours(this.horaFin);
-    while (fechaInicio.isBefore(fechaFin.toDate())) {
+    while (fechaInicio.isSameOrBefore(fechaFin.toDate())) {
       let fechaInicioReserva = fechaInicio.toDate();
       let fechaFinReserva = moment(fechaInicio).add(this.tiempoServicio, 'minutes').toDate();
       let eventoActual = moment(this.actual).isBetween(fechaInicioReserva, fechaFinReserva);
-      let alet = Math.round(Math.random() * 1);
       let reserva: ReservaOptions = {
         fechaInicio: fechaInicioReserva,
         fechaFin: fechaFinReserva,
-        estado: this.estadoDisponibilidad[alet],
+        estado: this.estadoDisponibilidad[0],
         evento: this.evento[1],
         cliente: { identificacion: null, nombre: null, telefono: null, correoelectronico: null },
-        usuario: this.usuario
+        usuario: this.usuario,
+        servicio: { id: null, nombre: null, descripcion: null, grupo: null, valor: null, duracion_MIN: null, activo: null, imagen: null }
       };
-
-      let esReserva = reserva.estado === this.estadoDisponibilidad[1];
-      if (esReserva) {
-        reserva.cliente = { identificacion: 123, nombre: 'Pedro Perez', telefono: '4527474', correoelectronico: null };
-      }
 
       if (eventoActual) {
         reserva.evento = this.evento[0];
-        if (esReserva) {
+        if (reserva.estado === this.estadoDisponibilidad[1]) {
           reserva.estado = this.estadoDisponibilidad[3];
         }
       }
 
+      let grupo = moment(reserva.fechaInicio).startOf('hours').format('h:mm a');;
+      if (grupos[grupo] === undefined) {
+        grupos[grupo] = [];
+      }
+      grupos[grupo].push(reserva);
+
       this.horario.push(reserva);
+
       fechaInicio = moment(reserva.fechaFin);
+    }
+
+    for (let grupo in grupos) {
+      this.horarios.push({ grupo: grupo, disponibilidad: grupos[grupo] });
     }
   }
 
   scrollTo(element: string) {
     let yOffset = document.getElementById(element).offsetTop;
-    this.content.scrollTo(0, yOffset - 10, 1000)
+    this.content.scrollTo(0, yOffset - 50, 1000)
   }
 
   reservar(reserva: ReservaOptions) {
-    let clienteModal = this.modalCtrl.create('DetallePersonaPage');
-    clienteModal.onDidDismiss(data => {
-      if (moment(new Date()).isBefore(reserva.fechaFin) && data) {
-        reserva.cliente = data;
-        reserva.estado = this.estadoDisponibilidad[1];
-        this.navCtrl.push('ReservaPage');
-      }
+    this.navCtrl.push('ReservaPage', {
+      disponibilidad: reserva,
+      horario: this.horario
     });
-    clienteModal.present();
+
+    return this.navCtrl.viewDidLeave.subscribe(data => {
+      this.horario = data.horario;
+      return this.horario;
+    });
   }
 
   genericAlert(titulo: string, mensaje: string) {
@@ -123,7 +132,7 @@ export class AgendaPage {
     mensajeAlert.present();
   }
 
-  cancelar(reserva: ReservaOptions) {
+  cancelar(slidingItem: ItemSliding, reserva: ReservaOptions) {
     let fechaInicio = moment(reserva.fechaInicio).locale("es").format("dddd, DD [de] MMMM [de] YYYY");
     let horaInicio = moment(reserva.fechaInicio).format("hh:mm a");
     let nombreCliente = reserva.cliente.nombre;
@@ -140,13 +149,13 @@ export class AgendaPage {
           handler: () => {
             reserva.cliente = { identificacion: null, nombre: null, telefono: null, correoelectronico: null };
             reserva.estado = this.estadoDisponibilidad[0];
-            this.genericAlert('Cita cancelada', 'La cita con '+ nombreCliente +' ha sido cancelada');
+            this.genericAlert('Cita cancelada', 'La cita con ' + nombreCliente + ' ha sido cancelada');
           }
         }
       ],
     });
-
     cancelarAlert.present();
+    slidingItem.close();
   }
 
 }
