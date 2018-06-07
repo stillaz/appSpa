@@ -194,7 +194,7 @@ export class ReservaPage {
 
   guardar() {
     this.carrito.forEach(reservaNueva => {
-      
+      this.horario.push(reservaNueva);
     });
 
     this.disponibilidadBloquear.forEach((bloquear,index) => {
