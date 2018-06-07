@@ -1,5 +1,5 @@
 import { Component, ViewChild } from '@angular/core';
-import { AlertController, Content, IonicPage, ItemSliding, NavController } from 'ionic-angular';
+import { AlertController, Content, IonicPage, ItemSliding, NavController, Events } from 'ionic-angular';
 import moment from 'moment';
 
 import { ReservaOptions } from '../../interfaces/reserva-options';
@@ -46,23 +46,25 @@ export class AgendaPage {
 
   private estadoDisponibilidad: string[] = ['Disponible', 'Reservado', 'Finalizado', 'Ejecutando'];
 
-  constructor(public navCtrl: NavController, public alertCtrl: AlertController) {
+  constructor(public navCtrl: NavController, public alertCtrl: AlertController, public events: Events) {
   }
 
   ionViewDidLoad() {
-    this.updateHorarios();
+    this.updateHorariosInicial();
   }
 
   ionViewDidEnter() {
-    this.scrollTo(this.evento[0]);
+    if (new Date().getHours() >= this.horaInicio) {
+      this.scrollTo(this.evento[0]);
+    }
   }
 
   setDate(date: Date) {
     this.initDate = date;
-    this.updateHorarios();
+    this.updateHorariosInicial();
   }
 
-  updateHorarios() {
+  updateHorariosInicial() {
     this.horario = [];
     this.horarios = [];
     let grupos = [];
@@ -110,15 +112,41 @@ export class AgendaPage {
     this.content.scrollTo(0, yOffset - 50, 1000)
   }
 
+  updateHorarios() {
+    this.horarios = [];
+    let grupos = [];
+    this.horario.forEach(reserva => {
+      let eventoActual = moment(this.actual).isBetween(reserva.fechaInicio, reserva.fechaFin);
+
+      if (eventoActual) {
+        reserva.evento = this.evento[0];
+        if (reserva.estado === this.estadoDisponibilidad[1]) {
+          reserva.estado = this.estadoDisponibilidad[3];
+        }
+      }
+
+      let grupo = moment(reserva.fechaInicio).startOf('hours').format('h:mm a');;
+      if (grupos[grupo] === undefined) {
+        grupos[grupo] = [];
+      }
+      grupos[grupo].push(reserva);
+    });
+
+    for (let grupo in grupos) {
+      this.horarios.push({ grupo: grupo, disponibilidad: grupos[grupo] });
+    }
+  }
+
   reservar(reserva: ReservaOptions) {
+    this.events.subscribe('actualizar-agenda', (data) => {
+      this.horario = data;
+      this.updateHorarios();
+      this.events.unsubscribe('actualizar-agenda'); // unsubscribe this event
+  })
+
     this.navCtrl.push('ReservaPage', {
       disponibilidad: reserva,
       horario: this.horario
-    });
-
-    return this.navCtrl.viewDidLeave.subscribe(data => {
-      this.horario = data.horario;
-      return this.horario;
     });
   }
 

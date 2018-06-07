@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { IonicPage, NavController, NavParams, ViewController, AlertController } from 'ionic-angular';
-import { CarritoOptions } from '../../interfaces/carrito-options';
+import { ReservaOptions } from '../../interfaces/reserva-options';
 
 /**
  * Generated class for the CarritoPage page.
@@ -17,7 +17,7 @@ import { CarritoOptions } from '../../interfaces/carrito-options';
 export class CarritoPage {
 
   public total: number;
-  public servicios: CarritoOptions[];
+  public servicios: ReservaOptions[];
 
   constructor(
     public alertCtrl: AlertController,
@@ -28,7 +28,7 @@ export class CarritoPage {
     this.total = this.navParams.get('total');
   }
 
-  eliminar(servicio: CarritoOptions) {
+  eliminar(servicio: ReservaOptions) {
     this.viewCtrl.dismiss({
       servicio: servicio,
       metodo: 'eliminar'

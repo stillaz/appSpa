@@ -1,10 +1,9 @@
 import { Component } from '@angular/core';
-import { AlertController, IonicPage, ModalController, NavParams, PopoverController, ViewController } from 'ionic-angular';
+import { AlertController, IonicPage, ModalController, NavParams, PopoverController, ViewController, NavController, Events } from 'ionic-angular';
 import { ServicioOptions } from '../../interfaces/servicio-options';
 import { ClienteOptions } from '../../interfaces/cliente-options';
 import { ReservaOptions } from '../../interfaces/reserva-options';
 import moment from 'moment';
-import { CarritoOptions } from '../../interfaces/carrito-options';
 
 /**
  * Generated class for the ReservaPage page.
@@ -22,7 +21,7 @@ import { CarritoOptions } from '../../interfaces/carrito-options';
 export class ReservaPage {
 
   public servicios: any[];
-  public carrito: CarritoOptions[] = [];
+  public carrito: ReservaOptions[] = [];
   public disponibilidadSeleccionada: ReservaOptions;
   public disponibilidadBloquear: ReservaOptions[] = [];
   public horario: ReservaOptions[];
@@ -40,6 +39,8 @@ export class ReservaPage {
   constructor(
     public alertCtrl: AlertController,
     public modalCtrl: ModalController,
+    private events: Events,
+    private navCtrl: NavController,
     private navParams: NavParams,
     public popoverCtrl: PopoverController,
     public viewCtrl: ViewController) {
@@ -119,19 +120,21 @@ export class ReservaPage {
       }
     }
 
-    if (disponible) {
+    if (disponible || (!disponibilidadEncontrada && contador > 0)) {
       this.disponibilidadBloquear.push.apply(this.disponibilidadBloquear, disponibilidadBloquear);
       this.cantidad++;
       servicio.activo = false;
       this.carrito.push({
         servicio: servicio,
-        horaDesde: disponibilidadBloquear[0].fechaInicio,
-        horaHasta: disponibilidadBloquear[disponibilidadBloquear.length - 1].fechaFin
+        fechaInicio: disponibilidadBloquear[0].fechaInicio,
+        fechaFin: disponibilidadBloquear[disponibilidadBloquear.length - 1].fechaFin,
+        cliente: this.cliente,
+        estado: 'Reservado',
+        evento: null,
+        usuario: null
       });
       this.ultimoHorario = disponibilidadBloquear[disponibilidadBloquear.length - 1].fechaFin;
       this.totalServicios += servicio.valor;
-    } else if (!disponibilidadEncontrada) {
-      this.genericAlert('Error al reservar', 'Disponibilidad' + + ' no encontrada');
     } else if (contador === 0) {
       this.genericAlert('Error al reservar', 'La cita se cruza con ' + disponibilidadEncontrada.cliente.nombre + ', la reserva ha sido cancelada');
     } else {
@@ -155,8 +158,12 @@ export class ReservaPage {
               servicio.activo = false;
               this.carrito.push({
                 servicio: servicio,
-                horaDesde: disponibilidadBloquear[0].fechaInicio,
-                horaHasta: disponibilidadBloquear[disponibilidadBloquear.length - 1].fechaFin
+                fechaInicio: disponibilidadBloquear[0].fechaInicio,
+                fechaFin: disponibilidadBloquear[disponibilidadBloquear.length - 1].fechaFin,
+                cliente: this.cliente,
+                estado: 'Reservado',
+                evento: null,
+                usuario: null
               });
               this.cantidad++;
               this.ultimoHorario = disponibilidadBloquear[disponibilidadBloquear.length - 1].fechaFin;
@@ -169,7 +176,7 @@ export class ReservaPage {
     }
   }
 
-  eliminar(servicio: CarritoOptions) {
+  eliminar(servicio: ReservaOptions) {
     this.disponibilidadBloquear = [];
     let item = this.carrito.indexOf(servicio);
     let carrito = this.carrito;
@@ -186,18 +193,17 @@ export class ReservaPage {
   }
 
   guardar() {
-    this.disponibilidadBloquear.forEach(bloquear => {
-      this.horario.forEach(disponibilidad => {
-        if (disponibilidad.fechaInicio.getTime() === bloquear.fechaInicio.getTime()) {
-          disponibilidad.cliente = this.cliente;
-          disponibilidad.estado = 'Reservado';
-          disponibilidad.servicio = bloquear.servicio;
-        }
-      });
+    this.carrito.forEach(reservaNueva => {
+      
     });
 
-    this.viewCtrl.dismiss({
-      horario: this.horario
+    this.disponibilidadBloquear.forEach((bloquear,index) => {
+      let item = this.horario.indexOf(bloquear);
+      this.horario.splice(item, 1);
+    });
+    
+    this.navCtrl.pop().then(() =>{
+      this.events.publish('actualizar-agenda', this.horario);
     });
   }
 

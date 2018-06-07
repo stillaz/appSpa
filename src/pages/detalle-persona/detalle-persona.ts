@@ -1,7 +1,6 @@
 import { Component } from '@angular/core';
 import { IonicPage, NavController, ViewController, ToastController } from 'ionic-angular';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
-import { PersonaProvider } from '../../providers/persona/persona';
 import { ClienteOptions } from '../../interfaces/cliente-options';
 
 /**
@@ -21,7 +20,7 @@ export class DetallePersonaPage {
   nuevo: boolean = true;
   public cliente: ClienteOptions;
 
-  constructor(public navCtrl: NavController, public viewCtrl: ViewController, private formBuilder: FormBuilder, private persona: PersonaProvider, public toastCtrl: ToastController) {
+  constructor(public navCtrl: NavController, public viewCtrl: ViewController, private formBuilder: FormBuilder, public toastCtrl: ToastController) {
     this.cliente = { identificacion: null, nombre: null, telefono: null, correoelectronico: null };
     this.form(this.cliente);
   }
@@ -33,10 +32,6 @@ export class DetallePersonaPage {
       telefono: [datosPersona.telefono, Validators.required],
       correoelectronico: [datosPersona.correoelectronico]
     });
-  }
-
-  ionViewDidLoad() {
-    console.log('ionViewDidLoad DetallePersonaPage');
   }
 
   getPersona() {
