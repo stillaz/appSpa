@@ -1,6 +1,6 @@
 import moment from 'moment';
 import { Component, ViewChild } from '@angular/core';
-import { AlertController, Content, IonicPage, ItemSliding, NavController, Events } from 'ionic-angular';
+import { AlertController, Content, IonicPage, ItemSliding, NavController, Events, ActionSheetController } from 'ionic-angular';
 import * as DataProvider from '../../providers/constants';
 import { ClienteOptions } from '../../interfaces/cliente-options';
 import { ReservaOptions } from '../../interfaces/reserva-options';
@@ -9,6 +9,7 @@ import { UsuarioOptions } from '../../interfaces/usuario-options';
 import { UsuarioProvider } from '../../providers/usuario';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/interval';
+import { PerfilProvider } from '../../providers/perfil';
 
 /**
  * Generated class for the AgendaPage page.
@@ -37,6 +38,7 @@ export class AgendaPage {
   public min: Date = new Date();
   public constantes = DataProvider;
   public usuario: UsuarioOptions;
+  public usuarioLogueado: UsuarioOptions;
   public horario: ReservaOptions[];
   public horarios: any[];
 
@@ -60,19 +62,21 @@ export class AgendaPage {
 
   constructor(
     public alertCtrl: AlertController,
+    public actionSheetCtrl: ActionSheetController,
     public events: Events,
     public navCtrl: NavController,
+    private perfilCtrl: PerfilProvider,
     private usuarioCtrl: UsuarioProvider
   ) {
-    
-    this.usuario = usuarioCtrl.getUsuarios()[0];
-    Observable.interval(60000).subscribe(ex => {
-      this.updateHorarios();
-    });
+    this.usuarioLogueado = this.usuarioCtrl.getUsuarios()[0];
+    this.usuario = this.usuarioLogueado;
   }
 
   ionViewDidLoad() {
     this.updateHorariosInicial();
+    Observable.interval(60000).subscribe(ex => {
+      this.updateHorarios();
+    });
   }
 
   ionViewDidEnter() {
@@ -140,8 +144,6 @@ export class AgendaPage {
     let grupos = [];
     this.horario.forEach(reserva => {
       let eventoActual = moment(new Date()).isBetween(reserva.fechaInicio, reserva.fechaFin);
-
-      console.log(eventoActual);
 
       if (eventoActual) {
         reserva.evento = this.constantes.EVENTOS.ACTUAL;
@@ -263,6 +265,54 @@ export class AgendaPage {
     reserva.estado = this.constantes.ESTADOS_RESERVA.FINALIZADO;
     let mensaje = tiempoSiguiente ? 'El próximo servicio empieza en: ' + tiempoSiguiente + ' minutos' : 'No hay más citas asignadas';
     this.genericAlert('Servicio finalizado', 'El servicio ha terminado satisfactoriamente. ' + mensaje);
+  }
+
+  isAdministrador(): boolean {
+    return this.usuarioCtrl.isAdministrador(this.usuarioLogueado);
+  }
+
+  configActionSheet(title: string, filtros){
+    let actionSheet = this.actionSheetCtrl.create({
+      title: title,
+      buttons: filtros
+    });
+    actionSheet.present();
+  }
+
+  filtroUsuarios(usuarios: UsuarioOptions[]) {
+    let filtros: any = [];
+    usuarios.forEach(usuario => {
+      filtros.push({
+        text: usuario.nombre + ': ' + usuario.perfiles.map(perfil => perfil.nombre).join(" - "), handler: () => {
+          this.usuario = usuario;
+          this.updateHorariosInicial();
+        }
+      });
+    });
+
+    this.configActionSheet('Selecciona usuario', filtros);
+  }
+
+  filtroPerfiles() {
+    let filtros: any = [];
+    let usuarios: UsuarioOptions[];
+    filtros.push({
+      text: 'Todos los perfiles', handler: () => {
+        usuarios = this.usuarioCtrl.getUsuarios();
+        this.filtroUsuarios(usuarios);
+      }
+    });
+
+    this.perfilCtrl.getPerfiles().forEach(perfil => {
+      filtros.push({
+        text: perfil.nombre, handler: () => {
+          usuarios = this.usuarioCtrl.getUsuariosByPerfil(perfil);
+          this.filtroUsuarios(usuarios);
+        }
+      });
+    });
+    
+    this.configActionSheet('Selecciona perfil', filtros);
   }
 
 }

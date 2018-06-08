@@ -13,20 +13,20 @@ import { PerfilOptions } from '../interfaces/perfil-options';
 @Injectable()
 export class UsuarioProvider {
 
-  constructor(private perfilCtrl: PerfilProvider){
-    
+  constructor(private perfilCtrl: PerfilProvider) {
+
   }
 
-  getUsuarios(): UsuarioOptions[]{
+  getUsuarios(): UsuarioOptions[] {
     let usuarios = [];
 
-    let perfiles1: PerfilOptions[] = this.perfilCtrl.getPerfiles().slice(0, 0);
+    let perfiles1: PerfilOptions[] = this.perfilCtrl.getPerfiles().slice(0, 1);
     let usuario1: UsuarioOptions = { id: 1, nombre: 'El Administrador', perfiles: perfiles1 };
 
-    let perfiles2: PerfilOptions[] = this.perfilCtrl.getPerfiles().slice(1, 1);
+    let perfiles2: PerfilOptions[] = this.perfilCtrl.getPerfiles().slice(1, 2);
     let usuario2: UsuarioOptions = { id: 1, nombre: 'El Barbero', perfiles: perfiles2 };
 
-    let perfiles3: PerfilOptions[] = this.perfilCtrl.getPerfiles().slice(0, 1);
+    let perfiles3: PerfilOptions[] = this.perfilCtrl.getPerfiles().slice(0, 2);
     let usuario3: UsuarioOptions = { id: 1, nombre: 'El Administrador, Barbero', perfiles: perfiles3 };
 
     usuarios.push(usuario1);
@@ -50,6 +50,20 @@ export class UsuarioProvider {
     });
 
     return servicios;
+  }
+
+  isAdministrador(usuario: UsuarioOptions): boolean {
+    return usuario.perfiles.some(perfil => {
+      return perfil.nombre === 'Admin';
+    });
+  }
+
+  getUsuariosByPerfil(perfil: PerfilOptions): UsuarioOptions[]{
+    return this.getUsuarios().filter(usuario => {
+      return usuario.perfiles.some(perfilUsuario => {
+        return perfilUsuario.id === perfil.id;
+      });
+    });
   }
 
 }

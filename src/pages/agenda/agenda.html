@@ -25,7 +25,7 @@
         </span>
       </ion-col>
       <ion-col>
-        <button float-end ion-button outline (click)="filtrosGrupos()">{{usuario.nombre}}</button>
+        <button *ngIf="isAdministrador()" float-end ion-button outline (click)="filtroPerfiles()">{{usuario.nombre}}</button>
       </ion-col>
     </ion-row>
   </ion-toolbar>
