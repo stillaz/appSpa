@@ -57,7 +57,7 @@ export class ReservaPage {
   }
 
   ionViewDidLoad() {
-    let clienteModal = this.modalCtrl.create('DetallePersonaPage');
+    let clienteModal = this.modalCtrl.create('ClientePage');
     clienteModal.onDidDismiss(data => {
       if (data) {
         this.cliente = data;

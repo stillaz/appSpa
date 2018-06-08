@@ -3,8 +3,6 @@ import { Component, ViewChild } from '@angular/core';
 import { AlertController, Content, IonicPage, ItemSliding, NavController, Events } from 'ionic-angular';
 import * as DataProvider from '../../providers/constants';
 import { ClienteOptions } from '../../interfaces/cliente-options';
-import { PerfilOptions } from '../../interfaces/perfil-options';
-import { PerfilProvider } from '../../providers/perfil';
 import { ReservaOptions } from '../../interfaces/reserva-options';
 import { ServicioOptions } from '../../interfaces/servicio-options';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
@@ -31,7 +29,7 @@ export class AgendaPage {
   public horaInicio = 7;
   public horaFin = 24;
   public tiempoServicio = 10;
-
+  public actual: Date;
   public initDate: Date = new Date();
   public initDate2: Date = new Date();
   public disabledDates: Date[] = [];
@@ -41,7 +39,6 @@ export class AgendaPage {
   public usuario: UsuarioOptions;
   public horario: ReservaOptions[];
   public horarios: any[];
-  public actual: Date;
 
   public cliente: ClienteOptions = {
     identificacion: null,
@@ -65,11 +62,10 @@ export class AgendaPage {
     public alertCtrl: AlertController,
     public events: Events,
     public navCtrl: NavController,
-    private perfilCtrl: PerfilProvider,
     private usuarioCtrl: UsuarioProvider
   ) {
-    let perfiles: PerfilOptions[] = this.perfilCtrl.getPerfiles();
-    this.usuario = { id: 123, nombre: 'El Barbero', perfiles: perfiles };
+    
+    this.usuario = usuarioCtrl.getUsuarios()[0];
     Observable.interval(60000).subscribe(ex => {
       this.updateHorarios();
     });

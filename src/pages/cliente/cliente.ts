@@ -11,10 +11,10 @@ import { ClienteOptions } from '../../interfaces/cliente-options';
  */
 @IonicPage()
 @Component({
-  selector: 'page-detalle-persona',
-  templateUrl: 'detalle-persona.html',
+  selector: 'page-cliente',
+  templateUrl: 'cliente.html',
 })
-export class DetallePersonaPage {
+export class ClientePage {
 
   todo: FormGroup;
   nuevo: boolean = true;

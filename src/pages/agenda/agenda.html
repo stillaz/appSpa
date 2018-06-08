@@ -7,22 +7,28 @@
 <ion-header>
 
   <ion-navbar>
+    <ion-title>Agenda {{usuario.nombre}}</ion-title>
+  </ion-navbar>
+
+  <ion-toolbar darkergraytoolbar class="toolbarPlan">
+    <ion-searchbar placeholder="Buscar reserva" [(ngModel)]="busqueda" (ionInput)="filtrar()"></ion-searchbar>
     <ion-row>
       <ion-col>
-        <ion-title>Agenda {{usuario.nombre}}</ion-title>
+        <span float-end ion-datepicker (ionChanged)="setDate($event);" [max]="maxDate" [min]="initDate2" [value]="initDate" [showMaxAndMin]="true"
+          [disabledDates]="disabledDates" clear class="ScheduleDate" [localeStrings]="constantes.LOCALE_STRINGS">
+          <span>
+            <button ion-button icon-left color="secondary" clear>
+              <ion-icon name="clipboard"></ion-icon>
+              {{initDate | date}}
+            </button>
+          </span>
+        </span>
       </ion-col>
       <ion-col>
-        <ion-toolbar darkergraytoolbar class="toolbarPlan">
-          <span ion-datepicker (ionChanged)="setDate($event);" [max]="maxDate" [min]="initDate2" [value]="initDate" [showMaxAndMin]="true"
-            [disabledDates]="disabledDates" clear class="ScheduleDate" [localeStrings]="constantes.LOCALE_STRINGS">
-            <span>{{initDate | date}}
-              <ion-icon name="clipboard" item-left></ion-icon>
-            </span>
-          </span>
-        </ion-toolbar>
+        <button float-end ion-button outline (click)="filtrosGrupos()">{{usuario.nombre}}</button>
       </ion-col>
     </ion-row>
-  </ion-navbar>
+  </ion-toolbar>
 </ion-header>
 
 
