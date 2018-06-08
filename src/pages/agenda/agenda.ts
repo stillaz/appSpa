@@ -1,11 +1,16 @@
+import moment from 'moment';
 import { Component, ViewChild } from '@angular/core';
 import { AlertController, Content, IonicPage, ItemSliding, NavController, Events } from 'ionic-angular';
-import moment from 'moment';
-
-import { ReservaOptions } from '../../interfaces/reserva-options';
-import { UsuarioOptions } from '../../interfaces/usuario-options';
+import * as DataProvider from '../../providers/constants';
 import { ClienteOptions } from '../../interfaces/cliente-options';
+import { PerfilOptions } from '../../interfaces/perfil-options';
+import { PerfilProvider } from '../../providers/perfil';
+import { ReservaOptions } from '../../interfaces/reserva-options';
 import { ServicioOptions } from '../../interfaces/servicio-options';
+import { UsuarioOptions } from '../../interfaces/usuario-options';
+import { UsuarioProvider } from '../../providers/usuario';
+import { Observable } from 'rxjs/Observable';
+import 'rxjs/add/observable/interval';
 
 /**
  * Generated class for the AgendaPage page.
@@ -27,32 +32,47 @@ export class AgendaPage {
   public horaFin = 24;
   public tiempoServicio = 10;
 
-  public actual: Date = new Date();
   public initDate: Date = new Date();
   public initDate2: Date = new Date();
   public disabledDates: Date[] = [];
   public maxDate: Date = new Date(new Date().setDate(new Date().getDate() + 30));
   public min: Date = new Date();
+  public constantes = DataProvider;
+  public usuario: UsuarioOptions;
+  public horario: ReservaOptions[];
+  public horarios: any[];
+  public actual: Date;
 
-  public evento = ['actual', 'otro'];
-
-  public localeStrings = {
-    monday: false,
-    weekdays: ['Dom.', 'Lun.', 'Mar.', 'Mié.', 'Jue.', 'Vie.', 'Sáb.'],
-    months: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+  public cliente: ClienteOptions = {
+    identificacion: null,
+    nombre: null,
+    telefono: null,
+    correoelectronico: null
   };
 
-  public cliente: ClienteOptions = { identificacion: null, nombre: null, telefono: null, correoelectronico: null };
-  public servicio: ServicioOptions = { id: null, nombre: null, descripcion: null, grupo: null, valor: null, duracion_MIN: null, activo: null, imagen: null }
-  public usuario: UsuarioOptions = { id: 123, nombre: 'El Barbero' };
+  public servicio: ServicioOptions = {
+    id: null,
+    nombre: null,
+    descripcion: null,
+    grupo: null,
+    valor: null,
+    duracion_MIN: null,
+    activo: null,
+    imagen: null
+  }
 
-  public horarios: any[];
-
-  public horario: ReservaOptions[];
-
-  private estadoDisponibilidad: string[] = ['Disponible', 'Reservado', 'Finalizado', 'Ejecutando'];
-
-  constructor(public navCtrl: NavController, public alertCtrl: AlertController, public events: Events) {
+  constructor(
+    public alertCtrl: AlertController,
+    public events: Events,
+    public navCtrl: NavController,
+    private perfilCtrl: PerfilProvider,
+    private usuarioCtrl: UsuarioProvider
+  ) {
+    let perfiles: PerfilOptions[] = this.perfilCtrl.getPerfiles();
+    this.usuario = { id: 123, nombre: 'El Barbero', perfiles: perfiles };
+    Observable.interval(60000).subscribe(ex => {
+      this.updateHorarios();
+    });
   }
 
   ionViewDidLoad() {
@@ -61,8 +81,9 @@ export class AgendaPage {
 
   ionViewDidEnter() {
     if (new Date().getHours() >= this.horaInicio) {
-      this.scrollTo(this.evento[0]);
+      this.scrollTo(this.constantes.EVENTOS.ACTUAL);
     }
+    this.actual = new Date();
   }
 
   setDate(date: Date) {
@@ -79,21 +100,21 @@ export class AgendaPage {
     while (fechaInicio.isSameOrBefore(fechaFin.toDate())) {
       let fechaInicioReserva = fechaInicio.toDate();
       let fechaFinReserva = moment(fechaInicio).add(this.tiempoServicio, 'minutes').toDate();
-      let eventoActual = moment(this.actual).isBetween(fechaInicioReserva, fechaFinReserva);
+      let eventoActual = moment(new Date()).isBetween(fechaInicioReserva, fechaFinReserva);
       let reserva: ReservaOptions = {
         fechaInicio: fechaInicioReserva,
         fechaFin: fechaFinReserva,
-        estado: this.estadoDisponibilidad[0],
-        evento: this.evento[1],
+        estado: this.constantes.ESTADOS_RESERVA.DISPONIBLE,
+        evento: this.constantes.EVENTOS.OTRO,
         cliente: this.cliente,
         usuario: this.usuario,
         servicio: this.servicio
       };
 
       if (eventoActual) {
-        reserva.evento = this.evento[0];
-        if (reserva.estado === this.estadoDisponibilidad[1]) {
-          reserva.estado = this.estadoDisponibilidad[3];
+        reserva.evento = this.constantes.EVENTOS.ACTUAL;
+        if (reserva.estado === this.constantes.ESTADOS_RESERVA.RESERVADO) {
+          reserva.estado = this.constantes.ESTADOS_RESERVA.EJECUTANDO;
         }
       }
 
@@ -122,12 +143,14 @@ export class AgendaPage {
     this.horarios = [];
     let grupos = [];
     this.horario.forEach(reserva => {
-      let eventoActual = moment(this.actual).isBetween(reserva.fechaInicio, reserva.fechaFin);
+      let eventoActual = moment(new Date()).isBetween(reserva.fechaInicio, reserva.fechaFin);
+
+      console.log(eventoActual);
 
       if (eventoActual) {
-        reserva.evento = this.evento[0];
-        if (reserva.estado === this.estadoDisponibilidad[1]) {
-          reserva.estado = this.estadoDisponibilidad[3];
+        reserva.evento = this.constantes.EVENTOS.ACTUAL;
+        if (reserva.estado === this.constantes.ESTADOS_RESERVA.RESERVADO) {
+          reserva.estado = this.constantes.ESTADOS_RESERVA.EJECUTANDO;
         }
       }
 
@@ -144,16 +167,24 @@ export class AgendaPage {
   }
 
   reservar(reserva: ReservaOptions) {
-    this.events.subscribe('actualizar-agenda', (data) => {
-      this.horario = data;
-      this.updateHorarios();
-      this.events.unsubscribe('actualizar-agenda'); // unsubscribe this event
-    })
+    let serviciosUsuario = this.usuarioCtrl.getServicios(this.usuario);
+    if (!serviciosUsuario || serviciosUsuario.length === 0) {
+      this.genericAlert('Error', 'El usuario no tiene servicios');
+    } else {
+      this.events.subscribe('actualizar-agenda', data => {
+        this.horario = data;
+        this.updateHorarios();
+        this.genericAlert('Reserva registrada', 'Se ha registrado la reserva');
+        this.events.unsubscribe('actualizar-agenda');
+      });
 
-    this.navCtrl.push('ReservaPage', {
-      disponibilidad: reserva,
-      horario: this.horario
-    });
+      this.navCtrl.push('ReservaPage', {
+        disponibilidad: reserva,
+        horario: this.horario,
+        usuario: this.usuario,
+        servicios: serviciosUsuario
+      });
+    }
   }
 
   genericAlert(titulo: string, mensaje: string) {
@@ -183,13 +214,11 @@ export class AgendaPage {
           handler: () => {
             let ultimoHorario = reserva.fechaInicio;
             for (let i = 0; i <= reserva.servicio.duracion_MIN / 10 - 1; i++) {
-              let inicio = moment(ultimoHorario).add(i * this.tiempoServicio, 'minutes').toDate();
-              let fin = moment(horaInicio).add(this.tiempoServicio, 'minutes').toDate();
               let disponibilidad: ReservaOptions = {
-                fechaInicio: inicio,
-                fechaFin: fin,
-                estado: this.estadoDisponibilidad[0],
-                evento: this.evento[1],
+                fechaInicio: ultimoHorario,
+                fechaFin: moment(ultimoHorario).add(this.tiempoServicio, 'minutes').toDate(),
+                estado: this.constantes.ESTADOS_RESERVA.DISPONIBLE,
+                evento: this.constantes.EVENTOS.OTRO,
                 cliente: this.cliente,
                 servicio: this.servicio,
                 usuario: this.usuario
@@ -197,7 +226,7 @@ export class AgendaPage {
 
               this.horario.push(disponibilidad);
 
-              ultimoHorario = fin;
+              ultimoHorario = disponibilidad.fechaFin;
             }
 
             let item = this.horario.indexOf(reserva);
@@ -222,6 +251,22 @@ export class AgendaPage {
     });
     cancelarAlert.present();
     slidingItem.close();
+  }
+
+  terminar(reserva: ReservaOptions) {
+    let reservado = this.constantes.ESTADOS_RESERVA.RESERVADO;
+    let tiempoSiguiente = null;
+    let siguiente = this.horario.find(function (disponiblidad) {
+      return disponiblidad.fechaInicio >= reserva.fechaFin && disponiblidad.estado === reservado;
+    });
+
+    if (siguiente) {
+      tiempoSiguiente = moment(siguiente.fechaInicio).diff(new Date(), 'minutes');
+    }
+
+    reserva.estado = this.constantes.ESTADOS_RESERVA.FINALIZADO;
+    let mensaje = tiempoSiguiente ? 'El próximo servicio empieza en: ' + tiempoSiguiente + ' minutos' : 'No hay más citas asignadas';
+    this.genericAlert('Servicio finalizado', 'El servicio ha terminado satisfactoriamente. ' + mensaje);
   }
 
 }

@@ -23,7 +23,7 @@
 
 <ion-content padding>
   <ion-list class="grid-full">
-    <ion-item-group *ngFor="let item of servicios">
+    <ion-item-group *ngFor="let item of grupoServicios">
       <ion-item-divider color="light" sticky>{{item.grupo}}</ion-item-divider>
       <ion-row>
         <ion-col #item *ngFor="let servicio of item.servicios" class="cell-1">

@@ -11,6 +11,9 @@ import { TabsPage } from '../pages/tabs/tabs';
 
 import { StatusBar } from '@ionic-native/status-bar';
 import { SplashScreen } from '@ionic-native/splash-screen';
+import { PerfilProvider } from '../providers/perfil';
+import { ServicioProvider } from '../providers/servicio';
+import { UsuarioProvider } from '../providers/usuario';
 
 @NgModule({
   declarations: [
@@ -34,7 +37,10 @@ import { SplashScreen } from '@ionic-native/splash-screen';
     SplashScreen,
     { provide: ErrorHandler, useClass: IonicErrorHandler },
     Calendar,
-    DatePicker
+    DatePicker,
+    PerfilProvider,
+    ServicioProvider,
+    UsuarioProvider
   ]
 })
 export class AppModule { }

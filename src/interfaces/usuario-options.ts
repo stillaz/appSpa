@@ -1,5 +1,7 @@
+import { PerfilOptions } from "./perfil-options";
 
 export interface UsuarioOptions {
     id: number,
-    nombre: string
+    nombre: string,
+    perfiles: PerfilOptions[]
 }
