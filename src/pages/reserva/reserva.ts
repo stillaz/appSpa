@@ -33,6 +33,7 @@ export class ReservaPage {
   public usuario: UsuarioOptions;
   public constantes = DataProvider;
   public grupoServicios: any[];
+  public idcarrito = 1;
 
   public cliente: ClienteOptions = {
     identificacion: null,
@@ -128,7 +129,8 @@ export class ReservaPage {
         cliente: this.cliente,
         estado: this.constantes.ESTADOS_RESERVA.RESERVADO,
         evento: this.constantes.EVENTOS.OTRO,
-        usuario: this.usuario
+        usuario: this.usuario,
+        idcarrito: this.idcarrito
       });
       this.ultimoHorario = disponibilidadBloquear[disponibilidadBloquear.length - 1].fechaFin;
       this.totalServicios += servicio.valor;
@@ -160,7 +162,8 @@ export class ReservaPage {
                 cliente: this.cliente,
                 estado: this.constantes.ESTADOS_RESERVA.RESERVADO,
                 evento: this.constantes.EVENTOS.OTRO,
-                usuario: this.usuario
+                usuario: this.usuario,
+                idcarrito: this.idcarrito
               });
               this.cantidad++;
               this.ultimoHorario = disponibilidadBloquear[disponibilidadBloquear.length - 1].fechaFin;

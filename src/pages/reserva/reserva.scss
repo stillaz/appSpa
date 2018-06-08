@@ -21,14 +21,14 @@ page-reserva {
         height: 100px
     }
 
-    ion-card {
+    .ion-card {
         position: relative;
         text-align: center;
     }
 
     .card-title {
         position: absolute;
-        top: 36%;
+        top: 9%;
         font-size: 2.0em;
         width: 100%;
         font-weight: bold;
@@ -39,7 +39,7 @@ page-reserva {
     .card-subtitle {
         font-size: 1.0em;
         position: absolute;
-        top: 52%;
+        top: 30%;
         width: 100%;
         color: #fff;
         text-shadow: 0 0 2px #000;
@@ -48,7 +48,7 @@ page-reserva {
     .card-precio {
         font-size: 1.0em;
         position: absolute;
-        top: 60%;
+        top: 40%;
         width: 100%;
         color: #fff;
         text-shadow: 0 0 2px #000;

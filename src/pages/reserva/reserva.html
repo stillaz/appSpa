@@ -25,9 +25,9 @@
   <ion-list class="grid-full">
     <ion-item-group *ngFor="let item of grupoServicios">
       <ion-item-divider color="light" sticky>{{item.grupo}}</ion-item-divider>
-      <ion-row>
-        <ion-col #item *ngFor="let servicio of item.servicios" class="cell-1">
-          <ion-card>
+      <ion-grid>
+        <ion-row>
+          <ion-col #item *ngFor="let servicio of item.servicios" class="cell-1">
             <img *ngIf="servicio.imagen" [src]="servicio.imagen">
             <div class="card-title">{{servicio.nombre}}</div>
             <div class="card-subtitle">{{servicio.descripcion}}. Duración: {{servicio.duracion_MIN}} minutos.</div>
@@ -37,9 +37,9 @@
                 Agregar
               </button>
             </ion-item>
-          </ion-card>
-        </ion-col>
-      </ion-row>
+          </ion-col>
+        </ion-row>
+      </ion-grid>
     </ion-item-group>
   </ion-list>
 </ion-content>

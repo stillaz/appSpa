@@ -7,6 +7,7 @@ export interface ReservaOptions {
   fechaFin: Date,
   estado: string,
   evento: string,
+  idcarrito: number,
   servicio: ServicioOptions,
   cliente: ClienteOptions,
   usuario: UsuarioOptions

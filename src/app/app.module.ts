@@ -14,6 +14,7 @@ import { SplashScreen } from '@ionic-native/splash-screen';
 import { PerfilProvider } from '../providers/perfil';
 import { ServicioProvider } from '../providers/servicio';
 import { UsuarioProvider } from '../providers/usuario';
+import { ReservaProvider } from '../providers/reserva';
 
 @NgModule({
   declarations: [
@@ -40,7 +41,8 @@ import { UsuarioProvider } from '../providers/usuario';
     DatePicker,
     PerfilProvider,
     ServicioProvider,
-    UsuarioProvider
+    UsuarioProvider,
+    ReservaProvider
   ]
 })
 export class AppModule { }

@@ -10,6 +10,7 @@ import { UsuarioProvider } from '../../providers/usuario';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/interval';
 import { PerfilProvider } from '../../providers/perfil';
+import { ReservaProvider } from '../../providers/reserva';
 
 /**
  * Generated class for the AgendaPage page.
@@ -66,9 +67,10 @@ export class AgendaPage {
     public events: Events,
     public navCtrl: NavController,
     private perfilCtrl: PerfilProvider,
+    private reservaCtrl: ReservaProvider,
     private usuarioCtrl: UsuarioProvider
   ) {
-    this.usuarioLogueado = this.usuarioCtrl.getUsuarios()[0];
+    this.usuarioLogueado = this.usuarioCtrl.getUsuarios()[1];
     this.usuario = this.usuarioLogueado;
   }
 
@@ -106,6 +108,7 @@ export class AgendaPage {
         fechaFin: fechaFinReserva,
         estado: this.constantes.ESTADOS_RESERVA.DISPONIBLE,
         evento: this.constantes.EVENTOS.OTRO,
+        idcarrito: null,
         cliente: this.cliente,
         usuario: this.usuario,
         servicio: this.servicio
@@ -195,6 +198,39 @@ export class AgendaPage {
     mensajeAlert.present();
   }
 
+  eliminar(reserva: ReservaOptions) {
+    let ultimoHorario = reserva.fechaInicio;
+    for (let i = 0; i <= reserva.servicio.duracion_MIN / 10 - 1; i++) {
+      let disponibilidad: ReservaOptions = {
+        fechaInicio: ultimoHorario,
+        fechaFin: moment(ultimoHorario).add(this.tiempoServicio, 'minutes').toDate(),
+        estado: this.constantes.ESTADOS_RESERVA.DISPONIBLE,
+        evento: this.constantes.EVENTOS.OTRO,
+        cliente: this.cliente,
+        servicio: this.servicio,
+        usuario: this.usuario,
+        idcarrito: null
+      }
+
+      this.horario.push(disponibilidad);
+
+      ultimoHorario = disponibilidad.fechaFin;
+    }
+
+    let item = this.horario.indexOf(reserva);
+    this.horario.splice(item, 1);
+
+    this.horario.sort(function (a, b) {
+      if (a.fechaInicio > b.fechaInicio) {
+        return 1;
+      }
+      if (a.fechaInicio < b.fechaInicio) {
+        return -1;
+      }
+      return 0;
+    });
+  }
+
   cancelar(slidingItem: ItemSliding, reserva: ReservaOptions) {
     let fechaInicio = moment(reserva.fechaInicio).locale("es").format("dddd, DD [de] MMMM [de] YYYY");
     let horaInicio = moment(reserva.fechaInicio).format("hh:mm a");
@@ -210,34 +246,12 @@ export class AgendaPage {
         {
           text: 'OK',
           handler: () => {
-            let ultimoHorario = reserva.fechaInicio;
-            for (let i = 0; i <= reserva.servicio.duracion_MIN / 10 - 1; i++) {
-              let disponibilidad: ReservaOptions = {
-                fechaInicio: ultimoHorario,
-                fechaFin: moment(ultimoHorario).add(this.tiempoServicio, 'minutes').toDate(),
-                estado: this.constantes.ESTADOS_RESERVA.DISPONIBLE,
-                evento: this.constantes.EVENTOS.OTRO,
-                cliente: this.cliente,
-                servicio: this.servicio,
-                usuario: this.usuario
-              }
+            this.eliminar(reserva);
 
-              this.horario.push(disponibilidad);
+            let otrasreservas = this.reservaCtrl.getOtrasReservasByIdServicioAndNotFinalizado(this.horario, reserva);
 
-              ultimoHorario = disponibilidad.fechaFin;
-            }
-
-            let item = this.horario.indexOf(reserva);
-            this.horario.splice(item, 1);
-
-            this.horario.sort(function (a, b) {
-              if (a.fechaInicio > b.fechaInicio) {
-                return 1;
-              }
-              if (a.fechaInicio < b.fechaInicio) {
-                return -1;
-              }
-              return 0;
+            otrasreservas.forEach(otrareserva => {
+              this.eliminar(otrareserva);
             });
 
             this.updateHorarios();
@@ -263,15 +277,22 @@ export class AgendaPage {
     }
 
     reserva.estado = this.constantes.ESTADOS_RESERVA.FINALIZADO;
+
+    let serviciosFinalizados = this.reservaCtrl.getReservasByIdServicioAndFinalizado(this.horario, reserva);
+
+    let total = serviciosFinalizados.map(a => a ? a.servicio.valor : 0).reduce((a, b) => a + b);
+
     let mensaje = tiempoSiguiente ? 'El próximo servicio empieza en: ' + tiempoSiguiente + ' minutos' : 'No hay más citas asignadas';
     this.genericAlert('Servicio finalizado', 'El servicio ha terminado satisfactoriamente. ' + mensaje);
+
+    this.genericAlert('Servicio finalizado', 'Valor servicios: ' + total);
   }
 
   isAdministrador(): boolean {
     return this.usuarioCtrl.isAdministrador(this.usuarioLogueado);
   }
 
-  configActionSheet(title: string, filtros){
+  configActionSheet(title: string, filtros) {
     let actionSheet = this.actionSheetCtrl.create({
       title: title,
       buttons: filtros
@@ -311,7 +332,7 @@ export class AgendaPage {
         }
       });
     });
-    
+
     this.configActionSheet('Selecciona perfil', filtros);
   }
 
