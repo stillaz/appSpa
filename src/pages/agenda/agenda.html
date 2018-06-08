@@ -59,7 +59,7 @@
         </button>
 
         <ion-item-options>
-          <button ion-button color="danger" (click)="cancelar(slidingItem, disponibilidad)" *ngIf="disponibilidad.estado === constantes.ESTADOS_RESERVA.RESERVADO">
+          <button ion-button color="danger" (click)="cancelar(slidingItem, disponibilidad)" *ngIf="disponibilidad.estado === constantes.ESTADOS_RESERVA.RESERVADO || disponibilidad.estado === constantes.ESTADOS_RESERVA.EJECUTANDO">
             Cancelar cita
           </button>
         </ion-item-options>
