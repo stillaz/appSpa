@@ -45,18 +45,16 @@
       <ion-item-sliding *ngFor="let disponibilidad of horario.disponibilidad" #slidingItem [attr.track]="disponibilidad.estado | lowercase"
         [id]="disponibilidad.evento">
 
-        <button ion-item>
-          <h3>{{disponibilidad.estado}}</h3>
-          <p>
-            {{disponibilidad.fechaInicio | date: 'hh:mm a'}} &mdash; {{disponibilidad.fechaFin | date: 'hh:mm a'}}: {{disponibilidad.cliente.nombre}}
-            : {{disponibilidad.servicio.nombre}}
-          </p>
+        <ion-item>
+          <h3>{{disponibilidad.fechaInicio | date: 'hh:mm a'}} &mdash; {{disponibilidad.fechaFin | date: 'hh:mm a'}}</h3>
+          <ion-note *ngIf="disponibilidad.cliente.nombre">{{disponibilidad.cliente.nombre}}: {{disponibilidad.servicio.nombre}}</ion-note>
+          <p>{{disponibilidad.estado}}</p>
 
           <button ion-button [hidden]="disponibilidad.estado !== constantes.ESTADOS_RESERVA.DISPONIBLE || disponibilidad.fechaFin < actual"
             clear item-end (click)="reservar(disponibilidad)">Reservar</button>
           <button ion-button [hidden]="disponibilidad.estado !== constantes.ESTADOS_RESERVA.EJECUTANDO" color="danger" clear item-end
             (tap)="terminar(disponibilidad)">Terminar</button>
-        </button>
+        </ion-item>
 
         <ion-item-options>
           <button ion-button color="danger" (click)="cancelar(slidingItem, disponibilidad)" *ngIf="disponibilidad.estado === constantes.ESTADOS_RESERVA.RESERVADO || disponibilidad.estado === constantes.ESTADOS_RESERVA.EJECUTANDO">

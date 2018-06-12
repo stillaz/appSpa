@@ -22,24 +22,21 @@
 </ion-header>
 
 <ion-content padding>
-  <ion-list class="grid-full">
-    <ion-item-group *ngFor="let item of grupoServicios">
-      <ion-item-divider color="light" sticky>{{item.grupo}}</ion-item-divider>
-      <ion-grid>
-        <ion-row>
-          <ion-col #item *ngFor="let servicio of item.servicios" class="cell-1">
-            <img *ngIf="servicio.imagen" [src]="servicio.imagen">
-            <div class="card-title">{{servicio.nombre}}</div>
-            <div class="card-subtitle">{{servicio.descripcion}}. Duración: {{servicio.duracion_MIN}} minutos.</div>
-            <ion-item>
-              <strong>{{servicio.valor| currency : USD: symbol: '4.0' }}</strong>
-              <button ion-button small outline item-end (tap)="agregar(servicio)" [disabled]="!servicio.activo">
-                Agregar
-              </button>
-            </ion-item>
-          </ion-col>
-        </ion-row>
-      </ion-grid>
-    </ion-item-group>
+  <ion-list class="grid-full" *ngFor="let servicio of servicios">
+    <ion-card>
+      <img *ngIf="servicio.imagen" [src]="servicio.imagen" width="100%">
+      <ion-card-content>
+        <h2>{{servicio.nombre}}</h2>
+        <p>{{servicio.descripcion}}.
+          <br/>Duración: {{servicio.duracion_MIN}} min.</p>
+      </ion-card-content>
+
+      <ion-item>
+        <p item-start>Precio: {{servicio.valor| currency : USD: symbol: '4.0' }}</p>
+        <button ion-button item-end icon-start outline (tap)="agregar(servicio)" [disabled]="!servicio.activo">
+          Agregar
+        </button>
+      </ion-item>
+    </ion-card>
   </ion-list>
 </ion-content>
