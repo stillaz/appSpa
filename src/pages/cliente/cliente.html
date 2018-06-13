@@ -18,7 +18,7 @@
       <form [formGroup]="todo">
         <ion-item>
           <ion-label floating>Identificación:</ion-label>
-          <ion-input type="number" formControlName="identificacion" (change)="getPersona()"></ion-input>
+          <ion-input type="number" formControlName="identificacion" (change)="cargar()"></ion-input>
         </ion-item>
 
         <ion-item color="danger" *ngIf="todo.controls.identificacion.errors && todo.controls.identificacion.touched">

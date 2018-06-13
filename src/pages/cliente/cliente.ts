@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { IonicPage, NavController, ViewController, ToastController } from 'ionic-angular';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
+import { AngularFirestore, AngularFirestoreDocument } from 'angularfire2/firestore';
 import { ClienteOptions } from '../../interfaces/cliente-options';
 
 /**
@@ -20,65 +21,52 @@ export class ClientePage {
   nuevo: boolean = true;
   public cliente: ClienteOptions;
 
-  constructor(public navCtrl: NavController, public viewCtrl: ViewController, private formBuilder: FormBuilder, public toastCtrl: ToastController) {
+  private clienteDoc: AngularFirestoreDocument<ClienteOptions>;
+
+  constructor(
+    public navCtrl: NavController,
+    public viewCtrl: ViewController,
+    private formBuilder: FormBuilder,
+    public toastCtrl: ToastController,
+    private afs: AngularFirestore) {
     this.cliente = { identificacion: null, nombre: null, telefono: null, correoelectronico: null };
-    this.form(this.cliente);
+    this.form();
   }
 
-  form(datosPersona: ClienteOptions) {
+  form() {
     this.todo = this.formBuilder.group({
-      identificacion: [datosPersona.identificacion, Validators.required],
-      nombre: [datosPersona.nombre, Validators.required],
-      telefono: [datosPersona.telefono, Validators.required],
-      correoelectronico: [datosPersona.correoelectronico]
+      identificacion: [this.cliente.identificacion, Validators.required],
+      nombre: [this.cliente.nombre, Validators.required],
+      telefono: [this.cliente.telefono, Validators.required],
+      correoelectronico: [this.cliente.correoelectronico]
     });
   }
 
-  getPersona() {
-    /*if(this.todo.value.idpersona){
-      this.persona.getById(this.todo.value.idpersona).then(res => {
-        if(res){
-          this.form(res);
-          this.nuevo = false;
-        } else{
-          this.nuevo = true;
+  cargar() {
+    let id = this.todo.value.identificacion;
+    if (id) {
+      this.clienteDoc = this.afs.doc<ClienteOptions>('clientes/' + id);
+      this.clienteDoc.valueChanges().subscribe(data => {
+        if (data) {
+          this.cliente = data;
+        } else {
+          this.cliente = { identificacion: id, nombre: null, telefono: null, correoelectronico: null };
         }
-      }).catch(err => alert("Error cargando datos de la persona"));
-    }*/
+        this.form();
+      });
+    }
   }
 
   guardar() {
-    this.viewCtrl.dismiss(this.todo.value);
-    /*if (this.nuevo) {
-      this.todo.patchValue({ activo: true });
-      this.persona.create(datosPersona).then(res => {
-        let toast = this.toastCtrl.create({
-          message: 'Los datos de la persona han sido ingresadas',
-          duration: 2000,
-          position: 'top'
-        });
-        toast.present()
-        this.viewCtrl.dismiss(datosPersona);
-      }).catch(err => {
-        alert("Error creando persona");
-      });*/
-    /*} else {
-      this.persona.update(datosPersona).then(res => {
-        let toast = this.toastCtrl.create({
-          message: 'Los datos de la persona han sido modificados',
-          duration: 3000,
-          position: 'top'
-        });
-        toast.present()
-        this.viewCtrl.dismiss(datosPersona);
-      }).catch(err => {
-        alert("Error modificando datos de la persona");
-      });
-    }*/
-  }
-
-  cerrar() {
-    this.viewCtrl.dismiss({});
+    this.cliente = this.todo.value;
+    this.clienteDoc.set(this.cliente);
+    let toast = this.toastCtrl.create({
+      message: 'Los datos de la persona han sido registrados',
+      duration: 1000,
+      position: 'top'
+    });
+    toast.present();
+    this.viewCtrl.dismiss(this.cliente);
   }
 
 }
