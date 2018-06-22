@@ -106,7 +106,7 @@ export class AgendaPage {
         this.usuarioLogueado = data;
         this.usuario = data;
         this.administrador = this.usuarioLogueado.perfiles.some(perfil => perfil.id === 0);
-      } else{
+      } else {
         this.genericAlert('Error usuario', 'Usuario no encontrado');
       }
     });
@@ -205,6 +205,13 @@ export class AgendaPage {
           if (!servicios || servicios.length === 0) {
             this.genericAlert('Error de servicios de usuario', 'El usuario no tiene ningún servicio asignado');
           } else {
+            this.events.subscribe('actualizar-agenda', data => {
+              this.horario = data;
+              this.updateHorarios();
+              this.genericAlert('Reserva registrada', 'Se ha registrado la reserva');
+              this.events.unsubscribe('actualizar-agenda');
+            });
+
             this.navCtrl.push('ReservaPage', {
               disponibilidad: reserva,
               horario: this.horario,

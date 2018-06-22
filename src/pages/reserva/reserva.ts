@@ -6,6 +6,8 @@ import { ServicioOptions } from '../../interfaces/servicio-options';
 import { ClienteOptions } from '../../interfaces/cliente-options';
 import { ReservaOptions } from '../../interfaces/reserva-options';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
+import { AngularFirestore, AngularFirestoreDocument } from 'angularfire2/firestore';
+import { IndiceOptions } from '../../interfaces/indice-options';
 
 /**
  * Generated class for the ReservaPage page.
@@ -22,18 +24,18 @@ import { UsuarioOptions } from '../../interfaces/usuario-options';
 
 export class ReservaPage {
 
-  public cantidad = 0;
-  public totalServicios: number = 0;
-  public ultimoHorario: Date;
-  public carrito: ReservaOptions[] = [];
-  public disponibilidadSeleccionada: ReservaOptions;
-  public disponibilidadBloquear: ReservaOptions[] = [];
-  public horario: ReservaOptions[];
-  public servicios: ServicioOptions[];
-  public usuario: UsuarioOptions;
-  public constantes = DataProvider;
-  public grupoServicios: any[];
-  public idcarrito = 1;
+  cantidad = 0;
+  totalServicios: number = 0;
+  ultimoHorario: Date;
+  carrito: ReservaOptions[] = [];
+  disponibilidadSeleccionada: ReservaOptions;
+  disponibilidadBloquear: ReservaOptions[] = [];
+  horario: ReservaOptions[];
+  servicios: ServicioOptions[];
+  usuario: UsuarioOptions;
+  constantes = DataProvider;
+  grupoServicios: any[];
+  idcarrito: number;
 
   public cliente: ClienteOptions = {
     identificacion: null,
@@ -49,12 +51,15 @@ export class ReservaPage {
     private navCtrl: NavController,
     private navParams: NavParams,
     public popoverCtrl: PopoverController,
-    public viewCtrl: ViewController) {
+    public viewCtrl: ViewController,
+    private afs: AngularFirestore
+  ) {
     this.disponibilidadSeleccionada = this.navParams.get('disponibilidad');
     this.horario = this.navParams.get('horario');
     this.ultimoHorario = this.disponibilidadSeleccionada.fechaInicio;
     this.usuario = this.navParams.get('usuario');
     this.servicios = this.navParams.get('servicios');
+    this.updateCarrito();
   }
 
   ionViewDidLoad() {
@@ -68,6 +73,24 @@ export class ReservaPage {
     });
     clienteModal.present();
     this.updateServicios();
+  }
+
+  updateCarrito() {
+    if (!this.disponibilidadSeleccionada || !this.disponibilidadSeleccionada.idcarrito) {
+      let indiceCarritoDoc = this.afs.doc<IndiceOptions>('indices/idcarrito');
+
+      if (!this.idcarrito) {
+        indiceCarritoDoc.ref.get().then(data => {
+          if (data.exists) {
+            this.idcarrito = data.get('id');
+            indiceCarritoDoc.set({ id: this.idcarrito + 1 });
+          } else {
+            this.idcarrito = 0;
+            indiceCarritoDoc.set({ id: 1 });
+          }
+        });
+      }
+    }
   }
 
   updateServicios() {
@@ -196,28 +219,56 @@ export class ReservaPage {
 
   guardar() {
     this.servicios.map(a => a.activo = true);
+
+    let promises = [];
     this.carrito.forEach(reservaNueva => {
-      this.horario.push(reservaNueva);
+      let reservaDoc: AngularFirestoreDocument<ReservaOptions> = this.afs.doc<ReservaOptions>('disponibilidades/' + this.disponibilidadSeleccionada.fechaInicio.getTime());
+      promises.push(
+        reservaDoc.ref.get().then(data => {
+          if (!data.exists) {
+            data.ref.set(reservaNueva);
+            this.horario.push(reservaNueva);
+          } else if (data.get('estado') !== DataProvider.ESTADOS_RESERVA.DISPONIBLE) {
+            throw new Error('La disponibilidad para el horario ' + reservaNueva.fechaInicio + ' no se encuentra disponible');
+          }
+        }).catch(err => {
+          return Promise.reject(err);
+        })
+      );
     });
 
-    this.disponibilidadBloquear.forEach((bloquear, index) => {
-      let item = this.horario.indexOf(bloquear);
-      this.horario.splice(item, 1);
+    Promise.all(promises).then(() => {
+      this.disponibilidadBloquear.forEach((bloquear, index) => {
+        let item = this.horario.indexOf(bloquear);
+        this.horario.splice(item, 1);
+      });
+
+      this.horario.sort(function (a, b) {
+        if (a.fechaInicio > b.fechaInicio) {
+          return 1;
+        }
+        if (a.fechaInicio < b.fechaInicio) {
+          return -1;
+        }
+        return 0;
+      });
+
+      this.navCtrl.pop().then(() => {
+        this.events.publish('actualizar-agenda', this.horario);
+      });
+    }).catch(err => {
+      this.alertCtrl.create({
+        title: 'Error procesando reserva',
+        message: err,
+        buttons: [{
+          text: 'OK',
+          handler: () => {
+            this.navCtrl.pop();
+          }
+        }]
+      }).present();
     });
 
-    this.horario.sort(function (a, b) {
-      if (a.fechaInicio > b.fechaInicio) {
-        return 1;
-      }
-      if (a.fechaInicio < b.fechaInicio) {
-        return -1;
-      }
-      return 0;
-    });
-
-    this.navCtrl.pop().then(() => {
-      this.events.publish('actualizar-agenda', this.horario);
-    });
   }
 
   ver(event) {
