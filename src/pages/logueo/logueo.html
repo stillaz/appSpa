@@ -1,0 +1,52 @@
+<ion-content class="background">
+
+  <ion-grid>
+    <ion-row>
+      <ion-col col-4></ion-col>
+      <ion-col col-4 style="margin-left: auto;margin-right: auto;display: block;">
+        <img src="https://lh3.googleusercontent.com/nAsQlh-rfNOdza7ZfE3skvQwj5XvSbuzyIMIqlwM2ZSn02oPddI1-q7twcThjE-Hr2JR1ZwnXg=w352-h352-n-o-rw"
+          style="width:100%;height:auto;border-radius: 100%">
+      </ion-col>
+      <ion-col col-4></ion-col>
+    </ion-row>
+  </ion-grid>
+
+  <ion-card>
+    <ion-card-content>
+      <form [formGroup]="todo">
+        <ion-list no-lines>
+          <ion-item>
+            <ion-label floating>Email</ion-label>
+            <ion-input type="email" formControlName="username"></ion-input>
+          </ion-item>
+
+          <ion-item *ngIf="todo.controls.username.errors && todo.controls.username.touched">
+            <p ion-text style="background-color: #f53d3d; color: #ffffff">El correo electrónico no es válido</p>
+          </ion-item>
+
+          <ion-item>
+            <ion-label floating>Contraseña</ion-label>
+            <ion-input type="password" formControlName="password"></ion-input>
+          </ion-item>
+
+          <ion-item *ngIf="todo.controls.password.errors && todo.controls.password.touched">
+            <p ion-text style="background-color: #f53d3d; color: #ffffff">La contraseña no es válida</p>
+          </ion-item>
+
+          <button ion-button color="primary" block outline style="margin-top: 10px" (tap)="logueo()" [disabled]="todo.invalid">INGRESAR</button>
+        </ion-list>
+
+        <p>¿Olvidaste tu contraseña?
+          <a>Entra aquí</a>
+        </p>
+
+        <br/>
+
+        <button ion-button color="primary" icon-left color="danger" (tap)="logueo_google()">
+          <ion-icon name="logo-google"></ion-icon>
+          <div>Ingresa con Google</div>
+        </button>
+      </form>
+    </ion-card-content>
+  </ion-card>
+</ion-content>
