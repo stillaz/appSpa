@@ -6,11 +6,12 @@ import { ClienteOptions } from '../../interfaces/cliente-options';
 import { ReservaOptions } from '../../interfaces/reserva-options';
 import { ServicioOptions } from '../../interfaces/servicio-options';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
-import { UsuarioProvider } from '../../providers/usuario';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/interval';
-import { PerfilProvider } from '../../providers/perfil';
 import { ReservaProvider } from '../../providers/reserva';
+import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection } from 'angularfire2/firestore';
+import { AngularFireAuth } from 'angularfire2/auth';
+import { PerfilOptions } from '../../interfaces/perfil-options';
 
 /**
  * Generated class for the AgendaPage page.
@@ -28,50 +29,41 @@ export class AgendaPage {
 
   @ViewChild(Content) content: Content;
 
-  public horaInicio = 7;
-  public horaFin = 24;
-  public tiempoServicio = 10;
-  public actual: Date;
-  public initDate: Date = new Date();
-  public initDate2: Date = new Date();
-  public disabledDates: Date[] = [];
-  public maxDate: Date = new Date(new Date().setDate(new Date().getDate() + 30));
-  public min: Date = new Date();
-  public constantes = DataProvider;
-  public usuario: UsuarioOptions;
-  public usuarioLogueado: UsuarioOptions;
-  public horario: ReservaOptions[];
-  public horarios: any[];
-
-  public cliente: ClienteOptions = {
-    identificacion: null,
-    nombre: null,
-    telefono: null,
-    correoelectronico: null
-  };
-
-  public servicio: ServicioOptions = {
-    id: null,
-    nombre: null,
-    descripcion: null,
-    grupo: null,
-    valor: null,
-    duracion_MIN: null,
-    activo: null,
-    imagen: null
-  }
+  horaInicio = 7;
+  horaFin = 24;
+  tiempoServicio = 10;
+  actual: Date;
+  initDate: Date = new Date();
+  initDate2: Date = new Date();
+  disabledDates: Date[] = [];
+  maxDate: Date = new Date(new Date().setDate(new Date().getDate() + 30));
+  min: Date = new Date();
+  constantes = DataProvider;
+  usuario = {} as UsuarioOptions;
+  usuarioLogueado: UsuarioOptions;
+  horario: ReservaOptions[];
+  horarios: any[];
+  usuarioDoc: AngularFirestoreDocument<UsuarioOptions>;
+  cliente = {} as ClienteOptions;
+  servicio = {} as ServicioOptions;
+  administrador: boolean;
+  usuariosCollection: AngularFirestoreCollection<UsuarioOptions>;
+  perfiles: PerfilOptions[];
+  usuarios: UsuarioOptions[];
 
   constructor(
     public alertCtrl: AlertController,
     public actionSheetCtrl: ActionSheetController,
     public events: Events,
     public navCtrl: NavController,
-    private perfilCtrl: PerfilProvider,
     private reservaCtrl: ReservaProvider,
-    private usuarioCtrl: UsuarioProvider
+    private afs: AngularFirestore,
+    private afa: AngularFireAuth
   ) {
-    this.usuarioLogueado = this.usuarioCtrl.getUsuarios()[1];
-    this.usuario = this.usuarioLogueado;
+    this.usuariosCollection = this.afs.collection<UsuarioOptions>('usuarios');
+    this.updateUsuario();
+    this.updateUsuarios();
+    this.updatePerfiles();
   }
 
   ionViewDidLoad() {
@@ -86,6 +78,38 @@ export class AgendaPage {
       this.scrollTo(this.constantes.EVENTOS.ACTUAL);
     }
     this.actual = new Date();
+  }
+
+  updateUsuarios() {
+    this.usuariosCollection.valueChanges().subscribe(data => {
+      if (data) {
+        this.usuarios = data;
+      }
+    });
+  }
+
+  updatePerfiles() {
+    let perfilesCollection: AngularFirestoreCollection<PerfilOptions>;
+    perfilesCollection = this.afs.collection<PerfilOptions>('perfiles');
+    perfilesCollection.valueChanges().subscribe(data => {
+      if (data) {
+        this.perfiles = data;
+      }
+    });
+  }
+
+  updateUsuario() {
+    let user = this.afa.auth.currentUser;
+    this.usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + user.uid);
+    this.usuarioDoc.valueChanges().subscribe(data => {
+      if (data) {
+        this.usuarioLogueado = data;
+        this.usuario = data;
+        this.administrador = this.usuarioLogueado.perfiles.some(perfil => perfil.id === 0);
+      } else{
+        this.genericAlert('Error usuario', 'Usuario no encontrado');
+      }
+    });
   }
 
   setDate(date: Date) {
@@ -168,23 +192,28 @@ export class AgendaPage {
   }
 
   reservar(reserva: ReservaOptions) {
-    let serviciosUsuario = this.usuarioCtrl.getServicios(this.usuario);
-    if (!serviciosUsuario || serviciosUsuario.length === 0) {
-      this.genericAlert('Error', 'El usuario no tiene servicios');
+    let usuario = this.usuario;
+    if (!usuario) {
+      this.genericAlert('Error de usuario', 'Usuario no existe');
     } else {
-      this.events.subscribe('actualizar-agenda', data => {
-        this.horario = data;
-        this.updateHorarios();
-        this.genericAlert('Reserva registrada', 'Se ha registrado la reserva');
-        this.events.unsubscribe('actualizar-agenda');
-      });
-
-      this.navCtrl.push('ReservaPage', {
-        disponibilidad: reserva,
-        horario: this.horario,
-        usuario: this.usuario,
-        servicios: serviciosUsuario
-      });
+      let perfiles = usuario.perfiles;
+      if (!perfiles || perfiles.length === 0) {
+        this.genericAlert('Error de perfil de usuario', 'El usuario no tiene ningún perfil asignado');
+      } else {
+        perfiles.forEach(perfil => {
+          let servicios = perfil.servicios;
+          if (!servicios || servicios.length === 0) {
+            this.genericAlert('Error de servicios de usuario', 'El usuario no tiene ningún servicio asignado');
+          } else {
+            this.navCtrl.push('ReservaPage', {
+              disponibilidad: reserva,
+              horario: this.horario,
+              usuario: this.usuario,
+              servicios: servicios
+            });
+          }
+        });
+      }
     }
   }
 
@@ -288,10 +317,6 @@ export class AgendaPage {
     this.genericAlert('Servicio finalizado', 'Valor servicios: ' + total);
   }
 
-  isAdministrador(): boolean {
-    return this.usuarioCtrl.isAdministrador(this.usuarioLogueado);
-  }
-
   configActionSheet(title: string, filtros) {
     let actionSheet = this.actionSheetCtrl.create({
       title: title,
@@ -316,18 +341,18 @@ export class AgendaPage {
 
   filtroPerfiles() {
     let filtros: any = [];
-    let usuarios: UsuarioOptions[];
+    let todosPerfiles: PerfilOptions = { id: 0, nombre: 'Todos los perfiles', imagen: null, servicios: null, activo: null }
     filtros.push({
-      text: 'Todos los perfiles', handler: () => {
-        usuarios = this.usuarioCtrl.getUsuarios();
-        this.filtroUsuarios(usuarios);
+      text: todosPerfiles.nombre, handler: () => {
+        this.filtroUsuarios(this.usuarios);
       }
     });
 
-    this.perfilCtrl.getPerfiles().forEach(perfil => {
+    this.perfiles.forEach(perfil => {
       filtros.push({
-        text: perfil.nombre, handler: () => {
-          usuarios = this.usuarioCtrl.getUsuariosByPerfil(perfil);
+        text: perfil.nombre,
+        handler: () => {
+          let usuarios = this.usuarios.filter(usuario => usuario.perfiles.some(item => item.id === perfil.id));
           this.filtroUsuarios(usuarios);
         }
       });

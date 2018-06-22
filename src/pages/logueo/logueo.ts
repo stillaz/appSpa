@@ -81,11 +81,15 @@ export class LogueoPage {
           if (data) {
             this.navCtrl.setRoot(AgendaPage);
           } else {
-            this.afa.auth.signOut();
             this.alertCtrl.create({
               title: 'Error de autenticación',
               message: 'El usaurio no ha sido registrado con esta cuenta',
-              buttons: [{ text: 'OK' }]
+              buttons: [{
+                 text: 'OK',
+                 handler: () =>{
+                  this.afa.auth.signOut();
+                 }
+                }]
             }).present();
           }
           this.form();

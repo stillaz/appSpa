@@ -1,7 +1,11 @@
 import { PerfilOptions } from "./perfil-options";
 
-export interface UsuarioOptions {
-    id: number,
+export interface UsuarioOptions{
+    id: string,
     nombre: string,
-    perfiles: PerfilOptions[]
+    telefono: string,
+    email: string,
+    perfiles: PerfilOptions[],
+    imagen: string,
+    activo: boolean
 }

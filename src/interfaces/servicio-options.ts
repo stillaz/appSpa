@@ -1,5 +1,5 @@
 
-export interface ServicioOptions{
+export interface ServicioOptions {
     id: number,
     nombre: string,
     descripcion: string,
