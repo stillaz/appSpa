@@ -228,7 +228,7 @@ export class AgendaPage {
     let canceladoDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('cancelados').doc(fecha);
     reserva.estado = DataProvider.ESTADOS_RESERVA.CANCELADO;
     canceladoDoc.set(reserva);
-    this.disponibilidadDoc.collection('disponibilidades').doc(reserva.fechaInicio.getTime().toString()).delete();
+    this.disponibilidadDoc.collection('disponibilidades').doc(new Date().getTime().toString()).delete();
   }
 
   cancelar(slidingItem: ItemSliding, reserva: ReservaOptions) {
@@ -275,6 +275,8 @@ export class AgendaPage {
     }
 
     reserva.estado = this.constantes.ESTADOS_RESERVA.FINALIZADO;
+
+    this.disponibilidadDoc.collection('disponibilidades').doc(reserva.fechaInicio.getTime().toString()).set(reserva);
 
     let serviciosFinalizados = this.reservaCtrl.getReservasByIdServicioAndFinalizado(this.horario, reserva);
 
