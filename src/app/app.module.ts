@@ -14,7 +14,6 @@ import { TabsPage } from '../pages/tabs/tabs';
 
 import { StatusBar } from '@ionic-native/status-bar';
 import { SplashScreen } from '@ionic-native/splash-screen';
-import { ServicioProvider } from '../providers/servicio';
 import { ReservaProvider } from '../providers/reserva';
 
 export const firebaseConfig = {
@@ -52,7 +51,6 @@ export const firebaseConfig = {
     { provide: ErrorHandler, useClass: IonicErrorHandler },
     Calendar,
     DatePicker,
-    ServicioProvider,
     ReservaProvider
   ]
 })

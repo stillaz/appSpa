@@ -1,6 +1,6 @@
 import moment from 'moment';
 import { Component } from '@angular/core';
-import { AlertController, IonicPage, ModalController, NavParams, PopoverController, ViewController, NavController, Events } from 'ionic-angular';
+import { AlertController, IonicPage, ModalController, NavParams, PopoverController, ViewController, NavController } from 'ionic-angular';
 import * as DataProvider from '../../providers/constants';
 import { ServicioOptions } from '../../interfaces/servicio-options';
 import { ClienteOptions } from '../../interfaces/cliente-options';
@@ -36,6 +36,9 @@ export class ReservaPage {
   constantes = DataProvider;
   grupoServicios: any[];
   idcarrito: number;
+  usuarioDoc: AngularFirestoreDocument<UsuarioOptions>;
+  disponibilidadDoc: AngularFirestoreDocument;
+  horaSeleccionada: string;
 
   public cliente: ClienteOptions = {
     identificacion: null,
@@ -47,7 +50,6 @@ export class ReservaPage {
   constructor(
     public alertCtrl: AlertController,
     public modalCtrl: ModalController,
-    private events: Events,
     private navCtrl: NavController,
     private navParams: NavParams,
     public popoverCtrl: PopoverController,
@@ -55,11 +57,15 @@ export class ReservaPage {
     private afs: AngularFirestore
   ) {
     this.disponibilidadSeleccionada = this.navParams.get('disponibilidad');
+    this.horaSeleccionada = moment(this.disponibilidadSeleccionada.fechaInicio).locale("es").format("dddd, DD [de] MMMM [de] YYYY [a las] h:mm a")
     this.horario = this.navParams.get('horario');
     this.ultimoHorario = this.disponibilidadSeleccionada.fechaInicio;
     this.usuario = this.navParams.get('usuario');
     this.servicios = this.navParams.get('servicios');
     this.updateCarrito();
+    this.usuarioDoc = this.afs.doc('usuarios/' + this.usuario.id);
+    let fecha: Date = moment(this.ultimoHorario).startOf('day').toDate();
+    this.disponibilidadDoc = this.usuarioDoc.collection('disponibilidades').doc(fecha.getTime().toString());
   }
 
   ionViewDidLoad() {
@@ -152,7 +158,6 @@ export class ReservaPage {
         cliente: this.cliente,
         estado: this.constantes.ESTADOS_RESERVA.RESERVADO,
         evento: this.constantes.EVENTOS.OTRO,
-        usuario: this.usuario,
         idcarrito: this.idcarrito
       });
       this.ultimoHorario = disponibilidadBloquear[disponibilidadBloquear.length - 1].fechaFin;
@@ -185,7 +190,6 @@ export class ReservaPage {
                 cliente: this.cliente,
                 estado: this.constantes.ESTADOS_RESERVA.RESERVADO,
                 evento: this.constantes.EVENTOS.OTRO,
-                usuario: this.usuario,
                 idcarrito: this.idcarrito
               });
               this.cantidad++;
@@ -218,18 +222,13 @@ export class ReservaPage {
   }
 
   guardar() {
-    this.servicios.map(a => a.activo = true);
-
     let promises = [];
     this.carrito.forEach(reservaNueva => {
-      let reservaDoc: AngularFirestoreDocument<ReservaOptions> = this.afs.doc<ReservaOptions>('disponibilidades/' + this.disponibilidadSeleccionada.fechaInicio.getTime());
+      let reservaDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('disponibilidades').doc(this.disponibilidadSeleccionada.fechaInicio.getTime().toString());
       promises.push(
         reservaDoc.ref.get().then(data => {
           if (!data.exists) {
             data.ref.set(reservaNueva);
-            this.horario.push(reservaNueva);
-          } else if (data.get('estado') !== DataProvider.ESTADOS_RESERVA.DISPONIBLE) {
-            throw new Error('La disponibilidad para el horario ' + reservaNueva.fechaInicio + ' no se encuentra disponible');
           }
         }).catch(err => {
           return Promise.reject(err);
@@ -237,37 +236,8 @@ export class ReservaPage {
       );
     });
 
-    Promise.all(promises).then(() => {
-      this.disponibilidadBloquear.forEach((bloquear, index) => {
-        let item = this.horario.indexOf(bloquear);
-        this.horario.splice(item, 1);
-      });
-
-      this.horario.sort(function (a, b) {
-        if (a.fechaInicio > b.fechaInicio) {
-          return 1;
-        }
-        if (a.fechaInicio < b.fechaInicio) {
-          return -1;
-        }
-        return 0;
-      });
-
-      this.navCtrl.pop().then(() => {
-        this.events.publish('actualizar-agenda', this.horario);
-      });
-    }).catch(err => {
-      this.alertCtrl.create({
-        title: 'Error procesando reserva',
-        message: err,
-        buttons: [{
-          text: 'OK',
-          handler: () => {
-            this.navCtrl.pop();
-          }
-        }]
-      }).present();
-    });
+    this.genericAlert('Reserva registrada', 'Se ha registrado la reserva');
+    this.navCtrl.pop();
 
   }
 

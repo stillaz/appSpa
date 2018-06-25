@@ -9,7 +9,7 @@
     <ion-row>
       <ion-col>
         <ion-title>Reservar para {{cliente.nombre}}
-          <br/> {{disponibilidadSeleccionada.fechaInicio | date: 'dd/MM/yyyy'}}</ion-title>
+          <br/> {{horaSeleccionada}}</ion-title>
       </ion-col>
       <ion-col>
         <button ion-button icon-right color="danger" clear float-right [hidden]="cantidad === 0" (tap)="ver($event)">

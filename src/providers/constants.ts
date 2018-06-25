@@ -6,4 +6,4 @@ export const LOCALE_STRINGS = {
 
 export enum EVENTOS { ACTUAL = 'actual', OTRO = 'otro' };
 
-export enum ESTADOS_RESERVA { DISPONIBLE = 'Disponible', RESERVADO = 'Reservado', FINALIZADO = 'Finalizado', EJECUTANDO = 'Ejecutando' };
+export enum ESTADOS_RESERVA { DISPONIBLE = 'Disponible', RESERVADO = 'Reservado', FINALIZADO = 'Finalizado', EJECUTANDO = 'Ejecutando', CANCELADO = 'Cancelado' };
