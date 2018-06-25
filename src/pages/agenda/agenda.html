@@ -7,6 +7,9 @@
 <ion-header>
 
   <ion-navbar>
+    <button ion-button menuToggle>
+      <ion-icon name="menu"></ion-icon>
+    </button>
     <ion-title>Agenda {{usuario.nombre}}</ion-title>
   </ion-navbar>
 
@@ -31,6 +34,11 @@
   </ion-toolbar>
 </ion-header>
 
+<ion-menu [content]="menu">
+  <ion-toolbar color="primary">
+    <ion-title>Pages</ion-title>
+  </ion-toolbar>
+</ion-menu>
 
 <ion-content padding>
   <ion-list #scheduleList>
@@ -65,3 +73,5 @@
     </ion-item-group>
   </ion-list>
 </ion-content>
+
+<ion-nav #menu></ion-nav>
