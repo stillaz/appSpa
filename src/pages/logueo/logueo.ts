@@ -2,11 +2,10 @@ import { Component } from '@angular/core';
 import { IonicPage, NavController, NavParams, AlertController } from 'ionic-angular';
 import { LoginOptions } from '../../interfaces/login-options';
 import { AngularFireAuth } from 'angularfire2/auth';
-import { AgendaPage } from '../agenda/agenda';
-import firebase from 'firebase';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
-import { AngularFirestore, AngularFirestoreDocument } from 'angularfire2/firestore';
+import { AngularFirestoreDocument } from 'angularfire2/firestore';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
+import { TabsPage } from '../tabs/tabs';
 
 /**
  * Generated class for the LogueoPage page.
@@ -32,8 +31,7 @@ export class LogueoPage {
     public navParams: NavParams,
     private afa: AngularFireAuth,
     private formBuilder: FormBuilder,
-    public alertCtrl: AlertController,
-    private afs: AngularFirestore
+    public alertCtrl: AlertController
   ) {
     this.form();
   }
@@ -49,7 +47,7 @@ export class LogueoPage {
     this.login = this.todo.value;
     let result = this.afa.auth.signInWithEmailAndPassword(this.login.username, this.login.password);
     result.then(() => {
-      this.navCtrl.setRoot(AgendaPage);
+      this.navCtrl.setRoot(TabsPage);
     }).catch(e => {
       let mensajeError;
       switch (e.code) {
@@ -67,38 +65,6 @@ export class LogueoPage {
       this.alertCtrl.create({
         title: 'Error de autenticación',
         message: mensajeError,
-        buttons: [{ text: 'OK' }]
-      }).present();
-    });
-  }
-
-  async logueo_google() {
-    this.afa.auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(data => {
-      if (data) {
-        let id = data.uid;
-        this.usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + id);
-        this.usuarioDoc.valueChanges().subscribe(data => {
-          if (data) {
-            this.navCtrl.setRoot(AgendaPage);
-          } else {
-            this.alertCtrl.create({
-              title: 'Error de autenticación',
-              message: 'El usaurio no ha sido registrado con esta cuenta',
-              buttons: [{
-                 text: 'OK',
-                 handler: () =>{
-                  this.afa.auth.signOut();
-                 }
-                }]
-            }).present();
-          }
-          this.form();
-        });
-      }
-    }).catch(e => {
-      this.alertCtrl.create({
-        title: 'Error de autenticación',
-        message: 'No fue posible autenticar con el proveedor de servicios',
         buttons: [{ text: 'OK' }]
       }).present();
     });

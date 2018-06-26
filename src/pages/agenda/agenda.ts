@@ -1,6 +1,6 @@
 import moment from 'moment';
 import { Component, ViewChild } from '@angular/core';
-import { AlertController, Content, IonicPage, ItemSliding, NavController, ActionSheetController } from 'ionic-angular';
+import { AlertController, Content, IonicPage, ItemSliding, NavController, ActionSheetController, PopoverController } from 'ionic-angular';
 import * as DataProvider from '../../providers/constants';
 import { ClienteOptions } from '../../interfaces/cliente-options';
 import { ReservaOptions } from '../../interfaces/reserva-options';
@@ -12,6 +12,7 @@ import { ReservaProvider } from '../../providers/reserva';
 import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection } from 'angularfire2/firestore';
 import { AngularFireAuth } from 'angularfire2/auth';
 import { PerfilOptions } from '../../interfaces/perfil-options';
+import { PaginaOptions } from '../../interfaces/pagina-options';
 
 /**
  * Generated class for the AgendaPage page.
@@ -36,7 +37,7 @@ export class AgendaPage {
   initDate: Date = new Date();
   initDate2: Date = new Date();
   disabledDates: Date[] = [];
-  maxDate: Date = new Date(new Date().setDate(new Date().getDate() + 30));
+  maxDate: Date = moment(new Date()).add(30, 'days').toDate();
   min: Date = new Date();
   constantes = DataProvider;
   usuario = {} as UsuarioOptions;
@@ -52,13 +53,19 @@ export class AgendaPage {
   usuarios: UsuarioOptions[];
   disponibilidadDoc: AngularFirestoreDocument;
 
+  opciones: any[] = [
+    { title: 'Configuración', component: 'ConfiguracionAgendaPage', icon: 'stats' }
+  ];
+
+
   constructor(
     public alertCtrl: AlertController,
     public actionSheetCtrl: ActionSheetController,
     public navCtrl: NavController,
     private reservaCtrl: ReservaProvider,
     private afs: AngularFirestore,
-    private afa: AngularFireAuth
+    private afa: AngularFireAuth,
+    public popoverCtrl: PopoverController
   ) {
     this.usuariosCollection = this.afs.collection<UsuarioOptions>('usuarios');
     this.updateUsuario();
@@ -68,6 +75,8 @@ export class AgendaPage {
 
   ionViewDidLoad() {
     Observable.interval(60000).subscribe(() => {
+      this.initDate = new Date();
+      this.initDate2 = new Date();
       this.updateHorariosInicial();
     });
   }
@@ -330,6 +339,10 @@ export class AgendaPage {
     });
 
     this.configActionSheet('Selecciona perfil', filtros);
+  }
+
+  ir(pagina: PaginaOptions) {
+    this.navCtrl.push(pagina.component);
   }
 
 }

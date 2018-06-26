@@ -6,39 +6,34 @@
 -->
 <ion-header>
 
-  <ion-navbar>
+  <ion-navbar color="danger">
     <button ion-button menuToggle>
       <ion-icon name="menu"></ion-icon>
     </button>
-    <ion-title>Agenda {{usuario.nombre}}</ion-title>
-  </ion-navbar>
+    <ion-title>AGENDA {{ usuario.nombre | uppercase }}</ion-title>
 
-  <ion-toolbar darkergraytoolbar class="toolbarPlan">
-    <ion-searchbar placeholder="Buscar reserva" [(ngModel)]="busqueda" (ionInput)="filtrar()"></ion-searchbar>
-    <ion-row>
-      <ion-col>
-        <span float-end ion-datepicker (ionChanged)="setDate($event);" [max]="maxDate" [min]="initDate2" [value]="initDate" [showMaxAndMin]="true"
-          [disabledDates]="disabledDates" clear class="ScheduleDate" [localeStrings]="constantes.LOCALE_STRINGS">
-          <span>
-            <button ion-button icon-left color="secondary" clear>
-              <ion-icon name="clipboard"></ion-icon>
-              {{initDate | date}}
-            </button>
+    <ion-toolbar>
+      <ion-row>
+        <ion-col>
+          <span float-end ion-datepicker (ionChanged)="setDate($event);" [max]="maxDate" [min]="initDate2" [value]="initDate" [showMaxAndMin]="true"
+            [disabledDates]="disabledDates" clear class="ScheduleDate" [localeStrings]="constantes.LOCALE_STRINGS">
+            <span>
+              <button ion-button icon-left color="light" clear>
+                <ion-icon name="clipboard"></ion-icon>
+                {{initDate | date}}
+              </button>
+            </span>
           </span>
-        </span>
-      </ion-col>
-      <ion-col>
-        <button *ngIf="administrador" float-end ion-button outline (click)="filtroPerfiles()">{{usuario.nombre}}</button>
-      </ion-col>
-    </ion-row>
-  </ion-toolbar>
-</ion-header>
+        </ion-col>
+        <ion-col>
+          <button *ngIf="administrador" float-end ion-button outline (click)="filtroPerfiles()">{{usuario.nombre}}</button>
+        </ion-col>
 
-<ion-menu [content]="menu">
-  <ion-toolbar color="primary">
-    <ion-title>Pages</ion-title>
-  </ion-toolbar>
-</ion-menu>
+        <ion-searchbar placeholder="Buscar reserva" [(ngModel)]="busqueda" (ionInput)="filtrar()"></ion-searchbar>
+      </ion-row>
+    </ion-toolbar>
+  </ion-navbar>
+</ion-header>
 
 <ion-content padding>
   <ion-list #scheduleList>
@@ -73,5 +68,3 @@
     </ion-item-group>
   </ion-list>
 </ion-content>
-
-<ion-nav #menu></ion-nav>
