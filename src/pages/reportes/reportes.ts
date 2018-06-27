@@ -33,6 +33,7 @@ export class ReportesPage {
   disponibilidadesCollection: AngularFirestoreCollection;
   disponibilidad: any[];
   total: number;
+  cantidad: number;
 
   constructor(
     public navCtrl: NavController,
@@ -101,6 +102,7 @@ export class ReportesPage {
     disponibilidadesCollection.valueChanges().subscribe(data => {
       this.disponibilidad = [];
       this.total = 0;
+      this.cantidad = 0;
       if (data) {
         data.forEach(dia => {
           disponibilidadesCollection.doc(dia.id.toString()).collection<ReservaOptions>('disponibilidades').valueChanges().subscribe(datos => {
@@ -111,6 +113,8 @@ export class ReportesPage {
               }
               return 0;
             }).reduce((sum, current) => sum + current);
+
+            this.cantidad ++;
           });
         });
       }
