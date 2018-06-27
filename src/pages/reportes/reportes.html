@@ -13,19 +13,20 @@
       <ion-row style="width: 70%; margin: auto;">
         <ion-col col-1>
           <ion-buttons start>
-            <button ion-button icon-left (click)="prev()" *ngIf="atras">
+            <button ion-button icon-left (click)="updateFecha(-1)" *ngIf="atras">
               <ion-icon name="arrow-back"></ion-icon>
             </button>
           </ion-buttons>
         </ion-col>
         <ion-col col-10>
-          <ion-select style="width: 100%; max-width: 100%; text-align: center; color: #ffffff;" [(ngModel)]="mesSeleccionado" (change)="updateFecha()">
+          <ion-select style="width: 100%; max-width: 100%; text-align: center; color: #ffffff; font-weight: bolder;" [(ngModel)]="mesSeleccionado" #C
+            (ionChange)="updateSeleccionado(C.value)">
             <ion-option *ngFor="let fecha of fechas" [value]="fecha">{{fecha.texto}}</ion-option>
           </ion-select>
         </ion-col>
         <ion-col col-1>
           <ion-buttons end>
-            <button ion-button icon-right (click)="next()" *ngIf="adelante">
+            <button ion-button icon-right (click)="updateFecha(1)" *ngIf="adelante">
               <ion-icon name="arrow-forward"></ion-icon>
             </button>
           </ion-buttons>
@@ -43,16 +44,49 @@
       <ion-col>
         <ion-item style="text-align: center">
           <p>Servicios</p>
-          <p>{{total}}</p>
+          <h2 style="color: #32db64">{{ total | currency:'USD':'symbol':'4.0' }}</h2>
         </ion-item>
       </ion-col>
 
       <ion-col>
         <ion-item style="text-align: center">
           <p>Reservas</p>
-          <p>{{cantidad}}</p>
+          <h2 style="color: #32db64">{{cantidad}}</h2>
         </ion-item>
       </ion-col>
     </ion-row>
+
+    <ion-item-group *ngFor="let disponibilidad of disponibilidades">
+      <ion-item-divider>
+        <ion-label style="color: black">
+          <strong>{{disponibilidad.grupo}}</strong>
+        </ion-label>
+      </ion-item-divider>
+
+      <ion-item *ngFor="let horario of disponibilidad.disponibilidades">
+        <ion-avatar item-start *ngIf="horario.servicio.imagen">
+          <img [src]="horario.servicio.imagen">
+        </ion-avatar>
+
+        <ion-row>
+          <ion-col style="text-align: left">
+            <h2>{{horario.servicio.nombre}}</h2>
+          </ion-col>
+          <ion-col style="text-align: right; color: #f53d3d">
+            <h2>{{horario.servicio.valor | currency:'USD':'symbol':'4.0'}}</h2>
+          </ion-col>
+        </ion-row>
+
+        <ion-row>
+          <ion-col style="text-align: left">
+            <p>{{ horario.cliente.nombre }}</p>
+          </ion-col>
+          <ion-col style="text-align: right">
+            <p>{{ horario.fechaInicio.toDate() | date: 'hh:mm a' }} - {{ horario.fechaFin.toDate() | date: 'hh:mm a'}}
+            </p>
+          </ion-col>
+        </ion-row>
+      </ion-item>
+    </ion-item-group>
   </ion-list>
 </ion-content>

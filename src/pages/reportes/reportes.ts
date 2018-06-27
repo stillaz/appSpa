@@ -31,7 +31,7 @@ export class ReportesPage {
   usuario: UsuarioOptions;
   administrador: boolean;
   disponibilidadesCollection: AngularFirestoreCollection;
-  disponibilidad: any[];
+  disponibilidades: any[];
   total: number;
   cantidad: number;
 
@@ -42,7 +42,7 @@ export class ReportesPage {
     private afs: AngularFirestore,
     public alertCtrl: AlertController
   ) {
-    this.updateFechas();
+    this.updateFechas(new Date());
     this.updateUsuario();
   }
 
@@ -75,15 +75,10 @@ export class ReportesPage {
     }
   }
 
-  updateFecha() {
-    this.adelante = moment(new Date()).diff(this.mesSeleccionado.fecha, "month") !== 0;
-    this.atras = moment(this.mesSeleccionado.fecha).get("month") !== 1;
-  }
-
-  updateFechas() {
+  updateFechas(fechaSeleccionada: Date) {
     this.fechas = [];
-    let actual = moment(new Date).startOf("month");
-    let fechaInicio = moment(new Date).add(-1, "years");
+    let actual = moment(fechaSeleccionada).startOf("month");
+    let fechaInicio = moment(fechaSeleccionada).add(-1, "years");
     let fecha = actual.startOf("month");
     let texto = fecha.locale("es").format("MMMM - YYYY").toLocaleUpperCase();
     this.mesSeleccionado = { fecha: actual.toDate(), texto: texto };
@@ -97,16 +92,17 @@ export class ReportesPage {
   }
 
   updateServicios(fecha: Date) {
-    let fechaFin = fecha.getMonth == new Date().getMonth ? new Date() : moment(fecha).endOf('month').toDate();
-    let disponibilidadesCollection: AngularFirestoreCollection<DisponibilidadOptions> = this.usuarioDoc.collection('disponibilidades', ref => ref.where('id', '<=', fechaFin.getTime()));
+    let fechaFin = fecha.getMonth() == new Date().getMonth() ? new Date() : moment(fecha).endOf('month').toDate();
+    let disponibilidadesCollection: AngularFirestoreCollection<DisponibilidadOptions> = this.usuarioDoc.collection('disponibilidades', ref => ref.where('id', '<=', fechaFin.getTime()).orderBy('id', 'desc'));
     disponibilidadesCollection.valueChanges().subscribe(data => {
-      this.disponibilidad = [];
+      this.disponibilidades = [];
       this.total = 0;
       this.cantidad = 0;
       if (data) {
         data.forEach(dia => {
-          disponibilidadesCollection.doc(dia.id.toString()).collection<ReservaOptions>('disponibilidades').valueChanges().subscribe(datos => {
-            this.disponibilidad.push({ grupo: dia, disponibilidades: datos });
+          disponibilidadesCollection.doc(dia.id.toString()).collection<ReservaOptions>('disponibilidades', ref => ref.orderBy('fechaFin', 'desc')).valueChanges().subscribe(datos => {
+            let fechaData = moment(new Date(dia.id)).locale('es').format('dddd, DD')
+            this.disponibilidades.push({ grupo: fechaData, disponibilidades: datos });
             this.total += datos.map(c => {
               if (c.servicio && c.servicio.valor) {
                 return c.servicio.valor;
@@ -114,11 +110,25 @@ export class ReportesPage {
               return 0;
             }).reduce((sum, current) => sum + current);
 
-            this.cantidad ++;
+            this.cantidad++;
           });
         });
       }
     });
+  }
+
+  updateFecha(valor: number) {
+    let fechaNueva = moment(this.mesSeleccionado.fecha).add(valor, 'month').toDate();
+    this.updateFechas(fechaNueva);
+    this.adelante = moment(new Date()).diff(this.mesSeleccionado.fecha, "month") !== 0;
+    this.atras = moment(this.mesSeleccionado.fecha).get("month") !== 1;
+    this.updateServicios(fechaNueva);
+  }
+
+  updateSeleccionado(seleccionado: FechaOptions) {
+    this.adelante = moment(new Date()).diff(seleccionado.fecha, "month") !== 0;
+    this.atras = moment(seleccionado.fecha).get("month") !== 1;
+    this.updateServicios(seleccionado.fecha);
   }
 
 }
