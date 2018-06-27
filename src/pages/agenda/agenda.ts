@@ -83,19 +83,23 @@ export class AgendaPage {
 
   updateUsuario() {
     let user = this.afa.auth.currentUser;
-    this.usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + user.uid);
-    this.usuarioDoc.valueChanges().subscribe(data => {
-      if (data) {
-        this.usuarioLogueado = data;
-        this.usuario = data;
-        this.administrador = this.usuarioLogueado.perfiles.some(perfil => perfil.id === 0);
-        let fecha = moment(this.initDate).startOf('days').toDate().getTime().toString();
-        this.disponibilidadDoc = this.usuarioDoc.collection('disponibilidades').doc(fecha);
-        this.updateHorariosInicial();
-      } else {
-        this.genericAlert('Error usuario', 'Usuario no encontrado');
-      }
-    });
+    if (!user) {
+      this.navCtrl.setRoot('LogueoPage');
+    } else {
+      this.usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + user.uid);
+      this.usuarioDoc.valueChanges().subscribe(data => {
+        if (data) {
+          this.usuarioLogueado = data;
+          this.usuario = data;
+          this.administrador = this.usuarioLogueado.perfiles.some(perfil => perfil.id === 0);
+          let fecha = moment(this.initDate).startOf('days').toDate().getTime().toString();
+          this.disponibilidadDoc = this.usuarioDoc.collection('disponibilidades').doc(fecha);
+          this.updateHorariosInicial();
+        } else {
+          this.genericAlert('Error usuario', 'Usuario no encontrado');
+        }
+      });
+    }
   }
 
   updateUsuarios() {

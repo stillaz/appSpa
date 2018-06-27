@@ -8,6 +8,7 @@ import { ReservaOptions } from '../../interfaces/reserva-options';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
 import { AngularFirestore, AngularFirestoreDocument } from 'angularfire2/firestore';
 import { IndiceOptions } from '../../interfaces/indice-options';
+import { DisponibilidadOptions } from '../../interfaces/disponibilidad-options';
 
 /**
  * Generated class for the ReservaPage page.
@@ -64,8 +65,15 @@ export class ReservaPage {
     this.servicios = this.navParams.get('servicios');
     this.updateCarrito();
     this.usuarioDoc = this.afs.doc('usuarios/' + this.usuario.id);
-    let fecha: Date = moment(this.ultimoHorario).startOf('day').toDate();
+    let fecha = moment(this.ultimoHorario).startOf('day').toDate();
     this.disponibilidadDoc = this.usuarioDoc.collection('disponibilidades').doc(fecha.getTime().toString());
+    let datos: DisponibilidadOptions = {
+      dia: fecha.getDate(),
+      mes: fecha.getMonth() + 1,
+      año: fecha.getFullYear(),
+      id: fecha.getTime()
+    };
+    this.disponibilidadDoc.set(datos);
   }
 
   ionViewDidLoad() {
@@ -223,8 +231,9 @@ export class ReservaPage {
 
   guardar() {
     let promises = [];
+    let fecha: Date = this.disponibilidadSeleccionada.fechaInicio;
     this.carrito.forEach(reservaNueva => {
-      let reservaDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('disponibilidades').doc(this.disponibilidadSeleccionada.fechaInicio.getTime().toString());
+      let reservaDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('disponibilidades').doc(fecha.getTime().toString());
       promises.push(
         reservaDoc.ref.get().then(data => {
           if (!data.exists) {
