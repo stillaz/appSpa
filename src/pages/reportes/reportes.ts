@@ -35,6 +35,7 @@ export class ReportesPage {
   total: number;
   cantidad: number;
   read;
+  modo: string = 'disponibilidades';
 
   constructor(
     public navCtrl: NavController,
@@ -101,17 +102,19 @@ export class ReportesPage {
       this.cantidad = 0;
       if (data) {
         data.forEach(dia => {
-          disponibilidadesCollection.doc(dia.id.toString()).collection<ReservaOptions>('disponibilidades', ref => ref.orderBy('fechaFin', 'desc')).valueChanges().subscribe(datos => {
-            let fechaData = moment(new Date(dia.id)).locale('es').format('dddd, DD')
-            this.disponibilidades.push({ grupo: fechaData, disponibilidades: datos });
-            this.total += datos.map(c => {
-              if (c.servicio && c.servicio.valor) {
-                return c.servicio.valor;
-              }
-              return 0;
-            }).reduce((sum, current) => sum + current);
+          disponibilidadesCollection.doc(dia.id.toString()).collection<ReservaOptions>(this.modo, ref => ref.orderBy('fechaFin', 'desc')).valueChanges().subscribe(datos => {
+            if (datos && datos.length > 0) {
+              let fechaData = moment(new Date(dia.id)).locale('es').format('dddd, DD')
+              this.disponibilidades.push({ grupo: fechaData, disponibilidades: datos });
+              this.total += datos.map(c => {
+                if (c.servicio && c.servicio.valor) {
+                  return c.servicio.valor;
+                }
+                return 0;
+              }).reduce((sum, current) => sum + current);
 
-            this.cantidad++;
+              this.cantidad++;
+            }
           });
         });
       }

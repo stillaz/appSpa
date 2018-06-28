@@ -19,7 +19,7 @@ export class ClientePage {
 
   todo: FormGroup;
   nuevo: boolean = true;
-  public cliente: ClienteOptions;
+  cliente: ClienteOptions;
 
   private clienteDoc: AngularFirestoreDocument<ClienteOptions>;
 

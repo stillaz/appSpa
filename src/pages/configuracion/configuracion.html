@@ -7,12 +7,58 @@
 <ion-header>
 
   <ion-navbar>
-    <ion-title>configuracion</ion-title>
+    <ion-title>Configuración</ion-title>
   </ion-navbar>
 
 </ion-header>
 
 
 <ion-content padding>
+  <ion-list>
+    <form [formGroup]="todo">
+      <ion-item>
+        <ion-label>Hora inicio disponibilidad:</ion-label>
+        <ion-input type="number" formControlName="horaInicio"></ion-input>
+      </ion-item>
 
+      <ion-item color="danger" *ngIf="todo.controls.horaInicio.errors && todo.controls.horaInicio.touched">
+        <p>La hora inicio de disponibilidad no es válida</p>
+      </ion-item>
+
+      <ion-item>
+        <ion-label>Hora fin disponibilidad:</ion-label>
+        <ion-input type="number" formControlName="horaFin"></ion-input>
+      </ion-item>
+
+      <div *ngIf="todo.controls.horaFin.errors && todo.controls.horaFin.touched">
+        <ion-item color="danger" *ngIf="todo.controls.horaFin.errors && !todo.controls.horaFin.errors.validarFechaFinMayor">
+          <p>La hora fin de disponibilidad no es válida</p>
+        </ion-item>
+
+        <ion-item color="danger" *ngIf="todo.controls.horaFin.errors.validarFechaFinMayor">
+          <p>La hora de disponibilidad fin debe ser mayor que la hora disponibilidad inicio</p>
+        </ion-item>
+      </div>
+
+      <ion-item>
+        <ion-label>Tiempo de disponibilidad (minutos):</ion-label>
+        <ion-input type="number" formControlName="tiempoDisponibilidad"></ion-input>
+      </ion-item>
+
+      <ion-item color="danger" *ngIf="todo.controls.tiempoDisponibilidad.errors && todo.controls.tiempoDisponibilidad.touched">
+        <p>El tiempo de disponibilidad no es válida</p>
+      </ion-item>
+
+      <br/>
+      <br/>
+
+      <button ion-button icon-right color="danger" (click)="cancelar()">Cancelar
+        <ion-icon name="close"></ion-icon>
+      </button>
+
+      <button ion-button type="submit" icon-right color="secondary" [disabled]="todo.invalid" (click)="guardar()">Guardar
+        <ion-icon name="checkmark"></ion-icon>
+      </button>
+    </form>
+  </ion-list>
 </ion-content>

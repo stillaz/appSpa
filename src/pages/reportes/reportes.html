@@ -34,12 +34,12 @@
       </ion-row>
 
       <ion-row>
-        <ion-segment [(ngModel)]="modo" (click)="filtrar()" assertive>
-          <ion-segment-button value="uno">
+        <ion-segment [(ngModel)]="modo" (ionChange)="updateSeleccionado(mesSeleccionado)" color="light">
+          <ion-segment-button value="disponibilidades">
             Reservas
           </ion-segment-button>
 
-          <ion-segment-button value="dos">
+          <ion-segment-button value="cancelados">
             Cancelaciones
           </ion-segment-button>
         </ion-segment>
@@ -51,8 +51,8 @@
 
 
 <ion-content padding>
-  <ion-list>
-    <ion-row>
+  <ion-list [ngSwitch]="modo">
+    <ion-row *ngSwitchCase="'disponibilidades'">
       <ion-col>
         <ion-item style="text-align: center">
           <p>Servicios</p>
@@ -64,6 +64,15 @@
         <ion-item style="text-align: center">
           <p>Reservas</p>
           <h2 style="color: #32db64">{{cantidad}}</h2>
+        </ion-item>
+      </ion-col>
+    </ion-row>
+
+    <ion-row *ngSwitchCase="'cancelados'">
+      <ion-col>
+        <ion-item style="text-align: center">
+          <p>Cancelaciones</p>
+          <h2 style="color: #f53d3d">{{cantidad}}</h2>
         </ion-item>
       </ion-col>
     </ion-row>

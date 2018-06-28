@@ -30,7 +30,7 @@ export class AgendaPage {
 
   @ViewChild(Content) content: Content;
 
-  horaInicio = 7;
+  horaInicio = 0;
   horaFin = 24;
   tiempoServicio = 30;
   actual: Date;
@@ -91,6 +91,12 @@ export class AgendaPage {
         if (data) {
           this.usuarioLogueado = data;
           this.usuario = data;
+          let configuracion = this.usuario.configuracion;
+          if (configuracion) {
+            this.horaInicio = configuracion.horaInicio;
+            this.horaFin = configuracion.horaFin;
+            this.tiempoServicio = configuracion.tiempoDisponibilidad;
+          }
           this.administrador = this.usuarioLogueado.perfiles.some(perfil => perfil.id === 0);
           let fecha = moment(this.initDate).startOf('days').toDate().getTime().toString();
           this.disponibilidadDoc = this.usuarioDoc.collection('disponibilidades').doc(fecha);
