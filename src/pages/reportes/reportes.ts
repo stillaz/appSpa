@@ -28,12 +28,13 @@ export class ReportesPage {
   fechas: FechaOptions[];
   usuarioDoc: AngularFirestoreDocument<UsuarioOptions>;
   usuarioLogueado: UsuarioOptions;
-  usuario: UsuarioOptions;
+  usuario = {} as UsuarioOptions;
   administrador: boolean;
   disponibilidadesCollection: AngularFirestoreCollection;
   disponibilidades: any[];
   total: number;
   cantidad: number;
+  read;
 
   constructor(
     public navCtrl: NavController,
@@ -94,7 +95,7 @@ export class ReportesPage {
   updateServicios(fecha: Date) {
     let fechaFin = fecha.getMonth() == new Date().getMonth() ? new Date() : moment(fecha).endOf('month').toDate();
     let disponibilidadesCollection: AngularFirestoreCollection<DisponibilidadOptions> = this.usuarioDoc.collection('disponibilidades', ref => ref.where('id', '<=', fechaFin.getTime()).orderBy('id', 'desc'));
-    disponibilidadesCollection.valueChanges().subscribe(data => {
+    this.read = disponibilidadesCollection.valueChanges().subscribe(data => {
       this.disponibilidades = [];
       this.total = 0;
       this.cantidad = 0;
@@ -118,6 +119,7 @@ export class ReportesPage {
   }
 
   updateFecha(valor: number) {
+    this.read.unsubscribe();
     let fechaNueva = moment(this.mesSeleccionado.fecha).add(valor, 'month').toDate();
     this.updateFechas(fechaNueva);
     this.adelante = moment(new Date()).diff(this.mesSeleccionado.fecha, "month") !== 0;
@@ -126,6 +128,7 @@ export class ReportesPage {
   }
 
   updateSeleccionado(seleccionado: FechaOptions) {
+    this.read.unsubscribe();
     this.adelante = moment(new Date()).diff(seleccionado.fecha, "month") !== 0;
     this.atras = moment(seleccionado.fecha).get("month") !== 1;
     this.updateServicios(seleccionado.fecha);
