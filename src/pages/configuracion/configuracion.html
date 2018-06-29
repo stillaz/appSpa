@@ -49,6 +49,15 @@
         <p>El tiempo de disponibilidad no es válida</p>
       </ion-item>
 
+      <ion-item>
+        <ion-label>Tiempo de alerta (minutos):</ion-label>
+        <ion-input type="number" formControlName="tiempoAlerta"></ion-input>
+      </ion-item>
+
+      <ion-item color="danger" *ngIf="todo.controls.tiempoAlerta.errors && todo.controls.tiempoAlerta.touched">
+        <p>El tiempo de alerta no es válida</p>
+      </ion-item>
+
       <br/>
       <br/>
 

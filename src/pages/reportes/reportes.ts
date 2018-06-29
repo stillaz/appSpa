@@ -108,7 +108,7 @@ export class ReportesPage {
               this.disponibilidades.push({ grupo: fechaData, disponibilidades: datos });
               this.total += datos.map(c => {
                 if (c.servicio && c.servicio.valor) {
-                  return c.servicio.valor;
+                  return Number(c.servicio.valor);
                 }
                 return 0;
               }).reduce((sum, current) => sum + current);

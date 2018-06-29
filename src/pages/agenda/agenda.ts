@@ -223,8 +223,7 @@ export class AgendaPage {
             this.navCtrl.push('ReservaPage', {
               disponibilidad: reserva,
               horario: this.horario,
-              usuario: this.usuario,
-              servicios: servicios
+              usuario: this.usuario
             });
           }
         });
@@ -243,11 +242,11 @@ export class AgendaPage {
   }
 
   private eliminar(reserva: ReservaOptions) {
-    let fecha = moment(reserva.fechaInicio).startOf('day').toDate().getTime().toString();
-    let canceladoDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('cancelados').doc(fecha);
+    let canceladoDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('cancelados').doc(new Date().getTime().toString());
     reserva.estado = DataProvider.ESTADOS_RESERVA.CANCELADO;
     canceladoDoc.set(reserva);
-    this.disponibilidadDoc.collection('disponibilidades').doc(new Date().getTime().toString()).delete();
+    this.disponibilidadDoc.collection('disponibilidades').doc(reserva.fechaInicio.getTime().toString()).delete();
+    this.disponibilidadDoc.collection('pendientes').doc(reserva.fechaInicio.getTime().toString()).delete();
   }
 
   cancelar(slidingItem: ItemSliding, reserva: ReservaOptions) {
@@ -296,6 +295,10 @@ export class AgendaPage {
     reserva.estado = this.constantes.ESTADOS_RESERVA.FINALIZADO;
 
     this.disponibilidadDoc.collection('disponibilidades').doc(reserva.fechaInicio.getTime().toString()).set(reserva);
+
+    this.disponibilidadDoc.collection('finalizados').doc(reserva.fechaInicio.getTime().toString()).set(reserva);
+
+    this.disponibilidadDoc.collection('pendientes').doc(reserva.fechaInicio.getTime().toString()).delete();
 
     let serviciosFinalizados = this.reservaCtrl.getReservasByIdServicioAndFinalizado(this.horario, reserva);
 

@@ -6,10 +6,10 @@
 -->
 <ion-header>
   <ion-navbar>
+    <ion-title>Reservar para {{cliente.nombre}}</ion-title>
     <ion-row>
-      <ion-col>
-        <ion-title>Reservar para {{cliente.nombre}}
-          <br/> {{horaSeleccionada}}</ion-title>
+      <ion-col col-8>
+        <br/> {{horaSeleccionada}}
       </ion-col>
       <ion-col>
         <button ion-button icon-right color="danger" clear float-right [hidden]="cantidad === 0" (tap)="ver($event)">

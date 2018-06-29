@@ -62,10 +62,17 @@ export class ReservaPage {
     this.horario = this.navParams.get('horario');
     this.ultimoHorario = this.disponibilidadSeleccionada.fechaInicio;
     this.usuario = this.navParams.get('usuario');
-    this.servicios = this.navParams.get('servicios');
+    this.servicios = [];
     this.updateCarrito();
     this.usuarioDoc = this.afs.doc('usuarios/' + this.usuario.id);
     let fecha = moment(this.ultimoHorario).startOf('day').toDate();
+    this.usuarioDoc.valueChanges().subscribe(data => {
+      if (data) {
+        data.perfiles.forEach(perfil => {
+          this.servicios.push.apply(this.servicios, perfil.servicios);
+        });
+      }
+    });
     this.disponibilidadDoc = this.usuarioDoc.collection('disponibilidades').doc(fecha.getTime().toString());
     let datos: DisponibilidadOptions = {
       dia: fecha.getDate(),
@@ -230,19 +237,22 @@ export class ReservaPage {
   }
 
   guardar() {
-    let promises = [];
     let fecha: Date = this.disponibilidadSeleccionada.fechaInicio;
     this.carrito.forEach(reservaNueva => {
       let reservaDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('disponibilidades').doc(fecha.getTime().toString());
-      promises.push(
-        reservaDoc.ref.get().then(data => {
-          if (!data.exists) {
-            data.ref.set(reservaNueva);
-          }
-        }).catch(err => {
-          return Promise.reject(err);
-        })
-      );
+      let pendienteDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('pendientes').doc(fecha.getTime().toString());
+      reservaDoc.ref.get().then(data => {
+        if (!data.exists) {
+          data.ref.set(reservaNueva);
+          pendienteDoc.ref.get().then(pendiente => {
+            pendiente.ref.set(reservaNueva);
+          });
+        } else {
+          return Promise.reject('La disponibilidad ha sido reservada');
+        }
+      }).catch(err => {
+        return Promise.reject(err);
+      });
     });
 
     this.genericAlert('Reserva registrada', 'Se ha registrado la reserva');

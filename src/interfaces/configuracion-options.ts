@@ -2,5 +2,6 @@
 export interface ConfiguracionOptions{
     horaInicio: number,
     horaFin: number,
-    tiempoDisponibilidad: number
+    tiempoDisponibilidad: number,
+    tiempoAlerta: number
 }
