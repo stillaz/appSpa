@@ -78,6 +78,7 @@ export class AgendaPage {
       this.initDate = new Date();
       this.initDate2 = new Date();
       this.updateHorariosInicial();
+      this.updatePendientes();
     });
   }
 
@@ -242,14 +243,6 @@ export class AgendaPage {
   }
 
   private eliminar(reserva: ReservaOptions) {
-    let canceladoDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('cancelados').doc(new Date().getTime().toString());
-    reserva.estado = DataProvider.ESTADOS_RESERVA.CANCELADO;
-    canceladoDoc.set(reserva);
-    this.disponibilidadDoc.collection('disponibilidades').doc(reserva.fechaInicio.getTime().toString()).delete();
-    this.disponibilidadDoc.collection('pendientes').doc(reserva.fechaInicio.getTime().toString()).delete();
-  }
-
-  cancelar(slidingItem: ItemSliding, reserva: ReservaOptions) {
     let fechaInicio = moment(reserva.fechaInicio).locale("es").format("dddd, DD [de] MMMM [de] YYYY");
     let horaInicio = moment(reserva.fechaInicio).format("hh:mm a");
     let nombreCliente = reserva.cliente.nombre;
@@ -264,12 +257,20 @@ export class AgendaPage {
         {
           text: 'OK',
           handler: () => {
-            this.eliminar(reserva);
+            let canceladoDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('cancelados').doc(new Date().getTime().toString());
+              reserva.estado = DataProvider.ESTADOS_RESERVA.CANCELADO;
+              canceladoDoc.set(reserva);
+              this.disponibilidadDoc.collection('disponibilidades').doc(reserva.fechaInicio.getTime().toString()).delete();
+              this.usuarioDoc.collection('pendientes').doc(reserva.fechaInicio.getTime().toString()).delete();
 
             let otrasreservas = this.reservaCtrl.getOtrasReservasByIdServicioAndNotFinalizado(this.horario, reserva);
 
             otrasreservas.forEach(otrareserva => {
-              this.eliminar(otrareserva);
+              let canceladoDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('cancelados').doc(new Date().getTime().toString());
+              reserva.estado = DataProvider.ESTADOS_RESERVA.CANCELADO;
+              canceladoDoc.set(otrareserva);
+              this.disponibilidadDoc.collection('disponibilidades').doc(reserva.fechaInicio.getTime().toString()).delete();
+              this.usuarioDoc.collection('pendientes').doc(reserva.fechaInicio.getTime().toString()).delete();
             });
 
             this.genericAlert('Cita cancelada', 'La cita con ' + nombreCliente + ' ha sido cancelada');
@@ -278,6 +279,10 @@ export class AgendaPage {
       ],
     });
     cancelarAlert.present();
+  }
+
+  cancelar(slidingItem: ItemSliding, reserva: ReservaOptions) {
+    this.eliminar(reserva);
     slidingItem.close();
   }
 
@@ -298,7 +303,7 @@ export class AgendaPage {
 
     this.disponibilidadDoc.collection('finalizados').doc(reserva.fechaInicio.getTime().toString()).set(reserva);
 
-    this.disponibilidadDoc.collection('pendientes').doc(reserva.fechaInicio.getTime().toString()).delete();
+    this.usuarioDoc.collection('pendientes').doc(reserva.fechaInicio.getTime().toString()).delete();
 
     let serviciosFinalizados = this.reservaCtrl.getReservasByIdServicioAndFinalizado(this.horario, reserva);
 
@@ -356,6 +361,31 @@ export class AgendaPage {
 
   ir(pagina: PaginaOptions) {
     this.navCtrl.push(pagina.component);
+  }
+
+  updatePendientes() {
+    let limite = moment(new Date()).add(-1, 'minute').toDate();
+    this.usuarioDoc.collection<ReservaOptions>('pendientes', ref => ref.where('fechaFin.toDate()', "<", limite).limit(1)).valueChanges().subscribe(pendientes => {
+      if (pendientes && pendientes.length > 0) {
+        let pendiente = pendientes[0];
+        this.alertCtrl.create({
+          title: 'Reservas pendientes',
+          subTitle: 'Tienes una reserva el día ' + + 'a las ' + ' con ' + + 'que no ha sido finalizado',
+          message: '¿El servicio finalizó?',
+          buttons: [{
+            text: 'Si',
+            handler: () => {
+              this.terminar(pendiente);
+            }
+          }, {
+            text: 'No',
+            handler: () => {
+              this.eliminar(pendiente);
+            }
+          }]
+        });
+      }
+    });
   }
 
 }

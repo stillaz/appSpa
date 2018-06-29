@@ -35,7 +35,7 @@ export class ReportesPage {
   total: number;
   cantidad: number;
   read;
-  modo: string = 'disponibilidades';
+  modo: string = 'finalizados';
 
   constructor(
     public navCtrl: NavController,

@@ -240,7 +240,7 @@ export class ReservaPage {
     let fecha: Date = this.disponibilidadSeleccionada.fechaInicio;
     this.carrito.forEach(reservaNueva => {
       let reservaDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('disponibilidades').doc(fecha.getTime().toString());
-      let pendienteDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('pendientes').doc(fecha.getTime().toString());
+      let pendienteDoc = this.usuarioDoc.collection('pendientes').doc(reservaNueva.fechaInicio.getTime().toString());
       reservaDoc.ref.get().then(data => {
         if (!data.exists) {
           data.ref.set(reservaNueva);
