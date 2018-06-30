@@ -71,6 +71,7 @@ export class AgendaPage {
     this.updateUsuario();
     this.updateUsuarios();
     this.updatePerfiles();
+    this.updatePendientes();
   }
 
   ionViewDidLoad() {
@@ -258,10 +259,10 @@ export class AgendaPage {
           text: 'OK',
           handler: () => {
             let canceladoDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('cancelados').doc(new Date().getTime().toString());
-              reserva.estado = DataProvider.ESTADOS_RESERVA.CANCELADO;
-              canceladoDoc.set(reserva);
-              this.disponibilidadDoc.collection('disponibilidades').doc(reserva.fechaInicio.getTime().toString()).delete();
-              this.usuarioDoc.collection('pendientes').doc(reserva.fechaInicio.getTime().toString()).delete();
+            reserva.estado = DataProvider.ESTADOS_RESERVA.CANCELADO;
+            canceladoDoc.set(reserva);
+            this.disponibilidadDoc.collection('disponibilidades').doc(reserva.fechaInicio.getTime().toString()).delete();
+            this.usuarioDoc.collection('pendientes').doc(reserva.fechaInicio.getTime().toString()).delete();
 
             let otrasreservas = this.reservaCtrl.getOtrasReservasByIdServicioAndNotFinalizado(this.horario, reserva);
 
@@ -365,25 +366,29 @@ export class AgendaPage {
 
   updatePendientes() {
     let limite = moment(new Date()).add(-1, 'minute').toDate();
-    this.usuarioDoc.collection<ReservaOptions>('pendientes', ref => ref.where('fechaFin.toDate()', "<", limite).limit(1)).valueChanges().subscribe(pendientes => {
+    this.usuarioDoc.collection<ReservaOptions>('pendientes').valueChanges().subscribe(pendientes => {
       if (pendientes && pendientes.length > 0) {
         let pendiente = pendientes[0];
-        this.alertCtrl.create({
-          title: 'Reservas pendientes',
-          subTitle: 'Tienes una reserva el día ' + + 'a las ' + ' con ' + + 'que no ha sido finalizado',
-          message: '¿El servicio finalizó?',
-          buttons: [{
-            text: 'Si',
-            handler: () => {
-              this.terminar(pendiente);
-            }
-          }, {
-            text: 'No',
-            handler: () => {
-              this.eliminar(pendiente);
-            }
-          }]
-        });
+        pendiente.fechaInicio = pendiente.fechaInicio.toDate();
+        pendiente.fechaFin = pendiente.fechaFin.toDate();
+        if (pendiente.fechaFin < limite.getTime()) {
+          this.alertCtrl.create({
+            title: 'Reservas pendientes',
+            subTitle: 'Tienes una reserva el día ' + moment(pendiente.fechaInicio).locale('es').format('DD/MM/YYYY') + 'a las ' + moment(pendiente.fechaInicio).locale('es').format('h:mm a') + ' con ' + pendiente.cliente.nombre + ' que no ha sido finalizado',
+            message: '¿El servicio finalizó?',
+            buttons: [{
+              text: 'Si',
+              handler: () => {
+                this.terminar(pendiente);
+              }
+            }, {
+              text: 'No',
+              handler: () => {
+                this.eliminar(pendiente);
+              }
+            }]
+          }).present();
+        }
       }
     });
   }
