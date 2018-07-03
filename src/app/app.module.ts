@@ -18,6 +18,7 @@ import { firebaseConfig } from './config.firebase';
 import { AgendaPage } from '../pages/agenda/agenda';
 import { ReportesPage } from '../pages/reportes/reportes';
 import { ConfiguracionPage } from '../pages/configuracion/configuracion';
+import { Push } from '@ionic-native/push';
 
 
 @NgModule({
@@ -50,6 +51,7 @@ import { ConfiguracionPage } from '../pages/configuracion/configuracion';
     { provide: ErrorHandler, useClass: IonicErrorHandler },
     Calendar,
     DatePicker,
+    Push,
     ReservaProvider
   ]
 })

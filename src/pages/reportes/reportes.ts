@@ -94,8 +94,9 @@ export class ReportesPage {
   }
 
   updateServicios(fecha: Date) {
+    let fechaInicio = moment(fecha).startOf('month').toDate();
     let fechaFin = fecha.getMonth() == new Date().getMonth() ? new Date() : moment(fecha).endOf('month').toDate();
-    let disponibilidadesCollection: AngularFirestoreCollection<DisponibilidadOptions> = this.usuarioDoc.collection('disponibilidades', ref => ref.where('id', '<=', fechaFin.getTime()).orderBy('id', 'desc'));
+    let disponibilidadesCollection: AngularFirestoreCollection<DisponibilidadOptions> = this.usuarioDoc.collection('disponibilidades', ref => ref.where('id', '<=', fechaFin.getTime()).orderBy('id', 'desc').where('id', '>=', fechaInicio.getTime()));
     this.read = disponibilidadesCollection.valueChanges().subscribe(data => {
       this.disponibilidades = [];
       this.total = 0;
@@ -106,14 +107,13 @@ export class ReportesPage {
             if (datos && datos.length > 0) {
               let fechaData = moment(new Date(dia.id)).locale('es').format('dddd, DD')
               this.disponibilidades.push({ grupo: fechaData, disponibilidades: datos });
-              this.total += datos.map(c => {
+              this.total = datos.map(c => {
                 if (c.servicio && c.servicio.valor) {
                   return Number(c.servicio.valor);
                 }
                 return 0;
               }).reduce((sum, current) => sum + current);
-
-              this.cantidad++;
+              this.cantidad = datos.length;
             }
           });
         });
