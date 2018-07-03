@@ -143,10 +143,10 @@ export class AgendaPage {
       let reservas: ReservaOptions[] = data;
       let fechaInicio = moment(this.initDate).startOf('day').hours(this.horaInicio);
       let fechaFin = moment(this.initDate).hours(this.horaFin);
+      let ahora = new Date();
       while (fechaInicio.isSameOrBefore(fechaFin.toDate())) {
         let fechaInicioReserva = fechaInicio.toDate();
         let fechaFinReserva = moment(fechaInicio).add(this.tiempoServicio, 'minutes').toDate();
-        let eventoActual = moment(new Date()).isBetween(fechaInicioReserva, fechaFinReserva);
         let reservaEnc = reservas.find(item => item.fechaInicio.toDate().getTime() === fechaInicioReserva.getTime());
         let reserva: ReservaOptions;
         if (!reservaEnc) {
@@ -171,11 +171,13 @@ export class AgendaPage {
           };
         }
 
-        if (eventoActual) {
+        if (moment(new Date()).isBetween(reserva.fechaInicio, reserva.fechaFin)) {
           reserva.evento = this.constantes.EVENTOS.ACTUAL;
           if (reserva.estado === this.constantes.ESTADOS_RESERVA.RESERVADO) {
             reserva.estado = this.constantes.ESTADOS_RESERVA.EJECUTANDO;
           }
+        } else if (reserva.estado == this.constantes.ESTADOS_RESERVA.RESERVADO && moment(ahora).isAfter(reserva.fechaInicio)) {
+          reserva.estado = this.constantes.ESTADOS_RESERVA.EJECUTANDO;
         }
 
         let grupo = moment(reserva.fechaInicio).startOf('hours').format('h:mm a');;
@@ -191,8 +193,6 @@ export class AgendaPage {
       for (let grupo in grupos) {
         this.horarios.push({ grupo: grupo, disponibilidad: grupos[grupo] });
       }
-
-      let ahora = new Date();
 
       if (ahora.getHours() >= this.horaInicio && moment(ahora).diff(fechaInicio, 'days') === 0) {
         setTimeout(() => {
