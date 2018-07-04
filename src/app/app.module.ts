@@ -23,6 +23,7 @@ import { Camera } from '@ionic-native/camera';
 import { FileChooser } from '@ionic-native/file-chooser';
 import { FilePath } from '@ionic-native/file-path';
 import { AngularFireStorageModule } from 'angularfire2/storage';
+import { SearchPipe } from '../pipes/search/search';
 
 
 @NgModule({
@@ -31,7 +32,8 @@ import { AngularFireStorageModule } from 'angularfire2/storage';
     AgendaPage,
     ConfiguracionPage,
     ReportesPage,
-    TabsPage
+    TabsPage,
+    SearchPipe
   ],
   imports: [
     BrowserModule,

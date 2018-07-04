@@ -23,6 +23,7 @@ export class ConfiguracionPage {
     private afs: AngularFirestore
   ) {
     this.pages.push({ title: 'Horario', component: 'GeneralPage', icon: 'alert' });
+    this.pages.push({ title: 'Perfil', component: 'PerfilPage', icon: 'alert' });
     this.updateUsuario();
   }
 

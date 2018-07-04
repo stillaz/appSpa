@@ -44,14 +44,15 @@ export class AgendaPage {
   usuarioLogueado: UsuarioOptions;
   horario: ReservaOptions[];
   horarios: any[];
-  usuarioDoc: AngularFirestoreDocument<UsuarioOptions>;
+  private usuarioDoc: AngularFirestoreDocument<UsuarioOptions>;
   cliente = {} as ClienteOptions;
   servicio = {} as ServicioOptions;
   administrador: boolean;
-  usuariosCollection: AngularFirestoreCollection<UsuarioOptions>;
+  private usuariosCollection: AngularFirestoreCollection<UsuarioOptions>;
   perfiles: PerfilOptions[];
   usuarios: UsuarioOptions[];
-  disponibilidadDoc: AngularFirestoreDocument;
+  private disponibilidadDoc: AngularFirestoreDocument;
+  terms: string;
 
   opciones: any[] = [
     { title: 'Configuración', component: 'ConfiguracionAgendaPage', icon: 'stats' }
@@ -308,7 +309,7 @@ export class AgendaPage {
 
     let serviciosFinalizados = this.reservaCtrl.getReservasByIdServicioAndFinalizado(this.horario, reserva);
 
-    let total = serviciosFinalizados.map(a => a ? a.servicio.valor : 0).reduce((a, b) => a + b);
+    let total = serviciosFinalizados && serviciosFinalizados.length > 0 ? serviciosFinalizados.map(a => a ? a.servicio.valor : 0).reduce((a, b) => a + b) : reserva.servicio.valor;
 
     let mensaje = tiempoSiguiente ? 'El próximo servicio empieza en: ' + tiempoSiguiente + ' minutos' : 'No hay más citas asignadas';
     this.genericAlert('Servicio finalizado', 'El servicio ha terminado satisfactoriamente. ' + mensaje);

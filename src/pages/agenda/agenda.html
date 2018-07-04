@@ -30,7 +30,7 @@
           <button *ngIf="administrador" color="light" float-end ion-button outline (click)="filtroPerfiles()">{{usuario.nombre}}</button>
         </ion-col>
 
-        <ion-searchbar placeholder="Buscar reserva" [(ngModel)]="busqueda" (ionInput)="filtrar()"></ion-searchbar>
+        <ion-searchbar placeholder="Buscar reserva" [(ngModel)]="terms"></ion-searchbar>
       </ion-row>
     </ion-toolbar>
   </ion-navbar>
@@ -38,7 +38,7 @@
 
 <ion-content padding>
   <ion-list>
-    <ion-item-group *ngFor="let horario of horarios">
+    <ion-item-group *ngFor="let horario of horarios | search : terms">
 
       <ion-item-divider sticky color="light">
         <ion-label>
