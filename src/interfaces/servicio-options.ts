@@ -1,6 +1,6 @@
 
 export interface ServicioOptions {
-    id: number,
+    id: string,
     nombre: string,
     descripcion: string,
     duracion_MIN: number,

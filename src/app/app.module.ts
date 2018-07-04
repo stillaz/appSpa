@@ -19,6 +19,10 @@ import { AgendaPage } from '../pages/agenda/agenda';
 import { ReportesPage } from '../pages/reportes/reportes';
 import { ConfiguracionPage } from '../pages/configuracion/configuracion';
 import { Push } from '@ionic-native/push';
+import { Camera } from '@ionic-native/camera';
+import { FileChooser } from '@ionic-native/file-chooser';
+import { FilePath } from '@ionic-native/file-path';
+import { AngularFireStorageModule } from 'angularfire2/storage';
 
 
 @NgModule({
@@ -35,7 +39,8 @@ import { Push } from '@ionic-native/push';
     DatePickerModule,
     AngularFireModule.initializeApp(firebaseConfig),
     AngularFirestoreModule.enablePersistence(),
-    AngularFireAuthModule
+    AngularFireAuthModule,
+    AngularFireStorageModule
   ],
   bootstrap: [IonicApp],
   entryComponents: [
@@ -50,7 +55,10 @@ import { Push } from '@ionic-native/push';
     SplashScreen,
     { provide: ErrorHandler, useClass: IonicErrorHandler },
     Calendar,
+    Camera,
     DatePicker,
+    FileChooser,
+    FilePath,
     Push,
     ReservaProvider
   ]
