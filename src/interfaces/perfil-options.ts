@@ -1,7 +1,7 @@
 import { ServicioOptions } from "./servicio-options";
 
 export interface PerfilOptions{
-    id: number,
+    id: string,
     nombre: string,
     imagen: string,
     servicios: ServicioOptions[],

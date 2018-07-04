@@ -35,7 +35,7 @@ export class ClientePage {
 
   form() {
     this.todo = this.formBuilder.group({
-      identificacion: [this.cliente.identificacion, Validators.required],
+      identificacion: [this.cliente.identificacion],
       nombre: [this.cliente.nombre, Validators.required],
       telefono: [this.cliente.telefono, Validators.required],
       correoelectronico: [this.cliente.correoelectronico]
@@ -43,14 +43,14 @@ export class ClientePage {
   }
 
   cargar() {
-    let id = this.todo.value.identificacion;
+    let id = this.todo.value.telefono;
     if (id) {
       this.clienteDoc = this.afs.doc<ClienteOptions>('clientes/' + id);
       this.clienteDoc.valueChanges().subscribe(data => {
         if (data) {
           this.cliente = data;
         } else {
-          this.cliente = { identificacion: id, nombre: null, telefono: null, correoelectronico: null };
+          this.cliente = { identificacion: null, nombre: null, telefono: id, correoelectronico: null };
         }
         this.form();
       });

@@ -1,7 +1,9 @@
 import { Component } from '@angular/core';
-import { IonicPage, NavController, ActionSheetController } from 'ionic-angular';
-import { AngularFirestore, AngularFirestoreCollection } from 'angularfire2/firestore';
+import { IonicPage, NavController, ActionSheetController, AlertController } from 'ionic-angular';
+import { AngularFirestore, AngularFirestoreCollection, AngularFirestoreDocument } from 'angularfire2/firestore';
 import { ServicioOptions } from '../../interfaces/servicio-options';
+import { AngularFireAuth } from 'angularfire2/auth';
+import { UsuarioOptions } from '../../interfaces/usuario-options';
 
 /**
  * Generated class for the ServicioPage page.
@@ -20,11 +22,15 @@ export class ServicioPage {
   grupoServicios: any[];
   grupoSeleccion: string;
   grupos: any[] = [];
+  private usuarioDoc: AngularFirestoreDocument<UsuarioOptions>;
+  private usuario: UsuarioOptions;
 
   constructor(
     private afs: AngularFirestore,
     public navCtrl: NavController,
-    public actionSheetCtrl: ActionSheetController
+    public actionSheetCtrl: ActionSheetController,
+    private afa: AngularFireAuth,
+    public alertCtrl: AlertController
   ) {
     this.initialUpdate();
   }
@@ -42,6 +48,39 @@ export class ServicioPage {
         this.grupoSeleccion = 'Todos los grupos';
       }
     });
+  }
+
+  genericAlert(title: string, message: string) {
+    let alert = this.alertCtrl.create({
+      title: title,
+      message: message,
+      buttons: [{
+        text: 'OK'
+      }]
+    });
+    alert.present();
+  }
+
+  updateUsuario() {
+    let user = this.afa.auth.currentUser;
+    if (!user) {
+      this.navCtrl.setRoot('LogueoPage');
+    } else {
+      this.usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + user.uid);
+      this.usuarioDoc.valueChanges().subscribe(data => {
+        if (data) {
+          this.usuario = data;
+          let administrador = this.usuario.perfiles.some(perfil => perfil.nombre === 'Administrador');
+          if (!administrador) {
+            this.genericAlert('Error usuario', 'Usuario no es administrador');
+            this.navCtrl.pop();
+          }
+        } else {
+          this.genericAlert('Error usuario', 'Usuario no encontrado');
+          this.navCtrl.setRoot('LogueoPage');
+        }
+      });
+    }
   }
 
   updateServicios(servicios: ServicioOptions[]) {

@@ -63,7 +63,7 @@ export class GeneralPage {
         if (data) {
           this.usuarioLogueado = data;
           this.usuario = data;
-          this.administrador = this.usuarioLogueado.perfiles.some(perfil => perfil.id === 0);
+          this.administrador = this.usuarioLogueado.perfiles.some(perfil => perfil.nombre === 'Administrador');
           this.configuracion = this.usuario.configuracion ? this.usuario.configuracion : {} as ConfiguracionOptions;
         } else {
           this.genericAlert('Error usuario', 'Usuario no encontrado');

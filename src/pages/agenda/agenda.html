@@ -10,7 +10,8 @@
     <button ion-button menuToggle>
       <ion-icon name="menu"></ion-icon>
     </button>
-    <ion-title>AGENDA {{ usuario.nombre | uppercase }}</ion-title>
+    <ion-title *ngIf="administrador">AGENDA</ion-title>
+    <ion-title *ngIf="!administrador">AGENDA {{ usuario.nombre | uppercase }}</ion-title>
 
     <ion-toolbar>
       <ion-row>
@@ -26,7 +27,7 @@
           </span>
         </ion-col>
         <ion-col>
-          <button *ngIf="administrador" float-end ion-button outline (click)="filtroPerfiles()">{{usuario.nombre}}</button>
+          <button *ngIf="administrador" color="light" float-end ion-button outline (click)="filtroPerfiles()">{{usuario.nombre}}</button>
         </ion-col>
 
         <ion-searchbar placeholder="Buscar reserva" [(ngModel)]="busqueda" (ionInput)="filtrar()"></ion-searchbar>

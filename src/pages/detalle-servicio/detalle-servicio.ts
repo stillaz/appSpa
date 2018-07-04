@@ -10,6 +10,7 @@ import { Camera, CameraOptions } from '@ionic-native/camera';
 import { FilePath } from '@ionic-native/file-path';
 import { PerfilOptions } from '../../interfaces/perfil-options';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
+import { AngularFireAuth } from 'angularfire2/auth';
 
 /**
  * Generated class for the DetalleServicioPage page.
@@ -38,6 +39,9 @@ export class DetalleServicioPage {
   private servicioDoc: AngularFirestoreDocument<ServicioOptions>;
   private perfilesCollection: AngularFirestoreCollection<PerfilOptions>;
   private usuariosCollection: AngularFirestoreCollection<UsuarioOptions>;
+  private usuarioDoc: AngularFirestoreDocument<UsuarioOptions>;
+  private usuario: UsuarioOptions;
+  private control_usuarios: boolean;
 
   constructor(
     public navCtrl: NavController,
@@ -51,11 +55,40 @@ export class DetalleServicioPage {
     public fileChooser: FileChooser,
     private storage: AngularFireStorage,
     private camera: Camera,
-    private filePath: FilePath
+    private filePath: FilePath,
+    private afa: AngularFireAuth
   ) {
     this.mobile = !plt.is('core');
     this.servicio = this.navParams.get('servicio');
+    this.updateUsuario();
     this.updateServicio();
+  }
+
+  updateUsuario() {
+    let user = this.afa.auth.currentUser;
+    if (!user) {
+      this.navCtrl.setRoot('LogueoPage');
+    } else {
+      this.usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + user.uid);
+      this.usuarioDoc.valueChanges().subscribe(data => {
+        if (data) {
+          this.usuario = data;
+          let administrador = this.usuario.perfiles.some(perfil => perfil.nombre === 'Administrador');
+          if (administrador) {
+            let configuracion = this.usuario.configuracion;
+            if (configuracion) {
+              this.control_usuarios = configuracion.control_usuarios;
+            }
+          } else {
+            this.genericAlert('Error usuario', 'Usuario no es administrador');
+            this.navCtrl.pop();
+          }
+        } else {
+          this.genericAlert('Error usuario', 'Usuario no encontrado');
+          this.navCtrl.setRoot('LogueoPage');
+        }
+      });
+    }
   }
 
   form() {
@@ -156,43 +189,73 @@ export class DetalleServicioPage {
   }
 
   guardar() {
+    let modo = this.nuevo ? 'actualizado' : 'registrado';
     this.servicio = this.todo.value;
-    this.servicioDoc.set(this.servicio);
     let batch = this.afs.firestore.batch();
     batch.set(this.servicioDoc.ref, this.servicio);
-    this.perfilesCollection = this.afs.collection<PerfilOptions>('perfiles', ref => ref.where('nombre', '==', 'Barbero'));
-    this.perfilesCollection.ref.get().then(data => {
-      data.forEach(perfil => {
-        let servicios: ServicioOptions[] = perfil.get('servicios');
-        let servicioEncontrado: ServicioOptions = servicios.find(servicio => servicio.id === this.servicio.id);
-        if (servicioEncontrado) {
-          let item = servicios.indexOf(servicioEncontrado);
-          servicios.splice(item, 1, this.servicio);
-          servicios.push(servicioEncontrado);
-          servicioEncontrado = this.servicio;
-        } else {
-          servicios.push(this.servicio);
-        }
+    if (!this.control_usuarios) {
+      this.perfilesCollection = this.afs.collection<PerfilOptions>('perfiles', ref => ref.where('nombre', '==', 'Barbero'));
+      this.perfilesCollection.ref.get().then(data => {
+        data.forEach(perfil => {
+          let servicios: ServicioOptions[] = perfil.get('servicios');
+          let servicioEncontrado: ServicioOptions = servicios.find(servicio => servicio.id === this.servicio.id);
+          if (servicioEncontrado) {
+            let item = servicios.indexOf(servicioEncontrado);
+            servicios.splice(item, 1, this.servicio);
+          } else {
+            servicios.push(this.servicio);
+          }
 
-        batch.set(perfil.ref, { servicios: servicios });
+          batch.update(perfil.ref, { servicios: servicios });
 
-        this.usuariosCollection = this.afs.collection('usuarios', ref => ref.where('perfiles.id', '==', perfil.id));
-        this.usuariosCollection.ref.get().then(usuariodata => {
-          usuariodata.forEach(usuario => {
-            
+          this.usuariosCollection = this.afs.collection('usuarios');
+          this.usuariosCollection.ref.get().then(usuariodata => {
+            usuariodata.forEach(usuario => {
+              let perfilesusuario: PerfilOptions[] = usuario.get('perfiles');
+              let perfilusuario: PerfilOptions = perfilesusuario.find(perfilu => perfilu.id === perfil.id);
+              if (perfilusuario) {
+                let itemperfil = perfilesusuario.indexOf(perfilusuario);
+                let serviciosperfilusuario = perfilusuario.servicios ? perfilusuario.servicios : [];
+                let servicioUsuarioEncontrado: ServicioOptions = serviciosperfilusuario.find(servicio => servicio.id === this.servicio.id);
+
+                if (servicioUsuarioEncontrado) {
+                  let item = serviciosperfilusuario.indexOf(servicioUsuarioEncontrado);
+                  serviciosperfilusuario.splice(item, 1, this.servicio);
+                } else {
+                  serviciosperfilusuario.push(this.servicio);
+                }
+
+                perfilusuario.servicios = serviciosperfilusuario;
+
+                perfilesusuario.splice(itemperfil, 1, perfilusuario);
+
+                batch.update(usuario.ref, { perfiles: perfilesusuario });
+              }
+            });
+
+            batch.commit().then(() => {
+              let alert = this.alertCtrl.create({
+                title: 'Servicio ' + modo,
+                message: 'El servicio ha sido ' + modo + ' exitosamente',
+                buttons: ['OK']
+              });
+              alert.present();
+              this.viewCtrl.dismiss();
+            });
           });
         });
       });
+    } else {
       batch.commit().then(() => {
         let alert = this.alertCtrl.create({
-          title: 'Servicio registrado',
-          message: 'El servicio ha sido registrado exitosamente',
+          title: 'Servicio ' + modo,
+          message: 'El servicio ha sido ' + modo + ' exitosamente',
           buttons: ['OK']
         });
         alert.present();
         this.viewCtrl.dismiss();
       });
-    });
+    }
   }
 
   menu() {
@@ -235,12 +298,63 @@ export class DetalleServicioPage {
         {
           text: 'Si',
           handler: () => {
-            this.servicioDoc.delete().then(() => {
-              if (servicio.imagen) {
-                this.storage.ref(this.filePathData).delete();
-              }
-              this.genericAlert('Eliminar servicio', 'El servicio ha sido eliminado');
-            });
+            let batch = this.afs.firestore.batch();
+            batch.delete(this.servicioDoc.ref);
+            if (!this.control_usuarios) {
+              this.perfilesCollection = this.afs.collection<PerfilOptions>('perfiles', ref => ref.where('nombre', '==', 'Barbero'));
+              this.perfilesCollection.ref.get().then(data => {
+                data.forEach(perfil => {
+                  let servicios: ServicioOptions[] = perfil.get('servicios');
+                  let servicioEncontrado: ServicioOptions = servicios.find(servicio => servicio.id === this.servicio.id);
+                  if (servicioEncontrado) {
+                    let item = servicios.indexOf(servicioEncontrado);
+                    servicios.splice(item, 1);
+                  }
+
+                  batch.update(perfil.ref, { servicios: servicios });
+
+                  this.usuariosCollection = this.afs.collection('usuarios');
+                  this.usuariosCollection.ref.get().then(usuariodata => {
+                    usuariodata.forEach(usuario => {
+                      let perfilesusuario: PerfilOptions[] = usuario.get('perfiles');
+                      let perfilusuario: PerfilOptions = perfilesusuario.find(perfilu => perfilu.id === perfil.id);
+                      if (perfilusuario) {
+                        let itemperfil = perfilesusuario.indexOf(perfilusuario);
+                        let serviciosperfilusuario = perfilusuario.servicios ? perfilusuario.servicios : [];
+                        let servicioUsuarioEncontrado: ServicioOptions = serviciosperfilusuario.find(servicio => servicio.id === this.servicio.id);
+
+                        if (servicioUsuarioEncontrado) {
+                          let item = serviciosperfilusuario.indexOf(servicioUsuarioEncontrado);
+                          serviciosperfilusuario.splice(item, 1);
+                        }
+
+                        perfilusuario.servicios = serviciosperfilusuario;
+
+                        perfilesusuario.splice(itemperfil, 1, perfilusuario);
+
+                        batch.update(usuario.ref, { perfiles: perfilesusuario });
+                      }
+                    });
+
+                    batch.commit().then(() => {
+                      if (servicio.imagen) {
+                        this.storage.ref(this.filePathData).delete();
+                      }
+                      this.genericAlert('Eliminar servicio', 'El servicio ha sido eliminado');
+                      this.viewCtrl.dismiss();
+                    });
+                  });
+                });
+              });
+            } else {
+              batch.commit().then(() => {
+                if (servicio.imagen) {
+                  this.storage.ref(this.filePathData).delete();
+                }
+                this.genericAlert('Eliminar servicio', 'El servicio ha sido eliminado');
+                this.viewCtrl.dismiss();
+              });
+            }
           }
         }
       ]

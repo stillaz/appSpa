@@ -68,7 +68,7 @@ export class ReportesPage {
         if (data) {
           this.usuarioLogueado = data;
           this.usuario = data;
-          this.administrador = this.usuarioLogueado.perfiles.some(perfil => perfil.id === 0);
+          this.administrador = this.usuarioLogueado.perfiles.some(perfil => perfil.nombre === 'Administrador');
           this.updateServicios(this.mesSeleccionado.fecha);
         } else {
           this.genericAlert('Error usuario', 'Usuario no encontrado');

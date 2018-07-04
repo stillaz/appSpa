@@ -99,12 +99,13 @@ export class AgendaPage {
             this.horaFin = configuracion.horaFin;
             this.tiempoServicio = configuracion.tiempoDisponibilidad;
           }
-          this.administrador = this.usuarioLogueado.perfiles.some(perfil => perfil.id === 0);
+          this.administrador = this.usuarioLogueado.perfiles.some(perfil => perfil.nombre === 'Administrador');
           let fecha = moment(this.initDate).startOf('days').toDate().getTime().toString();
           this.disponibilidadDoc = this.usuarioDoc.collection('disponibilidades').doc(fecha);
           this.updateHorariosInicial();
         } else {
           this.genericAlert('Error usuario', 'Usuario no encontrado');
+          this.navCtrl.setRoot('LogueoPage');
         }
       });
     }
@@ -217,18 +218,17 @@ export class AgendaPage {
       if (!perfiles || perfiles.length === 0) {
         this.genericAlert('Error de perfil de usuario', 'El usuario no tiene ningún perfil asignado');
       } else {
-        perfiles.forEach(perfil => {
-          let servicios = perfil.servicios;
-          if (!servicios || servicios.length === 0) {
-            this.genericAlert('Error de servicios de usuario', 'El usuario no tiene ningún servicio asignado');
-          } else {
-            this.navCtrl.push('ReservaPage', {
-              disponibilidad: reserva,
-              horario: this.horario,
-              usuario: this.usuario
-            });
-          }
-        });
+        let cantservicios: number = perfiles.map(perfil => perfil.servicios ? perfil.servicios.length : 0).reduce((a, b) => a + b);
+
+        if (!cantservicios || cantservicios === 0) {
+          this.genericAlert('Error de servicios de usuario', 'El usuario no tiene ningún servicio asignado');
+        } else {
+          this.navCtrl.push('ReservaPage', {
+            disponibilidad: reserva,
+            horario: this.horario,
+            usuario: this.usuario
+          });
+        }
       }
     }
   }
@@ -340,7 +340,7 @@ export class AgendaPage {
 
   filtroPerfiles() {
     let filtros: any = [];
-    let todosPerfiles: PerfilOptions = { id: 0, nombre: 'Todos los perfiles', imagen: null, servicios: null, activo: null }
+    let todosPerfiles: PerfilOptions = { id: '', nombre: 'Todos los perfiles', imagen: null, servicios: null, activo: null }
     filtros.push({
       text: todosPerfiles.nombre, handler: () => {
         this.filtroUsuarios(this.usuarios);
