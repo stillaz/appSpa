@@ -196,7 +196,7 @@ export class AgendaPage {
         this.horarios.push({ grupo: grupo, disponibilidad: grupos[grupo] });
       }
 
-      if (ahora.getHours() >= this.horaInicio && moment(ahora).diff(fechaInicio, 'days') === 0) {
+      if (moment(ahora).isBetween(this.horaInicio, this.horaFin) && moment(ahora).diff(fechaInicio, 'days') === 0) {
         setTimeout(() => {
           this.scrollTo(this.constantes.EVENTOS.ACTUAL)
         }, 1);

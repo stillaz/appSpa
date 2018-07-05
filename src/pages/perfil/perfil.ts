@@ -56,7 +56,7 @@ export class PerfilPage {
       nombre: [this.usuario.nombre, Validators.required],
       telefono: [this.usuario.telefono, Validators.required],
       email: [this.usuario.email, Validators.required],
-      clave: [''],
+      clave: ['1234567890'],
       perfiles: [this.usuario.perfiles, Validators.required],
       imagen: [this.usuario.imagen],
       activo: [this.usuario.activo, Validators.required]
@@ -106,14 +106,7 @@ export class PerfilPage {
       configuracion: this.usuario.configuracion
     };
 
-    if (this.actualizar_email) {
-      this.usuariologueado.updateEmail(this.usuario.email);
-    }
-    if (this.actualizar_clave) {
-      this.usuariologueado.updatePassword(usuario.clave);
-    }
-
-    this.usuarioDoc.set(this.usuario);
+    this.usuarioDoc.update({ telefono: usuario.telefono });
     let alert = this.alertCtrl.create({
       title: 'Usuario actualizado',
       message: 'El usuario ha sido actualizado exitosamente',
@@ -123,4 +116,200 @@ export class PerfilPage {
     this.navCtrl.pop();
   }
 
+  actualizarEmail() {
+    this.alertCtrl.create({
+      title: 'Actualizar correo',
+      message: '¿Está seguro de cambiar el correo electrónico de inicio de sesión?',
+      buttons: [
+        {
+          text: 'No',
+          role: 'cancel'
+        },
+        {
+          text: 'Si',
+          handler: () => {
+            const prompt = this.alertCtrl.create({
+              title: 'Actualizar correo',
+              message: "Ingrese aquí el nuevo correo electrónico",
+              inputs: [
+                {
+                  name: 'email',
+                  placeholder: this.usuario.email,
+                  type: 'email'
+                }
+              ],
+              buttons: [
+                {
+                  text: 'Cancelar',
+                  role: 'cancel'
+                },
+                {
+                  text: 'Guardar',
+                  handler: data => {
+                    if (data && data.email) {
+                      let email = data.email;
+                      this.usuariologueado.updateEmail(email).then(() => {
+                        this.usuarioDoc.update({ email: email }).then(() => {
+                          this.alertCtrl.create({
+                            title: 'Actualizar correo',
+                            subTitle: 'Correo actualizado correctamente',
+                            message: 'Ahora inicia nuevamente la sesión',
+                            buttons: [
+                              {
+                                text: 'OK',
+                                handler: () => {
+                                  this.navCtrl.setRoot('LogueoPage');
+                                }
+                              }
+                            ]
+                          }).present();
+                        });
+                      });
+                    } else {
+                      this.alertCtrl.create({
+                        title: 'Actualizar correo',
+                        message: 'Correo no es válido',
+                        buttons: [
+                          {
+                            text: 'OK',
+                            role: 'cancel'
+                          }
+                        ]
+                      }).present();
+                    }
+                  }
+                }
+              ]
+            });
+            prompt.present();
+          }
+        }
+      ]
+    }).present();
+  }
+
+  actualizarClave() {
+    this.alertCtrl.create({
+      title: 'Cambio de clave',
+      message: 'Ingresa aquí la clave actual',
+      inputs: [
+        {
+          name: 'clave',
+          type: 'password'
+        },
+      ],
+      buttons: [
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        },
+        {
+          text: 'Continuar',
+          handler: dataclave => {
+            if (!dataclave || !dataclave.clave) {
+              this.alertCtrl.create({
+                title: 'Cambio de clave',
+                message: 'La clave no es válida',
+                buttons: [{
+                  text: 'OK',
+                  role: 'cancel'
+                }]
+              }).present();
+            } else {
+              this.afa.auth.signInWithEmailAndPassword(this.usuario.email, dataclave.clave).then(respuesta => {
+                const prompt = this.alertCtrl.create({
+                  title: 'Cambio de clave',
+                  message: "Ingrese aquí la clave nueva",
+                  inputs: [
+                    {
+                      placeholder: 'Clave nueva',
+                      name: 'clave1',
+                      type: 'password'
+                    },
+
+                    {
+                      placeholder: 'Repite la clave',
+                      name: 'clave2',
+                      type: 'password'
+                    }
+                  ],
+                  buttons: [
+                    {
+                      text: 'Cancelar',
+                      role: 'cancel'
+                    },
+                    {
+                      text: 'Guardar',
+                      handler: data => {
+                        if (!data || !data.clave1) {
+                          this.alertCtrl.create({
+                            title: 'Cambio de clave',
+                            message: 'La primera clave no es válida',
+                            buttons: [
+                              {
+                                text: 'OK',
+                                role: 'cancel'
+                              }
+                            ]
+                          }).present();
+                        } else if (!data || !data.clave2) {
+                          this.alertCtrl.create({
+                            title: 'Cambio de clave',
+                            message: 'La segunda clave no es válida',
+                            buttons: [
+                              {
+                                text: 'OK',
+                                role: 'cancel'
+                              }
+                            ]
+                          }).present();
+                        } else if (data.clave1 !== data.clave1) {
+                          this.alertCtrl.create({
+                            title: 'Cambio de clave',
+                            message: 'Las claves no coinciden',
+                            buttons: [
+                              {
+                                text: 'OK',
+                                role: 'cancel'
+                              }
+                            ]
+                          }).present();
+                        } else {
+                          let clave = data.clave1;
+                          this.usuariologueado.updatePassword(clave).then(() => {
+                            this.alertCtrl.create({
+                              title: 'Cambio de clave',
+                              message: 'Clave actualizada',
+                              buttons: [
+                                {
+                                  text: 'OK',
+                                  handler: () => {
+                                    this.navCtrl.pop();
+                                  }
+                                }
+                              ]
+                            }).present();
+                          });
+                        }
+                      }
+                    }
+                  ]
+                });
+                prompt.present();
+              }).catch(() => this.alertCtrl.create({
+                title: 'Cambio de clave',
+                message: 'Clave incorrecta',
+                buttons: [
+                  {
+                    text: 'OK',
+                    role: 'cancel'
+                  }
+                ]
+              }).present());
+            }
+          }
+        }
+      ]
+    }).present();
+  }
 }
