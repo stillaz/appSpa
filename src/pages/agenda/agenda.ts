@@ -13,6 +13,7 @@ import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection 
 import { AngularFireAuth } from 'angularfire2/auth';
 import { PerfilOptions } from '../../interfaces/perfil-options';
 import { PaginaOptions } from '../../interfaces/pagina-options';
+import { TotalesServiciosOptions } from '../../interfaces/totales-servicios-options';
 
 /**
  * Generated class for the AgendaPage page.
@@ -196,7 +197,9 @@ export class AgendaPage {
         this.horarios.push({ grupo: grupo, disponibilidad: grupos[grupo] });
       }
 
-      if (moment(ahora).isBetween(this.horaInicio, this.horaFin) && moment(ahora).diff(fechaInicio, 'days') === 0) {
+      let horaAhora = ahora.getHours();
+
+      if (horaAhora >= this.horaInicio && horaAhora <= this.horaFin && moment(ahora).diff(fechaInicio, 'days') === 0) {
         setTimeout(() => {
           this.scrollTo(this.constantes.EVENTOS.ACTUAL)
         }, 1);
@@ -301,20 +304,55 @@ export class AgendaPage {
 
     reserva.estado = this.constantes.ESTADOS_RESERVA.FINALIZADO;
 
-    this.disponibilidadDoc.collection('disponibilidades').doc(reserva.fechaInicio.getTime().toString()).set(reserva);
+    let id = reserva.fechaInicio.getTime().toString();
 
-    this.disponibilidadDoc.collection('finalizados').doc(reserva.fechaInicio.getTime().toString()).set(reserva);
+    let batch = this.afs.firestore.batch();
 
-    this.usuarioDoc.collection('pendientes').doc(reserva.fechaInicio.getTime().toString()).delete();
+    batch.set(this.disponibilidadDoc.collection('disponibilidades').doc(id).ref, reserva);
 
-    let serviciosFinalizados = this.reservaCtrl.getReservasByIdServicioAndFinalizado(this.horario, reserva);
+    batch.set(this.disponibilidadDoc.collection('finalizados').doc(id).ref, reserva);
 
-    let total = serviciosFinalizados && serviciosFinalizados.length > 0 ? serviciosFinalizados.map(a => a ? a.servicio.valor : 0).reduce((a, b) => a + b) : reserva.servicio.valor;
+    batch.delete(this.usuarioDoc.collection('pendientes').doc(id).ref);
 
-    let mensaje = tiempoSiguiente ? 'El próximo servicio empieza en: ' + tiempoSiguiente + ' minutos' : 'No hay más citas asignadas';
-    this.genericAlert('Servicio finalizado', 'El servicio ha terminado satisfactoriamente. ' + mensaje);
+    let mesServicio = moment(reserva.fechaInicio).startOf('month');
 
-    this.genericAlert('Servicio finalizado', 'Valor servicios: ' + total);
+    let totalesServiciosDoc = this.afs.doc('totalesservicios/' + mesServicio);
+
+    totalesServiciosDoc.ref.get().then((data) => {
+      batch.set(totalesServiciosDoc.ref, { ultimaactualizacion: new Date() });
+
+      let totalesServiciosUsuarioDoc = totalesServiciosDoc.collection('totalesServiciosUsuarios').doc<TotalesServiciosOptions>(this.usuario.id);
+
+      totalesServiciosUsuarioDoc.ref.get().then(datos => {
+        if (data.exists) {
+          let totalActual = datos.get('totalServicios');
+          let cantidadActual = datos.get('cantidadServicios');
+          batch.update(totalesServiciosUsuarioDoc.ref, { totalServicios: Number(totalActual) + Number(reserva.servicio.valor), cantidadServicios: Number(cantidadActual) + 1, fecha: new Date() });
+        } else {
+          let totalServicioUsuario: TotalesServiciosOptions = {
+            idusuario: this.usuario.id,
+            usuario: this.usuario.nombre,
+            imagenusuario: this.usuario.imagen,
+            totalServicios: reserva.servicio.valor,
+            cantidadServicios: 1,
+            fecha: new Date()
+          }
+
+          batch.set(totalesServiciosUsuarioDoc.ref, totalServicioUsuario);
+        }
+
+        batch.commit().then(() => {
+          let serviciosFinalizados = this.reservaCtrl.getReservasByIdServicioAndFinalizado(this.horario, reserva);
+
+          let total = serviciosFinalizados && serviciosFinalizados.length > 0 ? serviciosFinalizados.map(a => a ? a.servicio.valor : 0).reduce((a, b) => a + b) : reserva.servicio.valor;
+
+          let mensaje = tiempoSiguiente ? 'El próximo servicio empieza en: ' + tiempoSiguiente + ' minutos' : 'No hay más citas asignadas';
+          this.genericAlert('Servicio finalizado', 'El servicio ha terminado satisfactoriamente. ' + mensaje);
+
+          this.genericAlert('Servicio finalizado', 'Valor servicios: ' + total);
+        });
+      });
+    });
   }
 
   configActionSheet(title: string, filtros) {
