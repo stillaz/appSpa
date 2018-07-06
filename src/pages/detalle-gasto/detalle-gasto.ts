@@ -208,9 +208,9 @@ export class DetalleGastoPage {
                   batch.set(totalesGastoDiaDoc.ref, totalGasto);
                 }
 
-                let gastosespecieDoc = totalesGastoDiaDoc.collection(this.gasto.especie.descripcion).doc(this.gasto.id);
+                let gastosdetalleDoc = totalesGastoDiaDoc.collection('gastos').doc(this.gasto.id);
 
-                batch.delete(gastosespecieDoc.ref);
+                batch.delete(gastosdetalleDoc.ref);
 
                 batch.commit().then(() => {
                   if (this.nuevo) {
@@ -224,6 +224,10 @@ export class DetalleGastoPage {
         }
       ]
     }).present();
+  }
+
+  cerrar(){
+    this.viewCtrl.dismiss();
   }
 
 }

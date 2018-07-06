@@ -112,12 +112,14 @@ export class GastoPage {
         gastosDiariosCollection.ref.get().then(gastosdiarios => {
           gastosdiarios.forEach(gasto => {
             gasto.ref.collection('gastos').get().then(gastos => {
-              let fechaData = moment(gasto.get('fecha').toDate()).locale('es').format('dddd, DD');
-              let detalle = [];
-              gastos.forEach(dato => {
-                detalle.push(dato.data());
-              })
-              this.gastos.push({ grupo: fechaData, gastos: detalle });
+              if (!gastos.empty) {
+                let fechaData = moment(gasto.get('fecha').toDate()).locale('es').format('dddd, DD');
+                let detalle = [];
+                gastos.forEach(dato => {
+                  detalle.push(dato.data());
+                })
+                this.gastos.push({ grupo: fechaData, gastos: detalle });
+              }
             });
           });
         });
@@ -141,10 +143,10 @@ export class GastoPage {
     this.updateGastos(seleccionado.fecha);
   }
 
-  ver(gasto: GastoOptions){
+  ver(gasto: GastoOptions) {
     this.modalCtrl.create('DetalleGastoPage', {
       gasto: gasto
-    });
+    }).present();
   }
 
 }

@@ -54,7 +54,7 @@
         </ion-label>
       </ion-item-divider>
 
-      <button ion-item *ngFor="let datosGasto of gasto.gastos" detail-push>
+      <ion-item *ngFor="let datosGasto of gasto.gastos" (click)="ver(datosGasto)">
         <ion-icon name="datosGasto.especie.icon"> </ion-icon>
 
         <ion-row>
@@ -71,7 +71,7 @@
             <p>{{ datosGasto.fecha.toDate() | date: 'hh:mm a' }}</p>
           </ion-col>
         </ion-row>
-      </button>
+      </ion-item>
     </ion-item-group>
   </ion-list>
 
