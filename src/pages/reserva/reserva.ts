@@ -176,7 +176,7 @@ export class ReservaPage {
         idcarrito: this.idcarrito
       });
       this.ultimoHorario = disponibilidadBloquear[disponibilidadBloquear.length - 1].fechaFin;
-      this.totalServicios += servicio.valor;
+      this.totalServicios += Number(servicio.valor);
     } else if (contador === 0) {
       this.genericAlert('Error al reservar', 'La cita se cruza con ' + disponibilidadEncontrada.cliente.nombre + ', la reserva ha sido cancelada');
     } else {
@@ -209,7 +209,7 @@ export class ReservaPage {
               });
               this.cantidad++;
               this.ultimoHorario = disponibilidadBloquear[disponibilidadBloquear.length - 1].fechaFin;
-              this.totalServicios += servicio.valor;
+              this.totalServicios += Number(servicio.valor);
             }
           }
         ],
@@ -236,28 +236,39 @@ export class ReservaPage {
     servicio.servicio.activo = true;
   }
 
-  guardar() {
-    let fecha: Date = this.disponibilidadSeleccionada.fechaInicio;
-    this.carrito.forEach(reservaNueva => {
-      let reservaDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('disponibilidades').doc(fecha.getTime().toString());
-      let pendienteDoc = this.usuarioDoc.collection('pendientes').doc(reservaNueva.fechaInicio.getTime().toString());
-      reservaDoc.ref.get().then(data => {
-        if (!data.exists) {
-          data.ref.set(reservaNueva);
-          pendienteDoc.ref.get().then(pendiente => {
-            pendiente.ref.set(reservaNueva);
-          });
-        } else {
-          return Promise.reject('La disponibilidad ha sido reservada');
-        }
-      }).catch(err => {
-        return Promise.reject(err);
+  validarReservaDisponible(): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.carrito.forEach(reservaNueva => {
+        let reservaDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('disponibilidades').doc(reservaNueva.fechaInicio.getTime().toString());
+        let read = reservaDoc.valueChanges().subscribe(data => {
+          if (data) {
+            reject('La disponibilidad ' + moment(reservaNueva.fechaInicio).locale('es').format('h:mm a') + ' fue reservada.');
+          }
+        });
+        read.unsubscribe();
+        resolve('ok');
       });
     });
+  }
 
-    this.genericAlert('Reserva registrada', 'Se ha registrado la reserva');
-    this.navCtrl.pop();
+  guardar() {
+    let batch = this.afs.firestore.batch();
+    this.validarReservaDisponible().then(() => {
+      this.carrito.forEach(reservaNueva => {
+        let reservaDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('disponibilidades').doc(reservaNueva.fechaInicio.getTime().toString());
+        let pendienteDoc = this.usuarioDoc.collection('pendientes').doc(reservaNueva.fechaInicio.getTime().toString());
+        batch.set(reservaDoc.ref, reservaNueva);
+        batch.set(pendienteDoc.ref, reservaNueva);
+      });
 
+      batch.commit().then(() => {
+        this.genericAlert('Reserva registrada', 'Se ha registrado la reserva');
+        this.navCtrl.pop();
+      });
+    }).catch(err => {
+      this.genericAlert('Error reserva', err);
+      this.navCtrl.pop();
+    });
   }
 
   ver(event) {

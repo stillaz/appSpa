@@ -51,9 +51,9 @@ export class TabsPage {
       this.navCtrl.setRoot('LogueoPage');
     } else {
       let usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + user.uid);
-      usuarioDoc.valueChanges().subscribe(data => {
+      usuarioDoc.ref.get().then(data => {
         if (data) {
-          let administrador = data.perfiles.some(perfil => perfil.nombre === 'Administrador');
+          let administrador = data.get('perfiles').some(perfil => perfil.nombre === 'Administrador');
           if (administrador) {
             this.tabs.splice(2, 1, { root: GastoPage, title: 'Gastos', icon: 'logo-usd', badge: 0 });
           }

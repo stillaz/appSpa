@@ -262,23 +262,22 @@ export class AgendaPage {
         {
           text: 'OK',
           handler: () => {
+            let batch = this.afs.firestore.batch();
             let canceladoDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('cancelados').doc(new Date().getTime().toString());
             reserva.estado = DataProvider.ESTADOS_RESERVA.CANCELADO;
-            canceladoDoc.set(reserva);
-            this.disponibilidadDoc.collection('disponibilidades').doc(reserva.fechaInicio.getTime().toString()).delete();
-            this.usuarioDoc.collection('pendientes').doc(reserva.fechaInicio.getTime().toString()).delete();
+            batch.set(canceladoDoc.ref, reserva);
 
-            let otrasreservas = this.reservaCtrl.getOtrasReservasByIdServicioAndNotFinalizado(this.horario, reserva);
+            let disponibilidadCancelarDoc: AngularFirestoreDocument = this.disponibilidadDoc.collection('disponibilidades').doc(reserva.fechaInicio.getTime().toString());
 
-            otrasreservas.forEach(otrareserva => {
-              let canceladoDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('cancelados').doc(new Date().getTime().toString());
-              reserva.estado = DataProvider.ESTADOS_RESERVA.CANCELADO;
-              canceladoDoc.set(otrareserva);
-              this.disponibilidadDoc.collection('disponibilidades').doc(reserva.fechaInicio.getTime().toString()).delete();
-              this.usuarioDoc.collection('pendientes').doc(reserva.fechaInicio.getTime().toString()).delete();
+            batch.delete(disponibilidadCancelarDoc.ref);
+
+            let pendienteDoc: AngularFirestoreDocument = this.usuarioDoc.collection('pendientes').doc(reserva.fechaInicio.getTime().toString());
+
+            batch.delete(pendienteDoc.ref);
+
+            batch.commit().then(() => {
+              this.genericAlert('Cita cancelada', 'La cita con ' + nombreCliente + ' ha sido cancelada');
             });
-
-            this.genericAlert('Cita cancelada', 'La cita con ' + nombreCliente + ' ha sido cancelada');
           }
         }
       ],
@@ -318,13 +317,13 @@ export class AgendaPage {
 
     let totalesServiciosDoc = this.afs.doc('totalesservicios/' + mesServicio);
 
-    totalesServiciosDoc.ref.get().then((data) => {
+    totalesServiciosDoc.ref.get().then(() => {
       batch.set(totalesServiciosDoc.ref, { ultimaactualizacion: new Date() });
 
       let totalesServiciosUsuarioDoc = totalesServiciosDoc.collection('totalesServiciosUsuarios').doc<TotalesServiciosOptions>(this.usuario.id);
 
       totalesServiciosUsuarioDoc.ref.get().then(datos => {
-        if (data.exists) {
+        if (datos.exists) {
           let totalActual = datos.get('totalServicios');
           let cantidadActual = datos.get('cantidadServicios');
           batch.update(totalesServiciosUsuarioDoc.ref, { totalServicios: Number(totalActual) + Number(reserva.servicio.valor), cantidadServicios: Number(cantidadActual) + 1, fecha: new Date() });
@@ -350,7 +349,7 @@ export class AgendaPage {
           this.genericAlert('Servicio finalizado', 'El servicio ha terminado satisfactoriamente. ' + mensaje);
 
           this.genericAlert('Servicio finalizado', 'Valor servicios: ' + total);
-        });
+        }).catch(err => console.log(err));
       });
     });
   }

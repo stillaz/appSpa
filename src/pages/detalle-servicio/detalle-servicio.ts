@@ -58,7 +58,7 @@ export class DetalleServicioPage {
     private filePath: FilePath,
     private afa: AngularFireAuth
   ) {
-    this.mobile = !plt.is('core');
+    this.mobile = plt.is('android');
     this.servicio = this.navParams.get('servicio');
     this.updateUsuario();
     this.updateServicio();
