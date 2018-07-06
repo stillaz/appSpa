@@ -1,5 +1,5 @@
 {
-  "name": "disbarber_o",
+  "name": "disbarber",
   "version": "0.0.1",
   "author": "DIS",
   "homepage": "http://ionicframework.com/",
@@ -60,7 +60,7 @@
     "@ionic/app-scripts": "3.1.9",
     "typescript": "~2.6.2"
   },
-  "description": "An Ionic project",
+  "description": "App para barbería",
   "cordova": {
     "plugins": {
       "cordova-plugin-datepicker": {},
