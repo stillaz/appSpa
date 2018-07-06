@@ -1,0 +1,44 @@
+<ion-content padding>
+  <ion-card>
+    <ion-card-content>
+      <form [formGroup]="todo">
+        <ion-item>
+          <ion-label floating>Valor:</ion-label>
+          <ion-input type="number" formControlName="valor" maxlength="8"></ion-input>
+        </ion-item>
+
+        <ion-item color="danger" *ngIf="todo.controls.valor.errors && todo.controls.valor.touched">
+          <p>El valor no es válido</p>
+        </ion-item>
+
+        <ion-item>
+          <ion-label floating>Descripción:</ion-label>
+          <ion-textarea formControlName="descripcion"></ion-textarea>
+        </ion-item>
+
+        <ion-item color="danger" *ngIf="todo.controls.descripcion.errors && todo.controls.descripcion.touched">
+          <p>La descripción no es válida</p>
+        </ion-item>
+
+        <ion-item>
+          <ion-label floating>Especie:</ion-label>
+          <ion-select formControlName="especie" [compareWith]="compareFn">
+            <ion-option *ngFor="let especie of especies" [value]="especie">{{especie.descripcion}}</ion-option>
+          </ion-select>
+        </ion-item>
+
+        <ion-item color="danger" *ngIf="todo.controls.especie.errors && todo.controls.especie.touched">
+          <p>Debe seleccionar una especie</p>
+        </ion-item>
+
+        <button ion-button type="submit" icon-right block color="secondary" [disabled]="todo.invalid" (click)="guardar()">Guardar
+          <ion-icon name="checkmark"></ion-icon>
+        </button>
+
+        <button *ngIf="!nuevo" ion-button icon-right block color="danger" (click)="eliminar()">Eliminar
+          <ion-icon name="trash"></ion-icon>
+        </button>
+      </form>
+    </ion-card-content>
+  </ion-card>
+</ion-content>

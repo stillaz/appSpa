@@ -1,11 +1,11 @@
 import { Component } from '@angular/core';
-import { IonicPage, NavController, NavParams, AlertController } from 'ionic-angular';
+import { IonicPage, NavController, NavParams, AlertController, ModalController } from 'ionic-angular';
 import moment from 'moment';
 import { FechaOptions } from '../../interfaces/fecha-options';
 import { AngularFireAuth } from 'angularfire2/auth';
 import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection } from 'angularfire2/firestore';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
-import { TotalesServiciosOptions } from '../../interfaces/totales-servicios-options';
+import { GastoOptions } from '../../interfaces/gasto-options';
 
 /**
  * Generated class for the ReportesPage page.
@@ -16,10 +16,10 @@ import { TotalesServiciosOptions } from '../../interfaces/totales-servicios-opti
 
 @IonicPage()
 @Component({
-  selector: 'page-reportes',
-  templateUrl: 'reportes.html',
+  selector: 'page-gasto',
+  templateUrl: 'gasto.html',
 })
-export class ReportesPage {
+export class GastoPage {
 
   mesSeleccionado: FechaOptions;
   adelante: boolean = false;
@@ -29,22 +29,26 @@ export class ReportesPage {
   usuarioLogueado: UsuarioOptions;
   usuario = {} as UsuarioOptions;
   administrador: boolean;
-  totalesUsuarios: TotalesServiciosOptions[];
+  gastos: any[];
   total: number;
-  cantidad: number;
   read;
   modo: string = 'finalizados';
-  totalesDoc: AngularFirestoreDocument;
 
   constructor(
     public navCtrl: NavController,
     public navParams: NavParams,
     private afa: AngularFireAuth,
     private afs: AngularFirestore,
-    public alertCtrl: AlertController
+    public alertCtrl: AlertController,
+    public modalCtrl: ModalController
   ) {
+    let idususario = this.navParams.get('idusuario');
     this.updateFechas(new Date());
-    this.updateUsuario();
+    this.updateUsuario(idususario);
+  }
+
+  crear() {
+    this.modalCtrl.create('DetalleGastoPage').present();
   }
 
   genericAlert(titulo: string, mensaje: string) {
@@ -57,21 +61,23 @@ export class ReportesPage {
     mensajeAlert.present();
   }
 
-  updateUsuario() {
+  updateUsuario(idusuario: string) {
     let user = this.afa.auth.currentUser;
     if (!user) {
       this.navCtrl.setRoot('LogueoPage');
     } else {
-      this.usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + user.uid);
-      this.usuarioDoc.valueChanges().subscribe(data => {
+      let usuarioLogueadoDoc = this.afs.doc<UsuarioOptions>('usuarios/' + user.uid);
+      this.usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + idusuario);
+      usuarioLogueadoDoc.valueChanges().subscribe(data => {
         if (data) {
           this.usuarioLogueado = data;
-          this.usuario = data;
           this.administrador = this.usuarioLogueado.perfiles.some(perfil => perfil.nombre === 'Administrador');
-          this.updateTotales(this.mesSeleccionado.fecha);
+          this.usuarioDoc.valueChanges().subscribe(datosusuario => {
+            this.usuario = datosusuario;
+            this.updateGastos(this.mesSeleccionado.fecha);
+          });
         } else {
           this.genericAlert('Error usuario', 'Usuario no encontrado');
-          this.navCtrl.setRoot('LogueoPage');
         }
       });
     }
@@ -93,19 +99,28 @@ export class ReportesPage {
     }
   }
 
-  updateTotales(fecha: Date) {
-    let fechaInicio = moment(fecha).startOf('month').toDate();
-    this.totalesDoc = this.afs.doc('totalesservicios/' + fechaInicio.getTime().toString());
-    let totalesServiciosUsuariosCollection: AngularFirestoreCollection<TotalesServiciosOptions> = this.totalesDoc.collection('totalesServiciosUsuarios');
-    this.read = totalesServiciosUsuariosCollection.valueChanges().subscribe(data => {
-      this.totalesUsuarios = [];
-      this.total = 0;
-      this.cantidad = 0;
-      this.totalesUsuarios = data;
+  updateGastos(fecha: Date) {
+    let fechaInicio = moment(fecha).startOf('month').toDate().getTime().toString();
 
-      if(data.length > 0){
-        this.total += this.totalesUsuarios.map(totalUsuario => Number(totalUsuario.totalServicios)).reduce((a, b) => a + b);
-        this.cantidad += this.totalesUsuarios.map(totalUsuario => Number(totalUsuario.cantidadServicios)).reduce((a, b) => a + b);
+    let gastosMesDoc: AngularFirestoreDocument = this.afs.doc('gastos/' + fechaInicio);
+    this.read = gastosMesDoc.valueChanges().subscribe(gastosMes => {
+      this.total = 0;
+      this.gastos = [];
+      if (gastosMes) {
+        this.total = gastosMes.totalGastos;
+        let gastosDiariosCollection: AngularFirestoreCollection = gastosMesDoc.collection('totalesgastos');
+        gastosDiariosCollection.ref.get().then(gastosdiarios => {
+          gastosdiarios.forEach(gasto => {
+            gasto.ref.collection('gastos').get().then(gastos => {
+              let fechaData = moment(gasto.get('fecha').toDate()).locale('es').format('dddd, DD');
+              let detalle = [];
+              gastos.forEach(dato => {
+                detalle.push(dato.data());
+              })
+              this.gastos.push({ grupo: fechaData, gastos: detalle });
+            });
+          });
+        });
       }
     });
   }
@@ -116,18 +131,20 @@ export class ReportesPage {
     this.updateFechas(fechaNueva);
     this.adelante = moment(new Date()).diff(this.mesSeleccionado.fecha, "month") !== 0;
     this.atras = moment(this.mesSeleccionado.fecha).get("month") !== 1;
-    this.updateTotales(fechaNueva);
+    this.updateGastos(fechaNueva);
   }
 
   updateSeleccionado(seleccionado: FechaOptions) {
     this.read.unsubscribe();
     this.adelante = moment(new Date()).diff(seleccionado.fecha, "month") !== 0;
     this.atras = moment(seleccionado.fecha).get("month") !== 1;
-    this.updateTotales(seleccionado.fecha);
+    this.updateGastos(seleccionado.fecha);
   }
 
-  ver(idusuario: string){
-    this.navCtrl.push('DetalleReportePage', { idusuario: idusuario});
+  ver(gasto: GastoOptions){
+    this.modalCtrl.create('DetalleGastoPage', {
+      gasto: gasto
+    });
   }
 
 }

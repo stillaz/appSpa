@@ -6,8 +6,8 @@
 -->
 <ion-header>
 
-  <ion-navbar color="primary">
-    <ion-title>REPORTES</ion-title>
+  <ion-navbar color="secondary">
+    <ion-title>GASTOS</ion-title>
 
     <ion-grid>
       <ion-row style="width: 70%; margin: auto;">
@@ -41,40 +41,43 @@
 <ion-content padding>
   <ion-list>
     <ion-row>
-      <ion-col>
-        <ion-item style="text-align: center">
-          <p>Total servicios</p>
-          <h2 style="color: #32db64">{{ total | currency:'USD':'symbol':'4.0' }}</h2>
-        </ion-item>
-      </ion-col>
-
-      <ion-col>
-        <ion-item style="text-align: center">
-          <p>Total reservas</p>
-          <h2 style="color: #32db64">{{cantidad}}</h2>
-        </ion-item>
-      </ion-col>
+      <ion-item style="text-align: center">
+        <p>Total gastos</p>
+        <h2 style="color: #32db64">{{ total | currency:'USD':'symbol':'4.0' }}</h2>
+      </ion-item>
     </ion-row>
 
-    <ion-item *ngFor="let totalesUsuario of totalesUsuarios" (tap)="ver(totalesUsuario.idusuario)">
-      <ion-avatar item-start *ngIf="totalesUsuario.imagenusuario">
-        <img [src]="totalesUsuario.imagenusuario">
-      </ion-avatar>
+    <ion-item-group *ngFor="let gasto of gastos">
+      <ion-item-divider>
+        <ion-label style="color: black">
+          <strong>{{gasto.grupo}}</strong>
+        </ion-label>
+      </ion-item-divider>
 
-      <ion-row>
-        <ion-col style="text-align: left">
-          <h2>{{totalesUsuario.usuario}}</h2>
-        </ion-col>
-        <ion-col style="text-align: right; color: #f53d3d">
-          <h2>{{totalesUsuario.totalServicios | currency:'USD':'symbol':'4.0'}}</h2>
-        </ion-col>
-      </ion-row>
+      <button ion-item *ngFor="let datosGasto of gasto.gastos" detail-push>
+        <ion-icon name="datosGasto.especie.icon"> </ion-icon>
 
-      <ion-row>
-        <ion-col style="text-align: right">
-          <p>Servicios: {{totalesUsuario.cantidadServicios}}</p>
-        </ion-col>
-      </ion-row>
-    </ion-item>
+        <ion-row>
+          <ion-col style="text-align: left">
+            <h2>{{datosGasto.descripcion}}</h2>
+          </ion-col>
+          <ion-col style="text-align: right; color: #f53d3d">
+            <h2>{{datosGasto.valor | currency:'USD':'symbol':'4.0'}}</h2>
+          </ion-col>
+        </ion-row>
+
+        <ion-row>
+          <ion-col style="text-align: right">
+            <p>{{ datosGasto.fecha.toDate() | date: 'hh:mm a' }}</p>
+          </ion-col>
+        </ion-row>
+      </button>
+    </ion-item-group>
   </ion-list>
+
+  <ion-fab right bottom>
+    <button ion-fab (tap)="crear()">
+      <ion-icon name="add"></ion-icon>
+    </button>
+  </ion-fab>
 </ion-content>

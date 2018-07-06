@@ -24,6 +24,7 @@ import { FileChooser } from '@ionic-native/file-chooser';
 import { FilePath } from '@ionic-native/file-path';
 import { AngularFireStorageModule } from 'angularfire2/storage';
 import { SearchPipe } from '../pipes/search/search';
+import { GastoPage } from '../pages/gasto/gasto';
 
 
 @NgModule({
@@ -31,6 +32,7 @@ import { SearchPipe } from '../pipes/search/search';
     MyApp,
     AgendaPage,
     ConfiguracionPage,
+    GastoPage,
     ReportesPage,
     TabsPage,
     SearchPipe
@@ -49,6 +51,7 @@ import { SearchPipe } from '../pipes/search/search';
     MyApp,
     AgendaPage,
     ConfiguracionPage,
+    GastoPage,
     ReportesPage,
     TabsPage
   ],
