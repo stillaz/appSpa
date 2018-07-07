@@ -46,22 +46,26 @@ export class TabsPage {
   }
 
   updateUsuario() {
+    let entrar = true;
     let user = this.afa.auth.currentUser;
     if (!user) {
       this.navCtrl.setRoot('LogueoPage');
     } else {
       let usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + user.uid);
-      usuarioDoc.ref.get().then(data => {
-        if (data) {
-          let administrador = data.get('perfiles').some(perfil => perfil.nombre === 'Administrador');
-          if (administrador) {
-            this.tabs.splice(2, 1, { root: GastoPage, title: 'Gastos', icon: 'logo-usd', badge: 0 });
+      usuarioDoc.valueChanges().subscribe(data => {
+        if (entrar) {
+          if (data) {
+            let administrador = data.perfiles.some(perfil => perfil.nombre === 'Administrador');
+            if (administrador) {
+              this.tabs.splice(2, 1, { root: GastoPage, title: 'Gastos', icon: 'logo-usd', badge: 0 });
+              entrar = false;
+            }
+          } else {
+            this.genericAlert('Error usuario', 'Usuario no encontrado');
+            this.navCtrl.setRoot('LogueoPage');
           }
-        } else {
-          this.genericAlert('Error usuario', 'Usuario no encontrado');
-          this.navCtrl.setRoot('LogueoPage');
+          this.tabs.push({ root: ConfiguracionPage, title: 'Configuración', icon: 'options', badge: 0 });
         }
-        this.tabs.push({ root: ConfiguracionPage, title: 'Configuración', icon: 'options', badge: 0 });
       });
     }
   }

@@ -349,7 +349,7 @@ export class AgendaPage {
           this.genericAlert('Servicio finalizado', 'El servicio ha terminado satisfactoriamente. ' + mensaje);
 
           this.genericAlert('Servicio finalizado', 'Valor servicios: ' + total);
-        }).catch(err => console.log(err));
+        });
       });
     });
   }

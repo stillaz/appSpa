@@ -3,7 +3,7 @@ import { IonicPage, NavController, NavParams, AlertController } from 'ionic-angu
 import { LoginOptions } from '../../interfaces/login-options';
 import { AngularFireAuth } from 'angularfire2/auth';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
-import { AngularFirestoreDocument } from 'angularfire2/firestore';
+import { AngularFirestoreDocument, AngularFirestore } from 'angularfire2/firestore';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
 import { TabsPage } from '../tabs/tabs';
 
@@ -31,7 +31,8 @@ export class LogueoPage {
     public navParams: NavParams,
     private afa: AngularFireAuth,
     private formBuilder: FormBuilder,
-    public alertCtrl: AlertController
+    public alertCtrl: AlertController,
+    private afs: AngularFirestore
   ) {
     this.form();
   }
@@ -46,8 +47,15 @@ export class LogueoPage {
   async logueo() {
     this.login = this.todo.value;
     let result = this.afa.auth.signInWithEmailAndPassword(this.login.username, this.login.password);
-    result.then(() => {
-      this.navCtrl.setRoot(TabsPage);
+    result.then(data => {
+      const idusuario = data.user.uid;
+      const token = data.user.refreshToken;
+
+      const usuarioDoc = this.afs.doc('usuarios/' + idusuario);
+
+      usuarioDoc.update({ fechaingreso: new Date(), acceso: token }).then(() => {
+        this.navCtrl.setRoot(TabsPage);
+      });
     }).catch(e => {
       let mensajeError;
       switch (e.code) {
