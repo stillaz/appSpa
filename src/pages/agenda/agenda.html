@@ -7,9 +7,6 @@
 <ion-header>
 
   <ion-navbar color="danger">
-    <button ion-button menuToggle>
-      <ion-icon name="menu"></ion-icon>
-    </button>
     <ion-title *ngIf="administrador">AGENDA</ion-title>
     <ion-title *ngIf="!administrador">AGENDA {{ usuario.nombre | uppercase }}</ion-title>
 

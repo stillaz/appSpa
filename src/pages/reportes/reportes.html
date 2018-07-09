@@ -7,26 +7,29 @@
 <ion-header>
 
   <ion-navbar color="primary">
+    <button ion-button menuToggle icon-only>
+      <ion-icon name='menu'></ion-icon>
+    </button>
     <ion-title>REPORTES</ion-title>
 
     <ion-grid>
       <ion-row style="width: 70%; margin: auto;">
         <ion-col col-1>
           <ion-buttons start>
-            <button ion-button icon-left (click)="updateFecha(-1)" *ngIf="atras">
+            <button ion-button icon-left (click)="updateFechaMes(-1)" *ngIf="atras">
               <ion-icon name="arrow-dropleft"></ion-icon>
             </button>
           </ion-buttons>
         </ion-col>
         <ion-col col-10>
           <ion-select style="width: 100%; max-width: 100%; text-align: center; color: #ffffff; font-weight: bolder;" [(ngModel)]="mesSeleccionado"
-            #C (ionChange)="updateSeleccionado(C.value)">
+            #C (ionChange)="updateSeleccionadoMes(C.value)">
             <ion-option *ngFor="let fecha of fechas" [value]="fecha">{{fecha.texto}}</ion-option>
           </ion-select>
         </ion-col>
         <ion-col col-1>
           <ion-buttons end>
-            <button ion-button icon-right (click)="updateFecha(1)" *ngIf="adelante">
+            <button ion-button icon-right (click)="updateFechaMes(1)" *ngIf="adelante">
               <ion-icon name="arrow-dropright"></ion-icon>
             </button>
           </ion-buttons>
@@ -37,6 +40,21 @@
 
 </ion-header>
 
+<ion-menu [content]="contenta">
+  <ion-header>
+    <ion-toolbar>
+      <ion-title>Filtrar por</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <ion-content>
+    <ion-list>
+      <button menuClose ion-item *ngFor="let filtro of filtros" #item (click)="filtrar(filtro)">
+        {{filtro}}
+      </button>
+    </ion-list>
+  </ion-content>
+</ion-menu>
 
 <ion-content padding>
   <ion-list>
@@ -78,3 +96,5 @@
     </ion-item>
   </ion-list>
 </ion-content>
+
+<ion-nav #contenta></ion-nav>

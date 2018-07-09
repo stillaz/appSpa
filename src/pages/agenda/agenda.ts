@@ -327,38 +327,51 @@ export class AgendaPage {
 
     let totalesServiciosDoc = this.afs.doc('totalesservicios/' + mesServicio);
 
-    totalesServiciosDoc.ref.get().then(() => {
-      batch.set(totalesServiciosDoc.ref, { ultimaactualizacion: new Date() });
+    this.disponibilidadDoc.ref.get().then(datosDiarios => {
+      console.log('entra');
+      if (datosDiarios.exists) {
+        let totalDiarioActual = datosDiarios.get('totalServicios');
+        let cantidadDiarioActual = datosDiarios.get('cantidadServicios');
+        console.log('total ' + totalDiarioActual);
+        console.log('cantidad ' + cantidadDiarioActual);
+        let totalDiario = totalDiarioActual ? Number(totalDiarioActual) + Number(reserva.servicio.valor) : reserva.servicio.valor;
+        let cantidadDiario = cantidadDiarioActual ? Number(cantidadDiarioActual) + 1 : 1;
+        batch.update(this.disponibilidadDoc.ref, { totalServicios: totalDiario, cantidadServicios: cantidadDiario, fecha: new Date() });
+      }
 
-      let totalesServiciosUsuarioDoc = totalesServiciosDoc.collection('totalesServiciosUsuarios').doc<TotalesServiciosOptions>(this.usuario.id);
+      totalesServiciosDoc.ref.get().then(() => {
+        batch.set(totalesServiciosDoc.ref, { ultimaactualizacion: new Date() });
 
-      totalesServiciosUsuarioDoc.ref.get().then(datos => {
-        if (datos.exists) {
-          let totalActual = datos.get('totalServicios');
-          let cantidadActual = datos.get('cantidadServicios');
-          batch.update(totalesServiciosUsuarioDoc.ref, { totalServicios: Number(totalActual) + Number(reserva.servicio.valor), cantidadServicios: Number(cantidadActual) + 1, fecha: new Date() });
-        } else {
-          let totalServicioUsuario: TotalesServiciosOptions = {
-            idusuario: this.usuario.id,
-            usuario: this.usuario.nombre,
-            imagenusuario: this.usuario.imagen,
-            totalServicios: reserva.servicio.valor,
-            cantidadServicios: 1,
-            fecha: new Date()
+        let totalesServiciosUsuarioDoc = totalesServiciosDoc.collection('totalesServiciosUsuarios').doc<TotalesServiciosOptions>(this.usuario.id);
+
+        totalesServiciosUsuarioDoc.ref.get().then(datos => {
+          if (datos.exists) {
+            let totalActual = datos.get('totalServicios');
+            let cantidadActual = datos.get('cantidadServicios');
+            batch.update(totalesServiciosUsuarioDoc.ref, { totalServicios: Number(totalActual) + Number(reserva.servicio.valor), cantidadServicios: Number(cantidadActual) + 1, fecha: new Date() });
+          } else {
+            let totalServicioUsuario: TotalesServiciosOptions = {
+              idusuario: this.usuario.id,
+              usuario: this.usuario.nombre,
+              imagenusuario: this.usuario.imagen,
+              totalServicios: reserva.servicio.valor,
+              cantidadServicios: 1,
+              fecha: new Date()
+            }
+
+            batch.set(totalesServiciosUsuarioDoc.ref, totalServicioUsuario);
           }
 
-          batch.set(totalesServiciosUsuarioDoc.ref, totalServicioUsuario);
-        }
+          batch.commit().then(() => {
+            let serviciosFinalizados = this.reservaCtrl.getReservasByIdServicioAndFinalizado(this.horario, reserva);
 
-        batch.commit().then(() => {
-          let serviciosFinalizados = this.reservaCtrl.getReservasByIdServicioAndFinalizado(this.horario, reserva);
+            let total = serviciosFinalizados && serviciosFinalizados.length > 0 ? serviciosFinalizados.map(a => a ? a.servicio.valor : 0).reduce((a, b) => a + b) : reserva.servicio.valor;
 
-          let total = serviciosFinalizados && serviciosFinalizados.length > 0 ? serviciosFinalizados.map(a => a ? a.servicio.valor : 0).reduce((a, b) => a + b) : reserva.servicio.valor;
+            let mensaje = tiempoSiguiente ? 'El próximo servicio empieza en: ' + tiempoSiguiente + ' minutos' : 'No hay más citas asignadas';
+            this.genericAlert('Servicio finalizado', 'El servicio ha terminado satisfactoriamente. ' + mensaje);
 
-          let mensaje = tiempoSiguiente ? 'El próximo servicio empieza en: ' + tiempoSiguiente + ' minutos' : 'No hay más citas asignadas';
-          this.genericAlert('Servicio finalizado', 'El servicio ha terminado satisfactoriamente. ' + mensaje);
-
-          this.genericAlert('Servicio finalizado', 'Valor servicios: ' + total);
+            this.genericAlert('Servicio finalizado', 'Valor servicios: ' + total);
+          });
         });
       });
     });

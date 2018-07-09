@@ -7,3 +7,4 @@ export const LOCALE_STRINGS = {
 export enum EVENTOS { ACTUAL = 'actual', OTRO = 'otro' };
 
 export enum ESTADOS_RESERVA { DISPONIBLE = 'Disponible', RESERVADO = 'Reservado', FINALIZADO = 'Finalizado', EJECUTANDO = 'Ejecutando', CANCELADO = 'Cancelado' };
+export enum FILTROS_FECHA { DIARIO = 'days', SEMANAL = 'weeks', MENSUAL = 'months', ANUAL = 'years' };
