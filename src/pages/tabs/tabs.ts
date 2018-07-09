@@ -64,7 +64,6 @@ export class TabsPage {
       this.navCtrl.setRoot('LogueoPage');
     } else {
       this.updateTabs(user.uid).then(data => {
-        console.log('hola' + data);
         if (data) {
           this.tabs.push({ root: GastoPage, title: 'Gastos', icon: 'logo-usd', badge: 0 });
         }
