@@ -45,27 +45,33 @@ export class TabsPage {
     alert.present();
   }
 
+  updateTabs(id: string) {
+    return new Promise<boolean>((resolve, reject) => {
+      let usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + id);
+      usuarioDoc.valueChanges().subscribe(data => {
+        if (data) {
+          resolve(data.perfiles.some(perfil => perfil.nombre === 'Administrador'));
+        } else {
+          reject('Usuario no encontrado');
+        }
+      });
+    });
+  }
+
   updateUsuario() {
-    let entrar = true;
     let user = this.afa.auth.currentUser;
     if (!user) {
       this.navCtrl.setRoot('LogueoPage');
     } else {
-      let usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + user.uid);
-      usuarioDoc.valueChanges().subscribe(data => {
-        if (entrar) {
-          if (data) {
-            let administrador = data.perfiles.some(perfil => perfil.nombre === 'Administrador');
-            if (administrador) {
-              this.tabs.splice(2, 1, { root: GastoPage, title: 'Gastos', icon: 'logo-usd', badge: 0 });
-              entrar = false;
-            }
-          } else {
-            this.genericAlert('Error usuario', 'Usuario no encontrado');
-            this.navCtrl.setRoot('LogueoPage');
-          }
-          this.tabs.push({ root: ConfiguracionPage, title: 'Configuración', icon: 'options', badge: 0 });
+      this.updateTabs(user.uid).then(data => {
+        console.log('hola' + data);
+        if (data) {
+          this.tabs.push({ root: GastoPage, title: 'Gastos', icon: 'logo-usd', badge: 0 });
         }
+        this.tabs.push({ root: ConfiguracionPage, title: 'Configuración', icon: 'options', badge: 0 });
+      }).catch(err => {
+        this.genericAlert('Error usuario', err);
+        this.navCtrl.setRoot('LogueoPage');
       });
     }
   }

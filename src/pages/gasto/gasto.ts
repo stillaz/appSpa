@@ -99,6 +99,23 @@ export class GastoPage {
     }
   }
 
+  updateGasto(gastosdiarios) {
+    return new Promise((resolve, reject) => {
+      gastosdiarios.forEach(gasto => {
+        gasto.ref.collection('gastos').get().then(gastos => {
+          if (!gastos.empty) {
+            let fechaData = moment(gasto.get('fecha').toDate()).locale('es').format('dddd, DD');
+            let detalle = [];
+            gastos.forEach(dato => {
+              detalle.push(dato.data());
+            })
+            this.gastos.push({ grupo: fechaData, gastos: detalle });
+          }
+        });
+      });
+    });
+  }
+
   updateGastos(fecha: Date) {
     let fechaInicio = moment(fecha).startOf('month').toDate().getTime().toString();
 
@@ -110,18 +127,7 @@ export class GastoPage {
         this.total = gastosMes.totalGastos;
         let gastosDiariosCollection: AngularFirestoreCollection = gastosMesDoc.collection('totalesgastos');
         gastosDiariosCollection.ref.get().then(gastosdiarios => {
-          gastosdiarios.forEach(gasto => {
-            gasto.ref.collection('gastos').get().then(gastos => {
-              if (!gastos.empty) {
-                let fechaData = moment(gasto.get('fecha').toDate()).locale('es').format('dddd, DD');
-                let detalle = [];
-                gastos.forEach(dato => {
-                  detalle.push(dato.data());
-                })
-                this.gastos.push({ grupo: fechaData, gastos: detalle });
-              }
-            });
-          });
+          this.updateGasto(gastosdiarios);
         });
       }
     });

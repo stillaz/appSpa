@@ -97,6 +97,24 @@ export class DetalleReportePage {
     }
   }
 
+  private updateDisponibilidades(disponibilidadesCollection: AngularFirestoreCollection<DisponibilidadOptions>, dia: DisponibilidadOptions) {
+    return new Promise((resolve, reject) => {
+      disponibilidadesCollection.doc(dia.id.toString()).collection<ReservaOptions>(this.modo, ref => ref.orderBy('fechaFin', 'desc')).valueChanges().subscribe(datos => {
+        if (datos && datos.length > 0) {
+          let fechaData = moment(new Date(dia.id)).locale('es').format('dddd, DD');
+          this.disponibilidades.push({ grupo: fechaData, disponibilidades: datos });
+          this.total += datos.map(c => {
+            if (c.servicio && c.servicio.valor) {
+              return Number(c.servicio.valor);
+            }
+            return 0;
+          }).reduce((sum, current) => sum + current);
+          this.cantidad += datos.length;
+        }
+      });
+    });
+  }
+
   updateServicios(fecha: Date) {
     let fechaInicio = moment(fecha).startOf('month').toDate();
     let fechaFin = fecha.getMonth() == new Date().getMonth() ? new Date() : moment(fecha).endOf('month').toDate();
@@ -107,19 +125,7 @@ export class DetalleReportePage {
       this.cantidad = 0;
       if (data) {
         data.forEach(dia => {
-          disponibilidadesCollection.doc(dia.id.toString()).collection<ReservaOptions>(this.modo, ref => ref.orderBy('fechaFin', 'desc')).valueChanges().subscribe(datos => {
-            if (datos && datos.length > 0) {
-              let fechaData = moment(new Date(dia.id)).locale('es').format('dddd, DD');
-              this.disponibilidades.push({ grupo: fechaData, disponibilidades: datos });
-              this.total += datos.map(c => {
-                if (c.servicio && c.servicio.valor) {
-                  return Number(c.servicio.valor);
-                }
-                return 0;
-              }).reduce((sum, current) => sum + current);
-              this.cantidad += datos.length;
-            }
-          });
+          this.updateDisponibilidades(disponibilidadesCollection, dia);
         });
       }
     });

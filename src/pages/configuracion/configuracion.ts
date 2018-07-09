@@ -38,23 +38,32 @@ export class ConfiguracionPage {
     alert.present();
   }
 
+  updateItems(id: string) {
+    return new Promise<boolean>((resolve, reject) => {
+      this.usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + id);
+      this.usuarioDoc.valueChanges().subscribe(data => {
+        if (data) {
+          this.usuario = data;
+          resolve(this.usuario.perfiles.some(perfil => perfil.nombre === 'Administrador'));
+        } else {
+          reject('Usuario no encontrado');
+        }
+      });
+    });
+  }
+
   updateUsuario() {
     let user = this.afa.auth.currentUser;
     if (!user) {
       this.navCtrl.setRoot('LogueoPage');
     } else {
-      this.usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + user.uid);
-      this.usuarioDoc.valueChanges().subscribe(data => {
+      this.updateItems(user.uid).then(data => {
         if (data) {
-          this.usuario = data;
-          let administrador = this.usuario.perfiles.some(perfil => perfil.nombre === 'Administrador');
-          if (administrador) {
-            this.pages.push({ title: 'Servicios', component: 'ServicioPage', icon: 'alert' });
-          }
-        } else {
-          this.genericAlert('Error usuario', 'Usuario no encontrado');
-          this.navCtrl.setRoot('LogueoPage');
+          this.pages.push({ title: 'Servicios', component: 'ServicioPage', icon: 'alert' });
         }
+      }).catch(err => {
+        this.genericAlert('Error usuario', err);
+        this.navCtrl.setRoot('LogueoPage');
       });
     }
   }

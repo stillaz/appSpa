@@ -25,7 +25,6 @@ import { FilePath } from '@ionic-native/file-path';
 import { AngularFireStorageModule } from 'angularfire2/storage';
 import { SearchPipe } from '../pipes/search/search';
 import { GastoPage } from '../pages/gasto/gasto';
-import { FmcProvider } from '../providers/fmc/fmc';
 
 
 @NgModule({
@@ -66,8 +65,7 @@ import { FmcProvider } from '../providers/fmc/fmc';
     FileChooser,
     FilePath,
     Push,
-    ReservaProvider,
-    FmcProvider
+    ReservaProvider
   ]
 })
 export class AppModule { }

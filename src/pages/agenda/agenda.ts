@@ -70,10 +70,13 @@ export class AgendaPage {
     public popoverCtrl: PopoverController
   ) {
     this.usuariosCollection = this.afs.collection<UsuarioOptions>('usuarios');
-    this.updateUsuario();
+    let user = this.afa.auth.currentUser;
+    if (!user) {
+      this.navCtrl.setRoot('LogueoPage');
+    }
+
     this.updateUsuarios();
     this.updatePerfiles();
-    this.updatePendientes();
   }
 
   ionViewDidLoad() {
@@ -81,36 +84,43 @@ export class AgendaPage {
       this.initDate = new Date();
       this.initDate2 = new Date();
       this.updateHorariosInicial();
-      this.updatePendientes();
+      if (this.usuario.id === this.afa.auth.currentUser.uid) {
+        this.updatePendientes();
+      }
     });
   }
 
-  updateUsuario() {
+  ionViewDidEnter() {
     let user = this.afa.auth.currentUser;
     if (!user) {
       this.navCtrl.setRoot('LogueoPage');
     } else {
-      this.usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + user.uid);
-      this.usuarioDoc.valueChanges().subscribe(data => {
-        if (data) {
-          this.usuarioLogueado = data;
-          this.usuario = data;
-          let configuracion = this.usuario.configuracion;
-          if (configuracion) {
-            this.horaInicio = configuracion.horaInicio;
-            this.horaFin = configuracion.horaFin;
-            this.tiempoServicio = configuracion.tiempoDisponibilidad;
-          }
-          this.administrador = this.usuarioLogueado.perfiles.some(perfil => perfil.nombre === 'Administrador');
-          let fecha = moment(this.initDate).startOf('days').toDate().getTime().toString();
-          this.disponibilidadDoc = this.usuarioDoc.collection('disponibilidades').doc(fecha);
-          this.updateHorariosInicial();
-        } else {
-          this.genericAlert('Error usuario', 'Usuario no encontrado');
-          this.navCtrl.setRoot('LogueoPage');
-        }
-      });
+      this.updateUsuario(user.uid);
+      this.updatePendientes();
     }
+  }
+
+  updateUsuario(id: string) {
+    this.usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + id);
+    this.usuarioDoc.valueChanges().subscribe(data => {
+      if (data) {
+        this.usuarioLogueado = data;
+        this.usuario = data;
+        let configuracion = this.usuario.configuracion;
+        if (configuracion) {
+          this.horaInicio = configuracion.horaInicio;
+          this.horaFin = configuracion.horaFin;
+          this.tiempoServicio = configuracion.tiempoDisponibilidad;
+        }
+        this.administrador = this.usuarioLogueado.perfiles.some(perfil => perfil.nombre === 'Administrador');
+        let fecha = moment(this.initDate).startOf('days').toDate().getTime().toString();
+        this.disponibilidadDoc = this.usuarioDoc.collection('disponibilidades').doc(fecha);
+        this.updateHorariosInicial();
+      } else {
+        this.genericAlert('Error usuario', 'Usuario no encontrado');
+        this.navCtrl.setRoot('LogueoPage');
+      }
+    });
   }
 
   updateUsuarios() {
@@ -368,7 +378,7 @@ export class AgendaPage {
       filtros.push({
         text: usuario.nombre + ': ' + usuario.perfiles.map(perfil => perfil.nombre).join(" - "), handler: () => {
           this.usuario = usuario;
-          this.updateHorariosInicial();
+          this.updateUsuario(usuario.id);
         }
       });
     });

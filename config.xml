@@ -90,6 +90,5 @@
     <plugin name="cordova-plugin-camera" spec="^4.0.3" />
     <plugin name="cordova-plugin-filechooser" spec="^1.0.1" />
     <plugin name="cordova-plugin-filepath" spec="^1.3.0" />
-    <engine name="android" spec="^7.1.0" />
-    <plugin name="cordova-plugin-firebase" spec="^1.0.5" />
+    <engine name="android" spec="7.0.0" />
 </widget>
