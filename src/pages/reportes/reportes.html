@@ -12,8 +12,8 @@
     </button>
     <ion-title>REPORTES</ion-title>
 
-    <ion-grid>
-      <ion-row style="width: 70%; margin: auto;">
+    <ion-grid [ngSwitch]="filtroSeleccionado">
+      <ion-row style="width: 70%; margin: auto;" *ngSwitchCase="'MENSUAL'">
         <ion-col col-1>
           <ion-buttons start>
             <button ion-button icon-left (click)="updateFechaMes(-1)" *ngIf="atras">
@@ -33,6 +33,20 @@
               <ion-icon name="arrow-dropright"></ion-icon>
             </button>
           </ion-buttons>
+        </ion-col>
+      </ion-row>
+
+      <ion-row *ngSwitchCase="'DIARIO'">
+        <ion-col>
+          <span float-end ion-datepicker (ionChanged)="updateSeleccionadosDia($event);" [max]="maxDate" [min]="minDate" [value]="initDate" [showMaxAndMin]="true"
+            [disabledDates]="disabledDates" clear class="ScheduleDate" [localeStrings]="constantes.LOCALE_STRINGS">
+            <span>
+              <button ion-button icon-left color="light" clear>
+                <ion-icon name="clipboard"></ion-icon>
+                {{initDate | date}}
+              </button>
+            </span>
+          </span>
         </ion-col>
       </ion-row>
     </ion-grid>

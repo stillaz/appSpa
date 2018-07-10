@@ -328,12 +328,9 @@ export class AgendaPage {
     let totalesServiciosDoc = this.afs.doc('totalesservicios/' + mesServicio);
 
     this.disponibilidadDoc.ref.get().then(datosDiarios => {
-      console.log('entra');
       if (datosDiarios.exists) {
         let totalDiarioActual = datosDiarios.get('totalServicios');
         let cantidadDiarioActual = datosDiarios.get('cantidadServicios');
-        console.log('total ' + totalDiarioActual);
-        console.log('cantidad ' + cantidadDiarioActual);
         let totalDiario = totalDiarioActual ? Number(totalDiarioActual) + Number(reserva.servicio.valor) : reserva.servicio.valor;
         let cantidadDiario = cantidadDiarioActual ? Number(cantidadDiarioActual) + 1 : 1;
         batch.update(this.disponibilidadDoc.ref, { totalServicios: totalDiario, cantidadServicios: cantidadDiario, fecha: new Date() });

@@ -78,9 +78,18 @@ export class ReservaPage {
       dia: fecha.getDate(),
       mes: fecha.getMonth() + 1,
       año: fecha.getFullYear(),
-      id: fecha.getTime()
+      id: fecha.getTime(),
+      cantidadServicios: 0,
+      totalServicios: 0,
+      idusuario: this.usuario.id,
+      imagenusuario: this.usuario.imagen,
+      usuario: this.usuario.nombre
     };
-    this.disponibilidadDoc.set(datos);
+    this.disponibilidadDoc.ref.get().then(datosDisp => {
+      if(!datosDisp.exists){
+        this.disponibilidadDoc.set(datos);
+      }
+    });
   }
 
   ionViewDidLoad() {

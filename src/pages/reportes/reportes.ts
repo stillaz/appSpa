@@ -38,7 +38,11 @@ export class ReportesPage {
   totalesDoc: AngularFirestoreDocument;
   constantes = DataProvider;
   filtros: string[];
-  filtroSeleccionado: string;
+  filtroSeleccionado: string = 'MENSUAL';
+  initDate: Date = new Date();
+  disabledDates: Date[] = [];
+  maxDate: Date = new Date();
+  minDate: Date = moment(new Date()).add(-30, 'days').toDate();
 
 
   constructor(
@@ -146,30 +150,22 @@ export class ReportesPage {
       this.total = 0;
       this.cantidad = 0;
       data.forEach(usuario => {
-        let disponibilidadUsuarioDoc = this.afs.doc('usuarios/' + usuario.id + '/disponibilidades/' + fechaInicio.getTime.toString());
+        let disponibilidadUsuarioDoc = this.afs.doc('usuarios/' + usuario.id + '/disponibilidades/' + fechaInicio.getTime().toString());
         disponibilidadUsuarioDoc.ref.get().then(totalDia => {
-          this.total += totalDia.get('totalServicios');
-          this.cantidad += totalDia.get('cantidadServicios');
-          this.totalesUsuarios.push(totalDia.data());
+          if (totalDia.exists) {
+            let totalesDia = totalDia.get('totalServicios');
+            let cantidadesDia = totalDia.get('cantidadServicios');
+            this.total += totalesDia ? Number(totalesDia) : 0;
+            this.cantidad += cantidadesDia ? Number(cantidadesDia) : 0;
+            this.totalesUsuarios.push(totalDia.data());
+          }
         });
       });
-    });
-    this.totalesDoc = this.afs.doc('totalesservicios/' + fechaInicio.getTime().toString());
-    let totalesServiciosUsuariosCollection: AngularFirestoreCollection<TotalesServiciosOptions> = this.totalesDoc.collection('totalesServiciosUsuarios');
-    this.read = totalesServiciosUsuariosCollection.valueChanges().subscribe(data => {
-      this.totalesUsuarios = [];
-      this.total = 0;
-      this.cantidad = 0;
-      this.totalesUsuarios = data;
-
-      if (data.length > 0) {
-        this.total += this.totalesUsuarios.map(totalUsuario => Number(totalUsuario.totalServicios)).reduce((a, b) => a + b);
-        this.cantidad += this.totalesUsuarios.map(totalUsuario => Number(totalUsuario.cantidadServicios)).reduce((a, b) => a + b);
-      }
     });
   }
 
   updateSeleccionadosDia(fecha: Date) {
+    this.initDate = fecha;
     this.read.unsubscribe();
     this.updateTotalesDia(fecha);
   }
@@ -180,7 +176,7 @@ export class ReportesPage {
 
   filtrar(filtro: string) {
     this.filtroSeleccionado = filtro;
-    switch (filtro) {
+    switch (this.constantes.FILTROS_FECHA[filtro]) {
       case this.constantes.FILTROS_FECHA.DIARIO:
         this.updateSeleccionadosDia(new Date());
         break;
