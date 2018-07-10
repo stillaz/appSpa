@@ -1,6 +1,6 @@
 import moment from 'moment';
 import { Component, ViewChild } from '@angular/core';
-import { AlertController, Content, IonicPage, ItemSliding, NavController, ActionSheetController, PopoverController } from 'ionic-angular';
+import { AlertController, Content, IonicPage, ItemSliding, NavController, ActionSheetController, PopoverController, LoadingController } from 'ionic-angular';
 import * as DataProvider from '../../providers/constants';
 import { ClienteOptions } from '../../interfaces/cliente-options';
 import { ReservaOptions } from '../../interfaces/reserva-options';
@@ -67,7 +67,8 @@ export class AgendaPage {
     private reservaCtrl: ReservaProvider,
     private afs: AngularFirestore,
     private afa: AngularFireAuth,
-    public popoverCtrl: PopoverController
+    public popoverCtrl: PopoverController,
+    public loadingCtrl: LoadingController
   ) {
     this.usuariosCollection = this.afs.collection<UsuarioOptions>('usuarios');
     let user = this.afa.auth.currentUser;
@@ -301,6 +302,14 @@ export class AgendaPage {
   }
 
   terminar(reserva: ReservaOptions) {
+    let loading = this.loadingCtrl.create({
+      spinner: 'crescent',
+      content: 'Procesando',
+      duration: 5000
+    });
+
+    loading.present();
+
     let reservado = this.constantes.ESTADOS_RESERVA.RESERVADO;
     let tiempoSiguiente = null;
     let siguiente = this.horario.find(function (disponiblidad) {
@@ -365,6 +374,9 @@ export class AgendaPage {
             let total = serviciosFinalizados && serviciosFinalizados.length > 0 ? serviciosFinalizados.map(a => a ? a.servicio.valor : 0).reduce((a, b) => a + b) : reserva.servicio.valor;
 
             let mensaje = tiempoSiguiente ? 'El próximo servicio empieza en: ' + tiempoSiguiente + ' minutos' : 'No hay más citas asignadas';
+
+            loading.dismiss();
+
             this.genericAlert('Servicio finalizado', 'El servicio ha terminado satisfactoriamente. ' + mensaje);
 
             this.genericAlert('Servicio finalizado', 'Valor servicios: ' + total);

@@ -1,10 +1,13 @@
 import { Component } from '@angular/core';
-import { IonicPage, NavController, NavParams, AlertController } from 'ionic-angular';
+import { IonicPage, NavController, NavParams, AlertController, Platform } from 'ionic-angular';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
 import { AngularFirestore, AngularFirestoreDocument } from 'angularfire2/firestore';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
 import { AngularFireAuth } from 'angularfire2/auth';
 import { User } from '@firebase/auth-types';
+import { CameraOptions, Camera } from '../../../node_modules/@ionic-native/camera';
+import { AngularFireStorage } from '../../../node_modules/angularfire2/storage';
+import firebase from 'firebase';
 
 /**
  * Generated class for the PerfilPage page.
@@ -26,6 +29,8 @@ export class PerfilPage {
   actualizar_email: boolean = false;
   actualizar_clave: boolean = false;
   private usuariologueado: User;
+  mobile: boolean;
+  filePathData: string;
 
   constructor(
     public navCtrl: NavController,
@@ -33,8 +38,12 @@ export class PerfilPage {
     private afs: AngularFirestore,
     public alertCtrl: AlertController,
     private formBuilder: FormBuilder,
-    private afa: AngularFireAuth
+    private afa: AngularFireAuth,
+    private plt: Platform,
+    private camera: Camera,
+    private storage: AngularFireStorage
   ) {
+    this.mobile = this.plt.is('android');
     this.todo = {} as FormGroup;
     this.updateUsuario();
   }
@@ -80,7 +89,8 @@ export class PerfilPage {
     if (!this.usuariologueado) {
       this.navCtrl.setRoot('LogueoPage');
     } else {
-      this.usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + this.usuariologueado.uid);
+      this.filePathData = 'usuarios/' + this.usuariologueado.uid;
+      this.usuarioDoc = this.afs.doc<UsuarioOptions>(this.filePathData);
       this.usuarioDoc.valueChanges().subscribe(data => {
         if (data) {
           this.usuario = data;
@@ -311,5 +321,48 @@ export class PerfilPage {
         }
       ]
     }).present();
+  }
+
+  sacarFoto() {
+    let cameraOptions: CameraOptions = {
+      quality: 50,
+      encodingType: this.camera.EncodingType.JPEG,
+      targetWidth: 1000,
+      targetHeight: 1000,
+      destinationType: this.camera.DestinationType.DATA_URL,
+      sourceType: this.camera.PictureSourceType.CAMERA,
+      correctOrientation: true
+    }
+
+    this.camera.getPicture(cameraOptions).then((imageData) => {
+      let imagen = "data:image/jpeg;base64," + imageData;
+      let fileRef = this.storage.ref(this.filePathData);
+      fileRef.putString(imagen, firebase.storage.StringFormat.DATA_URL).then(() => {
+        fileRef.getDownloadURL().subscribe(data => {
+          this.todo.patchValue({ imagen: data });
+        });
+      });
+    }).catch(err => alert('Upload Failed' + err));
+  }
+
+  cargarImagen() {
+    let cameraOptions: CameraOptions = {
+      quality: 50,
+      encodingType: this.camera.EncodingType.JPEG,
+      destinationType: this.camera.DestinationType.DATA_URL,
+      sourceType: this.camera.PictureSourceType.PHOTOLIBRARY,
+      mediaType: this.camera.MediaType.PICTURE,
+      correctOrientation: true
+    }
+
+    this.camera.getPicture(cameraOptions).then((imageData) => {
+      let imagen = "data:image/jpeg;base64," + imageData;
+      let fileRef = this.storage.ref(this.filePathData);
+      fileRef.putString(imagen, firebase.storage.StringFormat.DATA_URL).then(() => {
+        fileRef.getDownloadURL().subscribe(data => {
+          this.todo.patchValue({ imagen: data });
+        });
+      });
+    }).catch(err => alert('Upload Failed' + err));
   }
 }

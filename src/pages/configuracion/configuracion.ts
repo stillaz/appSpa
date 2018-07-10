@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { NavController, AlertController } from 'ionic-angular';
+import { NavController, AlertController, Platform } from 'ionic-angular';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
 import { AngularFirestoreDocument, AngularFirestore } from 'angularfire2/firestore';
 import { AngularFireAuth } from 'angularfire2/auth';
@@ -20,10 +20,11 @@ export class ConfiguracionPage {
     public navCtrl: NavController,
     private afa: AngularFireAuth,
     public alertCtrl: AlertController,
-    private afs: AngularFirestore
+    private afs: AngularFirestore,
+    private platform: Platform
   ) {
-    this.pages.push({ title: 'Horario', component: 'GeneralPage', icon: 'alert' });
-    this.pages.push({ title: 'Perfil', component: 'PerfilPage', icon: 'alert' });
+    this.pages.push({ title: 'Horario', component: 'GeneralPage', icon: 'timer', color: 'secondary' });
+    this.pages.push({ title: 'Perfil', component: 'PerfilPage', icon: 'person', color: 'primary' });
     this.updateUsuario();
   }
 
@@ -59,7 +60,7 @@ export class ConfiguracionPage {
     } else {
       this.updateItems(user.uid).then(data => {
         if (data) {
-          this.pages.push({ title: 'Servicios', component: 'ServicioPage', icon: 'alert' });
+          this.pages.push({ title: 'Servicios', component: 'ServicioPage', icon: 'share', color: 'dark' });
         }
       }).catch(err => {
         this.genericAlert('Error usuario', err);
@@ -70,6 +71,11 @@ export class ConfiguracionPage {
 
   openPage(page) {
     this.navCtrl.push(page.component);
+  }
+
+  salir() {
+    this.afa.auth.signOut();
+    this.platform.exitApp();
   }
 
 }

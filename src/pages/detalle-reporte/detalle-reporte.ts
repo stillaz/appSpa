@@ -98,7 +98,7 @@ export class DetalleReportePage {
   }
 
   private updateDisponibilidades(disponibilidadesCollection: AngularFirestoreCollection<DisponibilidadOptions>, dia: DisponibilidadOptions) {
-    return new Promise((resolve, reject) => {
+    return new Promise(resolve => {
       disponibilidadesCollection.doc(dia.id.toString()).collection<ReservaOptions>(this.modo, ref => ref.orderBy('fechaFin', 'desc')).valueChanges().subscribe(datos => {
         if (datos && datos.length > 0) {
           let fechaData = moment(new Date(dia.id)).locale('es').format('dddd, DD');

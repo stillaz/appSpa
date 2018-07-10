@@ -9,7 +9,13 @@
 <ion-content padding>
   <ion-list>
     <button ion-item *ngFor="let p of pages" (click)="openPage(p)">
+      <ion-icon [name]="p.icon" [color]="p.color"></ion-icon>
       {{p.title}}
+    </button>
+
+    <button ion-item (click)="salir()">
+      <ion-icon name="exit" color="danger"></ion-icon>
+      Salir
     </button>
   </ion-list>
 </ion-content>
