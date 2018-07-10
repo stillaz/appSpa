@@ -110,6 +110,8 @@ export class DetalleReportePage {
             return 0;
           }).reduce((sum, current) => sum + current);
           this.cantidad += datos.length;
+
+          resolve('ok');
         }
       });
     });
