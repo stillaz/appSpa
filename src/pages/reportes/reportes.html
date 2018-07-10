@@ -7,10 +7,12 @@
 <ion-header>
 
   <ion-navbar color="primary">
-    <button ion-button menuToggle icon-only>
-      <ion-icon name='menu'></ion-icon>
-    </button>
-    <ion-title>REPORTES</ion-title>
+    <ion-row>
+      <button ion-button menuToggle icon-only>
+        <ion-icon name='menu'></ion-icon>
+      </button>
+      <ion-title>REPORTES</ion-title>
+    </ion-row>
 
     <ion-grid [ngSwitch]="filtroSeleccionado">
       <ion-row style="width: 70%; margin: auto;" *ngSwitchCase="'MENSUAL'">
@@ -38,8 +40,8 @@
 
       <ion-row *ngSwitchCase="'DIARIO'">
         <ion-col>
-          <span float-end ion-datepicker (ionChanged)="updateSeleccionadosDia($event);" [max]="maxDate" [min]="minDate" [value]="initDate" [showMaxAndMin]="true"
-            [disabledDates]="disabledDates" clear class="ScheduleDate" [localeStrings]="constantes.LOCALE_STRINGS">
+          <span float-end ion-datepicker (ionChanged)="updateSeleccionadosDia($event);" [max]="maxDate" [min]="minDate" [value]="initDate"
+            [showMaxAndMin]="true" [disabledDates]="disabledDates" clear class="ScheduleDate" [localeStrings]="constantes.LOCALE_STRINGS">
             <span>
               <button ion-button icon-left color="light" clear>
                 <ion-icon name="clipboard"></ion-icon>
@@ -47,6 +49,46 @@
               </button>
             </span>
           </span>
+        </ion-col>
+      </ion-row>
+
+      <ion-row style="width: 70%; margin: auto;" *ngSwitchCase="'SEMANAL'">
+        <ion-col col-1>
+          <ion-buttons start>
+            <button ion-button icon-left (click)="updateFechaSemana(-1)" *ngIf="atras">
+              <ion-icon name="arrow-dropleft"></ion-icon>
+            </button>
+          </ion-buttons>
+        </ion-col>
+        <ion-col col-10>
+          <ion-label style="width: 100%; max-width: 100%; text-align: center; color: #ffffff; font-weight: bolder;">{{textoSemana}}</ion-label>
+        </ion-col>
+        <ion-col col-1>
+          <ion-buttons end>
+            <button ion-button icon-right (click)="updateFechaSemana(1)" *ngIf="adelante">
+              <ion-icon name="arrow-dropright"></ion-icon>
+            </button>
+          </ion-buttons>
+        </ion-col>
+      </ion-row>
+
+      <ion-row style="width: 70%; margin: auto;" *ngSwitchCase="'ANUAL'">
+        <ion-col col-1>
+          <ion-buttons start>
+            <button ion-button icon-left (click)="updateFechaAno(-1)" *ngIf="atras">
+              <ion-icon name="arrow-dropleft"></ion-icon>
+            </button>
+          </ion-buttons>
+        </ion-col>
+        <ion-col col-10>
+          <ion-label style="width: 100%; max-width: 100%; text-align: center; color: #ffffff; font-weight: bolder;">{{textoAno}}</ion-label>
+        </ion-col>
+        <ion-col col-1>
+          <ion-buttons end>
+            <button ion-button icon-right (click)="updateFechaAno(1)" *ngIf="adelante">
+              <ion-icon name="arrow-dropright"></ion-icon>
+            </button>
+          </ion-buttons>
         </ion-col>
       </ion-row>
     </ion-grid>
