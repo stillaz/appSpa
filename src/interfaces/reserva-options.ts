@@ -8,5 +8,7 @@ export interface ReservaOptions {
   evento: string,
   idcarrito: number,
   servicio: ServicioOptions[],
-  cliente: ClienteOptions
+  cliente: ClienteOptions,
+  idusuario: string,
+  nombreusuario: string
 }
