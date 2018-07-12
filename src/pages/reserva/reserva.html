@@ -12,13 +12,13 @@
         <br/> {{horaSeleccionada}}
       </ion-col>
       <ion-col>
-        <button ion-button icon-right color="danger" clear float-right *ngIf="cantidad !== 0" (tap)="ver($event)">
+        <button ion-button icon-right color="danger" clear float-right *ngIf="continuar && cantidad !== 0" (tap)="ver($event)">
           {{cantidad}}
           <ion-icon name="list" item-end></ion-icon>
         </button>
       </ion-col>
       <ion-col>
-        <button ion-button icon-right color="danger" outline float-right *ngIf="cantidad === 0" (tap)="reservarVacio()">
+        <button ion-button icon-right color="danger" outline float-right *ngIf="cotinuar && cantidad === 0" (tap)="reservarVacio()">
           Reservar sin servicio
         </button>
       </ion-col>

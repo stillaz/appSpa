@@ -174,6 +174,30 @@ export class ReportesPage {
     this.updateTotalesDia(fecha);
   }
 
+  updateDataSemana(usuario: UsuarioOptions, init: Date) {
+    let disponibilidadUsuarioDoc = this.afs.doc('usuarios/' + usuario.id + '/disponibilidades/' + init.getTime().toString());
+    return new Promise(resolve => {
+      disponibilidadUsuarioDoc.ref.get().then(totalDia => {
+        console.log('entra2');
+        if (totalDia.exists) {
+          console.log('entra1');
+          let totalesDia = totalDia.get('totalServicios');
+          let cantidadesDia = totalDia.get('cantidadServicios');
+          this.total += totalesDia ? Number(totalesDia) : 0;
+          this.cantidad += cantidadesDia ? Number(cantidadesDia) : 0;
+          if (this.totalesUsuarios.length === 0 || !this.totalesUsuarios.some(totalUsuario => totalUsuario.idusuario === usuario.id)) {
+            this.totalesUsuarios.push(totalDia.data());
+          } else {
+            let totalUsuarioEncontrado = this.totalesUsuarios.find(totalUsuario => totalUsuario.idusuario === usuario.id);
+            totalUsuarioEncontrado.totalServicios += totalesDia ? Number(totalesDia) : 0;
+            totalUsuarioEncontrado.cantidadServicios += cantidadesDia ? Number(cantidadesDia) : 0;
+          }
+        }
+        resolve('ok');
+      });
+    });
+  }
+
   updateTotalesSemana(fecha: Date) {
     let diaInicioSemana = moment(fecha).startOf('week').toDate();
     let diaFinSemana = moment(diaInicioSemana).endOf('week').toDate();
@@ -186,23 +210,12 @@ export class ReportesPage {
       this.total = 0;
       this.cantidad = 0;
       data.forEach(usuario => {
+        console.log('entra ' + usuario.id);
         while (moment(init).isSameOrBefore(diaFinSemana)) {
-          let disponibilidadUsuarioDoc = this.afs.doc('usuarios/' + usuario.id + '/disponibilidades/' + init.getTime().toString());
-          disponibilidadUsuarioDoc.ref.get().then(totalDia => {
-            if (totalDia.exists) {
-              let totalesDia = totalDia.get('totalServicios');
-              let cantidadesDia = totalDia.get('cantidadServicios');
-              this.total += totalesDia ? Number(totalesDia) : 0;
-              this.cantidad += cantidadesDia ? Number(cantidadesDia) : 0;
-              if (this.totalesUsuarios.length === 0 || !this.totalesUsuarios.some(totalUsuario => totalUsuario.idusuario === usuario.id)) {
-                this.totalesUsuarios.push(totalDia.data());
-              } else {
-                let totalUsuarioEncontrado = this.totalesUsuarios.find(totalUsuario => totalUsuario.idusuario === usuario.id);
-                totalUsuarioEncontrado.totalServicios += totalesDia ? Number(totalesDia) : 0;
-                totalUsuarioEncontrado.cantidadServicios += cantidadesDia ? Number(cantidadesDia) : 0;
-              }
-            }
+          this.updateDataSemana(usuario, init).then(() => {
+            
           });
+
           init = moment(init).add(1, 'days').toDate();
         }
       });
