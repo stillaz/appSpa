@@ -25,6 +25,7 @@ import { FilePath } from '@ionic-native/file-path';
 import { AngularFireStorageModule } from 'angularfire2/storage';
 import { SearchPipe } from '../pipes/search/search';
 import { GastoPage } from '../pages/gasto/gasto';
+import { JoinsPipe } from '../pipes/joins/joins';
 
 
 @NgModule({
@@ -35,7 +36,8 @@ import { GastoPage } from '../pages/gasto/gasto';
     GastoPage,
     ReportesPage,
     TabsPage,
-    SearchPipe
+    SearchPipe,
+    JoinsPipe
   ],
   imports: [
     BrowserModule,

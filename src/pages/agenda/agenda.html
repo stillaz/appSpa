@@ -48,7 +48,7 @@
 
         <ion-item>
           <h2>{{disponibilidad.fechaInicio | date: 'hh:mm a'}} &mdash; {{disponibilidad.fechaFin | date: 'hh:mm a'}}</h2>
-          <ion-note *ngIf="disponibilidad.cliente.nombre">{{disponibilidad.cliente.nombre}}: {{disponibilidad.servicio.nombre}}</ion-note>
+          <ion-note *ngIf="disponibilidad.cliente.nombre">{{disponibilidad.cliente.nombre}}: {{disponibilidad.servicio | joins}}</ion-note>
           <p>{{disponibilidad.estado}}</p>
 
           <button ion-button [hidden]="disponibilidad.estado !== constantes.ESTADOS_RESERVA.DISPONIBLE || disponibilidad.fechaFin < actual"

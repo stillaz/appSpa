@@ -7,7 +7,7 @@ export class ReservaProvider {
 
     getOtrasReservasByIdServicioAndNotFinalizado(reservas: ReservaOptions[], reservaSeleccionada: ReservaOptions) {
         return reservas.filter(reserva =>
-            reserva.idcarrito === reservaSeleccionada.idcarrito && reserva.servicio.id !== reservaSeleccionada.servicio.id && reserva.estado !== DataProvider.ESTADOS_RESERVA.FINALIZADO
+            reserva.idcarrito === reservaSeleccionada.idcarrito && reserva.estado !== DataProvider.ESTADOS_RESERVA.FINALIZADO
         );
     }
 

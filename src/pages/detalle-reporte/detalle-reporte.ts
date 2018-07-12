@@ -104,8 +104,10 @@ export class DetalleReportePage {
           let fechaData = moment(new Date(dia.id)).locale('es').format('dddd, DD');
           this.disponibilidades.push({ grupo: fechaData, disponibilidades: datos });
           this.total += datos.map(c => {
-            if (c.servicio && c.servicio.valor) {
-              return Number(c.servicio.valor);
+            if (c.servicio && c.servicio.length > 1) {
+              return Number(c.servicio.map(item => Number(item.valor)).reduce((a, b) => a + b));
+            } else if (c.servicio && c.servicio.length === 1) {
+              return Number(c.servicio[0].valor);
             }
             return 0;
           }).reduce((sum, current) => sum + current);

@@ -171,7 +171,7 @@ export class AgendaPage {
             evento: this.constantes.EVENTOS.OTRO,
             idcarrito: null,
             cliente: this.cliente,
-            servicio: this.servicio
+            servicio: [this.servicio]
           };
         } else {
           reserva = {
@@ -301,7 +301,7 @@ export class AgendaPage {
     slidingItem.close();
   }
 
-  terminar(reserva: ReservaOptions) {
+  private almacenar(reserva: ReservaOptions) {
     let loading = this.loadingCtrl.create({
       spinner: 'crescent',
       content: 'Procesando',
@@ -336,11 +336,13 @@ export class AgendaPage {
 
     let totalesServiciosDoc = this.afs.doc('totalesservicios/' + mesServicio);
 
+    let totalServiciosReserva = reserva.servicio.map(servicioReserva => Number(servicioReserva.valor)).reduce((a, b) => a + b);
+
     this.disponibilidadDoc.ref.get().then(datosDiarios => {
       if (datosDiarios.exists) {
         let totalDiarioActual = datosDiarios.get('totalServicios');
         let cantidadDiarioActual = datosDiarios.get('cantidadServicios');
-        let totalDiario = totalDiarioActual ? Number(totalDiarioActual) + Number(reserva.servicio.valor) : reserva.servicio.valor;
+        let totalDiario = totalDiarioActual ? Number(totalDiarioActual) + totalServiciosReserva : totalServiciosReserva;
         let cantidadDiario = cantidadDiarioActual ? Number(cantidadDiarioActual) + 1 : 1;
         batch.update(this.disponibilidadDoc.ref, { totalServicios: totalDiario, cantidadServicios: cantidadDiario, fecha: new Date() });
       }
@@ -354,13 +356,13 @@ export class AgendaPage {
           if (datos.exists) {
             let totalActual = datos.get('totalServicios');
             let cantidadActual = datos.get('cantidadServicios');
-            batch.update(totalesServiciosUsuarioDoc.ref, { totalServicios: Number(totalActual) + Number(reserva.servicio.valor), cantidadServicios: Number(cantidadActual) + 1, fecha: new Date() });
+            batch.update(totalesServiciosUsuarioDoc.ref, { totalServicios: Number(totalActual) + totalServiciosReserva, cantidadServicios: Number(cantidadActual) + 1, fecha: new Date() });
           } else {
             let totalServicioUsuario: TotalesServiciosOptions = {
               idusuario: this.usuario.id,
               usuario: this.usuario.nombre,
               imagenusuario: this.usuario.imagen,
-              totalServicios: reserva.servicio.valor,
+              totalServicios: totalServiciosReserva,
               cantidadServicios: 1,
               fecha: new Date()
             }
@@ -371,7 +373,7 @@ export class AgendaPage {
           batch.commit().then(() => {
             let serviciosFinalizados = this.reservaCtrl.getReservasByIdServicioAndFinalizado(this.horario, reserva);
 
-            let total = serviciosFinalizados && serviciosFinalizados.length > 0 ? serviciosFinalizados.map(a => a ? a.servicio.valor : 0).reduce((a, b) => a + b) : reserva.servicio.valor;
+            let total = serviciosFinalizados && serviciosFinalizados.length > 0 ? serviciosFinalizados.map(a => a ? totalServiciosReserva : 0).reduce((a, b) => a + b) : totalServiciosReserva;
 
             let mensaje = tiempoSiguiente ? 'El próximo servicio empieza en: ' + tiempoSiguiente + ' minutos' : 'No hay más citas asignadas';
 
@@ -384,6 +386,45 @@ export class AgendaPage {
         });
       });
     });
+  }
+
+  terminar(reserva: ReservaOptions) {
+    if (!reserva.servicio[0].id) {
+      let alertServicios = this.alertCtrl.create({
+        title: 'Servicios',
+        message: 'Selecciona los servicios aplicados a la reserva'
+      });
+
+      let serviciosUsuario = this.usuario.perfiles.find(perfil => perfil.nombre === 'Barbero').servicios;
+      serviciosUsuario.forEach((servicioUsuario, index) => {
+        alertServicios.addInput({
+          type: 'checkbox',
+          label: servicioUsuario.nombre + ' ' + servicioUsuario.valor,
+          value: index.toString()
+        });
+      });
+
+      alertServicios.addButton({
+        text: 'Cancelar',
+        role: 'cancel'
+      });
+
+      alertServicios.addButton({
+        text: 'OK',
+        handler: data => {
+          reserva.servicio = [];
+          data.forEach(i => {
+            reserva.servicio.push(serviciosUsuario[Number(i)]);
+          });
+
+          this.almacenar(reserva);
+        }
+      });
+
+      alertServicios.present();
+    } else {
+      this.almacenar(reserva);
+    }
   }
 
   configActionSheet(title: string, filtros) {

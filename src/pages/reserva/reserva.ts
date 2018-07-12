@@ -40,6 +40,7 @@ export class ReservaPage {
   usuarioDoc: AngularFirestoreDocument<UsuarioOptions>;
   disponibilidadDoc: AngularFirestoreDocument;
   horaSeleccionada: string;
+  tiempoDisponibilidad: number;
 
   public cliente: ClienteOptions = {
     identificacion: null,
@@ -68,6 +69,7 @@ export class ReservaPage {
     let fecha = moment(this.ultimoHorario).startOf('day').toDate();
     this.usuarioDoc.valueChanges().subscribe(data => {
       if (data) {
+        this.tiempoDisponibilidad = data.configuracion ? data.configuracion.tiempoDisponibilidad : 30;
         data.perfiles.forEach(perfil => {
           this.servicios.push.apply(this.servicios, perfil.servicios);
         });
@@ -86,7 +88,7 @@ export class ReservaPage {
       usuario: this.usuario.nombre
     };
     this.disponibilidadDoc.ref.get().then(datosDisp => {
-      if(!datosDisp.exists){
+      if (!datosDisp.exists) {
         this.disponibilidadDoc.set(datos);
       }
     });
@@ -150,23 +152,35 @@ export class ReservaPage {
   }
 
   agregar(servicio: ServicioOptions) {
+    const servicioVacio: ServicioOptions = {
+      activo: true,
+      descripcion: null,
+      duracion_MIN: this.tiempoDisponibilidad,
+      grupo: null,
+      id: null,
+      imagen: null,
+      nombre: null,
+      valor: 0
+    }
+
+    let servicioSeleccionado = servicio ? servicio : servicioVacio;
     let disponibilidadBloquear: ReservaOptions[] = [];
     let disponibilidadEncontrada: ReservaOptions;
     let disponible: boolean = true;
     let contador = 0;
-    for (let i = 0; i <= servicio.duracion_MIN / 10 - 1; i++) {
+    for (let i = 0; i <= Number(Math.ceil(servicioSeleccionado.duracion_MIN / this.tiempoDisponibilidad) - 1); i++) {
       contador = i;
-      let horaInicio = moment(this.ultimoHorario).add(i * 10, 'minutes').toDate();
+      let horaInicio = moment(this.ultimoHorario).add(i * this.tiempoDisponibilidad, 'minutes').toDate();
 
-      disponibilidadEncontrada = this.horario.filter(disponibilidad =>
+      disponibilidadEncontrada = this.horario.find(disponibilidad =>
         disponibilidad.fechaInicio.getTime() === horaInicio.getTime()
-      )[0];
+      );
 
       if (!disponibilidadEncontrada || disponibilidadEncontrada.estado !== this.constantes.ESTADOS_RESERVA.DISPONIBLE) {
         disponible = false;
         break;
       } else {
-        disponibilidadEncontrada.servicio = servicio;
+        disponibilidadEncontrada.servicio = [servicioSeleccionado];
         disponibilidadBloquear.push(disponibilidadEncontrada);
       }
     }
@@ -174,9 +188,9 @@ export class ReservaPage {
     if (disponible || (!disponibilidadEncontrada && contador > 0)) {
       this.disponibilidadBloquear.push.apply(this.disponibilidadBloquear, disponibilidadBloquear);
       this.cantidad++;
-      servicio.activo = false;
+      servicioSeleccionado.activo = false;
       this.carrito.push({
-        servicio: servicio,
+        servicio: [servicioSeleccionado],
         fechaInicio: disponibilidadBloquear[0].fechaInicio,
         fechaFin: disponibilidadBloquear[disponibilidadBloquear.length - 1].fechaFin,
         cliente: this.cliente,
@@ -185,7 +199,7 @@ export class ReservaPage {
         idcarrito: this.idcarrito
       });
       this.ultimoHorario = disponibilidadBloquear[disponibilidadBloquear.length - 1].fechaFin;
-      this.totalServicios += Number(servicio.valor);
+      this.totalServicios += Number(servicioSeleccionado.valor);
     } else if (contador === 0) {
       this.genericAlert('Error al reservar', 'La cita se cruza con ' + disponibilidadEncontrada.cliente.nombre + ', la reserva ha sido cancelada');
     } else {
@@ -206,9 +220,9 @@ export class ReservaPage {
             text: 'SI',
             handler: () => {
               this.disponibilidadBloquear.push.apply(this.disponibilidadBloquear, disponibilidadBloquear);
-              servicio.activo = false;
+              servicioSeleccionado.activo = false;
               this.carrito.push({
-                servicio: servicio,
+                servicio: [servicioSeleccionado],
                 fechaInicio: disponibilidadBloquear[0].fechaInicio,
                 fechaFin: disponibilidadBloquear[disponibilidadBloquear.length - 1].fechaFin,
                 cliente: this.cliente,
@@ -218,7 +232,7 @@ export class ReservaPage {
               });
               this.cantidad++;
               this.ultimoHorario = disponibilidadBloquear[disponibilidadBloquear.length - 1].fechaFin;
-              this.totalServicios += Number(servicio.valor);
+              this.totalServicios += Number(servicioSeleccionado.valor);
             }
           }
         ],
@@ -239,10 +253,10 @@ export class ReservaPage {
     this.ultimoHorario = this.disponibilidadSeleccionada.fechaInicio;
 
     carrito.forEach(servicioAdquirido => {
-      this.agregar(servicioAdquirido.servicio);
+      this.agregar(servicioAdquirido.servicio[0]);
     });
 
-    servicio.servicio.activo = true;
+    servicio.servicio[0].activo = true;
   }
 
   validarReservaDisponible(): Promise<any> {
@@ -278,6 +292,11 @@ export class ReservaPage {
       this.genericAlert('Error reserva', err);
       this.navCtrl.pop();
     });
+  }
+
+  reservarVacio() {
+    this.agregar(null);
+    this.guardar();
   }
 
   ver(event) {
