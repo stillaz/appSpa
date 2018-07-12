@@ -174,13 +174,11 @@ export class ReportesPage {
     this.updateTotalesDia(fecha);
   }
 
-  updateDataSemana(usuario: UsuarioOptions, init: Date) {
-    let disponibilidadUsuarioDoc = this.afs.doc('usuarios/' + usuario.id + '/disponibilidades/' + init.getTime().toString());
-    return new Promise(resolve => {
+  updateDataSemana(usuario: UsuarioOptions, init: Date, fin: Date) {
+    while (moment(init).isSameOrBefore(fin)) {
+      let disponibilidadUsuarioDoc = this.afs.doc('usuarios/' + usuario.id + '/disponibilidades/' + init.getTime().toString());
       disponibilidadUsuarioDoc.ref.get().then(totalDia => {
-        console.log('entra2');
         if (totalDia.exists) {
-          console.log('entra1');
           let totalesDia = totalDia.get('totalServicios');
           let cantidadesDia = totalDia.get('cantidadServicios');
           this.total += totalesDia ? Number(totalesDia) : 0;
@@ -193,9 +191,10 @@ export class ReportesPage {
             totalUsuarioEncontrado.cantidadServicios += cantidadesDia ? Number(cantidadesDia) : 0;
           }
         }
-        resolve('ok');
       });
-    });
+
+      init = moment(init).add(1, 'days').toDate();
+    }
   }
 
   updateTotalesSemana(fecha: Date) {
@@ -210,14 +209,7 @@ export class ReportesPage {
       this.total = 0;
       this.cantidad = 0;
       data.forEach(usuario => {
-        console.log('entra ' + usuario.id);
-        while (moment(init).isSameOrBefore(diaFinSemana)) {
-          this.updateDataSemana(usuario, init).then(() => {
-            
-          });
-
-          init = moment(init).add(1, 'days').toDate();
-        }
+        this.updateDataSemana(usuario, init, diaFinSemana);
       });
     });
   }

@@ -302,6 +302,8 @@ export class AgendaPage {
   }
 
   private almacenar(reserva: ReservaOptions) {
+    let iddisponibilidad = moment(reserva.fechaInicio).startOf('day').toDate().getTime().toString();
+    let disponibilidadDoc = this.usuarioDoc.collection('disponibilidades').doc(iddisponibilidad);
     let loading = this.loadingCtrl.create({
       spinner: 'crescent',
       content: 'Procesando',
@@ -326,9 +328,9 @@ export class AgendaPage {
 
     let batch = this.afs.firestore.batch();
 
-    batch.set(this.disponibilidadDoc.collection('disponibilidades').doc(id).ref, reserva);
+    batch.set(disponibilidadDoc.collection('disponibilidades').doc(id).ref, reserva);
 
-    batch.set(this.disponibilidadDoc.collection('finalizados').doc(id).ref, reserva);
+    batch.set(disponibilidadDoc.collection('finalizados').doc(id).ref, reserva);
 
     batch.delete(this.usuarioDoc.collection('pendientes').doc(id).ref);
 
@@ -338,13 +340,13 @@ export class AgendaPage {
 
     let totalServiciosReserva = reserva.servicio.map(servicioReserva => Number(servicioReserva.valor)).reduce((a, b) => a + b);
 
-    this.disponibilidadDoc.ref.get().then(datosDiarios => {
+    disponibilidadDoc.ref.get().then(datosDiarios => {
       if (datosDiarios.exists) {
         let totalDiarioActual = datosDiarios.get('totalServicios');
         let cantidadDiarioActual = datosDiarios.get('cantidadServicios');
         let totalDiario = totalDiarioActual ? Number(totalDiarioActual) + totalServiciosReserva : totalServiciosReserva;
         let cantidadDiario = cantidadDiarioActual ? Number(cantidadDiarioActual) + 1 : 1;
-        batch.update(this.disponibilidadDoc.ref, { totalServicios: totalDiario, cantidadServicios: cantidadDiario, fecha: new Date() });
+        batch.update(disponibilidadDoc.ref, { totalServicios: totalDiario, cantidadServicios: cantidadDiario, fecha: new Date() });
       }
 
       totalesServiciosDoc.ref.get().then(() => {

@@ -41,7 +41,6 @@ export class ReservaPage {
   disponibilidadDoc: AngularFirestoreDocument;
   horaSeleccionada: string;
   tiempoDisponibilidad: number;
-  continuar: boolean = false;
 
   public cliente: ClienteOptions = {
     identificacion: null,
@@ -121,7 +120,6 @@ export class ReservaPage {
             this.idcarrito = 0;
             indiceCarritoDoc.set({ id: 1 });
           }
-          this.continuar = true;
         });
       }
     }
