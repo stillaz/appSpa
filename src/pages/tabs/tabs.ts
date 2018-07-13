@@ -26,6 +26,7 @@ import * as DataProvider from '../../providers/constants';
 export class TabsPage {
   tabs = [];
   constantes = DataProvider;
+  cantidadesanteriores: any[];
 
   constructor(
     private afa: AngularFireAuth,
@@ -34,6 +35,7 @@ export class TabsPage {
     public alertCtrl: AlertController
   ) {
     this.tabs.push({ root: AgendaPage, title: 'Agenda', icon: 'bookmarks', badge: 0 });
+    this.cantidadesanteriores = [];
     this.updateUsuario();
   }
 
@@ -86,27 +88,27 @@ export class TabsPage {
   private updateServiciosUsuarios() {
     this.afs.collection<UsuarioOptions>('usuarios').valueChanges().subscribe(data => {
       data.forEach(usuario => {
-        this.updatePendientesPago(usuario).then(respuesta => {
-          this.tabs[1].badge += respuesta;
-        });
-      });
-    });
-  }
+        let pendientesCollection: AngularFirestoreCollection<ReservaOptions> = this.afs.doc('usuarios/' + usuario.id).collection<ReservaOptions>('pendientes', ref => ref.where('estado', '==', this.constantes.ESTADOS_RESERVA.PENDIENTE_PAGO));
+        pendientesCollection.valueChanges().subscribe(pendientes => {
+          let pendientesMap = [];
+          let cantidad = 0;
+          pendientes.forEach(pendiente => {
+            let id = 'id' + pendiente.idcarrito;
+            if (!pendientesMap[id]) {
+              pendientesMap[id] = {};
+              cantidad++;
+            }
+          });
 
-  private updatePendientesPago(usuario: UsuarioOptions) {
-    let pendientesCollection: AngularFirestoreCollection<ReservaOptions> = this.afs.doc('usuarios/' + usuario.id).collection<ReservaOptions>('pendientes', ref => ref.where('estado', '==', this.constantes.ESTADOS_RESERVA.PENDIENTE_PAGO));
-    return new Promise<number>(resolve => {
-      pendientesCollection.valueChanges().subscribe(pendientes => {
-        let pendientesMap = [];
-        let cantidad = 0;
-        pendientes.forEach(pendiente => {
-          let id = 'id' + pendiente.idcarrito;
-          if (!pendientesMap[id]) {
-            pendientesMap[id] = {};
-            cantidad++;
-          }
+          let cantidadactual = this.cantidadesanteriores[usuario.id] ? this.cantidadesanteriores[usuario.id] : 0;
+
+          let diferencia = cantidad - cantidadactual;
+          console.log(cantidad);
+          console.log(cantidadactual);
+          this.tabs[1].badge += diferencia;
+
+          this.cantidadesanteriores[usuario.id] = cantidad;
         });
-        resolve(cantidad);
       });
     });
   }

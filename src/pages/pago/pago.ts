@@ -68,10 +68,8 @@ export class PagoPage {
 
   private updateServiciosUsuarios() {
     this.afs.collection<UsuarioOptions>('usuarios').valueChanges().subscribe(data => {
-      console.log('entro aqui1');
       this.pendientesPago = [];
       data.forEach(usuario => {
-        console.log('entro aqui2');
         this.updatePendientesPago(usuario);
       });
     });
@@ -81,7 +79,6 @@ export class PagoPage {
     let pendientesCollection: AngularFirestoreCollection<ReservaOptions> = this.afs.doc('usuarios/' + usuario.id).collection<ReservaOptions>('pendientes', ref => ref.where('estado', '==', this.constantes.ESTADOS_RESERVA.PENDIENTE_PAGO));
     return new Promise(resolve => {
       let read = pendientesCollection.valueChanges().subscribe(pendientes => {
-        console.log('entro aqui');
         let pendientesMap = [];
         let contador = -1;
         let contadoranterior = contador;
@@ -126,9 +123,10 @@ export class PagoPage {
 
             contadoranterior = contador;
           });
-          read.unsubscribe();
-          resolve('ok');
         }
+
+        read.unsubscribe();
+        resolve('ok');
       });
     });
   }
@@ -151,7 +149,7 @@ export class PagoPage {
 
     batch.delete(this.usuarioDoc.collection('pendientes').doc(id).ref);
 
-    let mesServicio = moment(reserva.fechaInicio).startOf('month');
+    let mesServicio = moment(fechainicio).startOf('month');
 
     let totalesServiciosDoc = this.afs.doc('totalesservicios/' + mesServicio);
 
@@ -231,6 +229,8 @@ export class PagoPage {
         this.genericAlert('Servicio finalizado', 'El servicio ha sido pagado satisfactoriamente.');
 
         this.genericAlert('Servicio finalizado', 'Valor servicios: ' + total);
+
+        this.updateServiciosUsuarios();
 
         loading.dismiss();
       }).catch(err => this.genericAlert('Error al pagar', err));

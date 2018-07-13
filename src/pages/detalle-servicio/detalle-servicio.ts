@@ -193,52 +193,56 @@ export class DetalleServicioPage {
       this.perfilesCollection = this.afs.collection<PerfilOptions>('perfiles', ref => ref.where('nombre', '==', 'Barbero'));
       this.perfilesCollection.ref.get().then(data => {
         data.forEach(perfil => {
-          let servicios: ServicioOptions[] = perfil.get('servicios');
-          let servicioEncontrado: ServicioOptions = servicios.find(servicio => servicio.id === this.servicio.id);
-          if (servicioEncontrado) {
-            let item = servicios.indexOf(servicioEncontrado);
-            servicios.splice(item, 1, this.servicio);
-          } else {
-            servicios.push(this.servicio);
-          }
+          if (perfil.get('nombre') === 'Barbero') {
+            let servicios: ServicioOptions[] = perfil.get('servicios');
+            let servicioEncontrado: ServicioOptions = servicios.find(servicio => {
+              return servicio.id === this.servicio.id;
+            });
+            if (servicioEncontrado) {
+              let item = servicios.indexOf(servicioEncontrado);
+              servicios.splice(item, 1, this.servicio);
+            } else {
+              servicios.push(this.servicio);
+            }
 
-          batch.update(perfil.ref, { servicios: servicios });
+            batch.update(perfil.ref, { servicios: servicios });
 
-          this.usuariosCollection = this.afs.collection('usuarios');
-          this.usuariosCollection.ref.get().then(usuariodata => {
-            usuariodata.forEach(usuario => {
-              let perfilesusuario: PerfilOptions[] = usuario.get('perfiles');
-              let perfilusuario: PerfilOptions = perfilesusuario.find(perfilu => perfilu.id === perfil.id);
-              if (perfilusuario) {
-                let itemperfil = perfilesusuario.indexOf(perfilusuario);
-                let serviciosperfilusuario = perfilusuario.servicios ? perfilusuario.servicios : [];
-                let servicioUsuarioEncontrado: ServicioOptions = serviciosperfilusuario.find(servicio => servicio.id === this.servicio.id);
+            this.usuariosCollection = this.afs.collection('usuarios');
+            this.usuariosCollection.ref.get().then(usuariodata => {
+              usuariodata.forEach(usuario => {
+                let perfilesusuario: PerfilOptions[] = usuario.get('perfiles');
+                let perfilusuario: PerfilOptions = perfilesusuario.find(perfilu => perfilu.id === perfil.id);
+                if (perfilusuario) {
+                  let itemperfil = perfilesusuario.indexOf(perfilusuario);
+                  let serviciosperfilusuario = perfilusuario.servicios ? perfilusuario.servicios : [];
+                  let servicioUsuarioEncontrado: ServicioOptions = serviciosperfilusuario.find(servicio => servicio.id === this.servicio.id);
 
-                if (servicioUsuarioEncontrado) {
-                  let item = serviciosperfilusuario.indexOf(servicioUsuarioEncontrado);
-                  serviciosperfilusuario.splice(item, 1, this.servicio);
-                } else {
-                  serviciosperfilusuario.push(this.servicio);
+                  if (servicioUsuarioEncontrado) {
+                    let item = serviciosperfilusuario.indexOf(servicioUsuarioEncontrado);
+                    serviciosperfilusuario.splice(item, 1, this.servicio);
+                  } else {
+                    serviciosperfilusuario.push(this.servicio);
+                  }
+
+                  perfilusuario.servicios = serviciosperfilusuario;
+
+                  perfilesusuario.splice(itemperfil, 1, perfilusuario);
+
+                  batch.update(usuario.ref, { perfiles: perfilesusuario });
                 }
-
-                perfilusuario.servicios = serviciosperfilusuario;
-
-                perfilesusuario.splice(itemperfil, 1, perfilusuario);
-
-                batch.update(usuario.ref, { perfiles: perfilesusuario });
-              }
-            });
-
-            batch.commit().then(() => {
-              let alert = this.alertCtrl.create({
-                title: 'Servicio ' + modo,
-                message: 'El servicio ha sido ' + modo + ' exitosamente',
-                buttons: ['OK']
               });
-              alert.present();
-              this.viewCtrl.dismiss();
+
+              batch.commit().then(() => {
+                let alert = this.alertCtrl.create({
+                  title: 'Servicio ' + modo,
+                  message: 'El servicio ha sido ' + modo + ' exitosamente',
+                  buttons: ['OK']
+                });
+                alert.present();
+                this.viewCtrl.dismiss();
+              });
             });
-          });
+          }
         });
       });
     } else {
