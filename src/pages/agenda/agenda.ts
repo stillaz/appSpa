@@ -13,9 +13,6 @@ import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection 
 import { AngularFireAuth } from 'angularfire2/auth';
 import { PerfilOptions } from '../../interfaces/perfil-options';
 import { PaginaOptions } from '../../interfaces/pagina-options';
-import { TotalesServiciosOptions } from '../../interfaces/totales-servicios-options';
-import firebase from 'firebase';
-import { PendientePagoOptions } from '../../interfaces/pendiente-pago-options';
 
 /**
  * Generated class for the AgendaPage page.
@@ -55,8 +52,6 @@ export class AgendaPage {
   perfiles: PerfilOptions[];
   usuarios: UsuarioOptions[];
   private disponibilidadDoc: AngularFirestoreDocument;
-  terms: string;
-  pendientesPago: PendientePagoOptions[];
 
   opciones: any[] = [
     { title: 'Configuración', component: 'ConfiguracionAgendaPage', icon: 'stats' }
@@ -129,19 +124,15 @@ export class AgendaPage {
 
   updateUsuarios() {
     this.usuariosCollection.valueChanges().subscribe(data => {
-      if (data) {
-        this.usuarios = data;
-      }
+      this.usuarios = data;
     });
   }
 
-  updatePerfiles() {
+  private updatePerfiles() {
     let perfilesCollection: AngularFirestoreCollection<PerfilOptions>;
     perfilesCollection = this.afs.collection<PerfilOptions>('perfiles');
     perfilesCollection.valueChanges().subscribe(data => {
-      if (data) {
-        this.perfiles = data;
-      }
+      this.perfiles = data;
     });
   }
 
@@ -308,99 +299,6 @@ export class AgendaPage {
     slidingItem.close();
   }
 
-  private pagarServicio(reserva: ReservaOptions) {
-    let iddisponibilidad = moment(reserva.fechaInicio).startOf('day').toDate().getTime().toString();
-    let disponibilidadDoc = this.usuarioDoc.collection('disponibilidades').doc(iddisponibilidad);
-
-    reserva.estado = this.constantes.ESTADOS_RESERVA.FINALIZADO;
-
-    let id = reserva.fechaInicio.getTime().toString();
-
-    let batch = this.afs.firestore.batch();
-
-    batch.update(disponibilidadDoc.collection('disponibilidades').doc(id).ref, reserva);
-
-    batch.set(disponibilidadDoc.collection('finalizados').doc(id).ref, reserva);
-
-    batch.delete(this.usuarioDoc.collection('pendientes').doc(id).ref);
-
-    let mesServicio = moment(reserva.fechaInicio).startOf('month');
-
-    let totalesServiciosDoc = this.afs.doc('totalesservicios/' + mesServicio);
-
-    let totalServiciosReserva = reserva.servicio.map(servicioReserva => Number(servicioReserva.valor)).reduce((a, b) => a + b);
-
-    return new Promise<firebase.firestore.WriteBatch>(resolve => {
-      disponibilidadDoc.ref.get().then(datosDiarios => {
-        if (datosDiarios.exists) {
-          let totalDiarioActual = datosDiarios.get('totalServicios');
-          let cantidadDiarioActual = datosDiarios.get('cantidadServicios');
-          let totalDiario = totalDiarioActual ? Number(totalDiarioActual) + totalServiciosReserva : totalServiciosReserva;
-          let cantidadDiario = cantidadDiarioActual ? Number(cantidadDiarioActual) + 1 : 1;
-          batch.update(disponibilidadDoc.ref, { totalServicios: totalDiario, cantidadServicios: cantidadDiario, fecha: new Date() });
-        }
-
-        totalesServiciosDoc.ref.get().then(() => {
-          batch.set(totalesServiciosDoc.ref, { ultimaactualizacion: new Date() });
-
-          let totalesServiciosUsuarioDoc = totalesServiciosDoc.collection('totalesServiciosUsuarios').doc<TotalesServiciosOptions>(this.usuario.id);
-
-          totalesServiciosUsuarioDoc.ref.get().then(datos => {
-            if (datos.exists) {
-              let totalActual = datos.get('totalServicios');
-              let cantidadActual = datos.get('cantidadServicios');
-              batch.update(totalesServiciosUsuarioDoc.ref, { totalServicios: Number(totalActual) + totalServiciosReserva, cantidadServicios: Number(cantidadActual) + 1, fecha: new Date() });
-            } else {
-              let totalServicioUsuario: TotalesServiciosOptions = {
-                idusuario: this.usuario.id,
-                usuario: this.usuario.nombre,
-                imagenusuario: this.usuario.imagen,
-                totalServicios: totalServiciosReserva,
-                cantidadServicios: 1,
-                fecha: new Date()
-              }
-
-              batch.set(totalesServiciosUsuarioDoc.ref, totalServicioUsuario);
-            }
-
-            resolve(batch);
-          });
-        });
-      });
-    });
-  }
-
-  private pagarReservas(reservas: ReservaOptions[]) {
-    return new Promise((resolve, reject) => {
-      reservas.forEach(reserva => {
-        this.pagarServicio(reserva).then(batch => {
-          batch.commit().then(() => {
-            resolve('ok');
-          }).catch(err => reject(err));
-        });
-      });
-    });
-  }
-
-  pagar(reservas: ReservaOptions[]) {
-    this.pagarReservas(reservas).then(() => {
-      let loading = this.loadingCtrl.create({
-        spinner: 'crescent',
-        content: 'Procesando'
-      });
-
-      loading.present();
-      let serviciosReservas: ServicioOptions[] = reservas.map(reserva => reserva.servicio).reduce(servicio => servicio);
-      let total = serviciosReservas.length > 1 ? serviciosReservas.map(servicio => servicio.valor).reduce((a, b) => a + b) : serviciosReservas[0].valor;
-
-      this.genericAlert('Servicio finalizado', 'El servicio ha sido pagado satisfactoriamente.');
-
-      this.genericAlert('Servicio finalizado', 'Valor servicios: ' + total);
-
-      loading.dismiss();
-    }).catch(err => this.genericAlert('Error al pagar', err));
-  }
-
   private registrarServicio(reserva: ReservaOptions) {
     let iddisponibilidad = moment(reserva.fechaInicio).startOf('day').toDate().getTime().toString();
     let disponibilidadDoc = this.usuarioDoc.collection('disponibilidades').doc(iddisponibilidad);
@@ -564,30 +462,10 @@ export class AgendaPage {
     });
   }
 
-  updatePendientesPago() {
-    this.usuarioDoc.collection<ReservaOptions>('pendientes', ref => ref.where('estado', '==', this.constantes.ESTADOS_RESERVA.PENDIENTE_PAGO)).valueChanges().subscribe(pendientes => {
-      this.pendientesPago = [];
-      let pendientesMap = [];
-      pendientes.forEach(pendiente => {
-        if (!pendientesMap[pendiente.idcarrito]) {
-          pendientesMap[pendiente.idcarrito] = {
-            total: 0,
-            idcarrito: pendiente.idcarrito,
-            nombrecliente: pendiente.cliente.nombre,
-            nombreusuario: pendiente.nombreusuario,
-            servicios: 0,
-            reservas: []
-          }
-        }
-
-        let servicios = pendiente.servicio;
-
-        let total = servicios.length > 1 ? servicios.map(servicio => servicio.valor).reduce((a, b) => a + b) : servicios[0].valor;
-
-        pendientesMap[pendiente.idcarrito].total += total;
-        pendientesMap[pendiente.idcarrito].servicios += servicios.length;
-        pendientesMap[pendiente.idcarrito].reservas.push(pendiente);
-      })
+  presentPopover(myEvent) {
+    let popover = this.popoverCtrl.create('PendientePagoPage');
+    popover.present({
+      ev: myEvent
     });
   }
 
