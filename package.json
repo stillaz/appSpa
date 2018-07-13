@@ -37,8 +37,6 @@
     "cordova-plugin-camera": "^4.0.3",
     "cordova-plugin-datepicker": "^0.9.3",
     "cordova-plugin-device": "^2.0.2",
-    "cordova-plugin-filechooser": "^1.0.1",
-    "cordova-plugin-filepath": "^1.3.0",
     "cordova-plugin-ionic-keyboard": "^2.1.2",
     "cordova-plugin-ionic-webview": "^1.2.1",
     "cordova-plugin-splashscreen": "^5.0.2",
@@ -74,9 +72,7 @@
         "ANDROID_SUPPORT_V13_VERSION": "27.+",
         "FCM_VERSION": "11.6.2"
       },
-      "cordova-plugin-camera": {},
-      "cordova-plugin-filechooser": {},
-      "cordova-plugin-filepath": {}
+      "cordova-plugin-camera": {}
     },
     "platforms": [
       "android"

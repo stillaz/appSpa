@@ -27,16 +27,13 @@
         <ion-row>
           <ion-col #item *ngFor="let servicio of item.servicios" class="cell-1" (click)="ver(servicio)">
             <img *ngIf="servicio.imagen" [src]="servicio.imagen">
-            <ion-card>
+            <ion-card color="dark">
               <ion-card-header>
-                <ion-title>{{servicio.nombre}}</ion-title>
+                {{servicio.nombre}}
               </ion-card-header>
               <ion-card-content>
-                <p>{{servicio.descripcion}}.</p>
-                <ion-item>
-                  <p item-start>Duración: {{servicio.duracion_MIN}} min.</p>
-                  <strong item-end>{{servicio.valor| currency : USD: symbol: '4.0' }}</strong>
-                </ion-item>
+                <p>{{servicio.descripcion}}. {{servicio.duracion_MIN}} min.</p>
+                <p> {{servicio.valor| currency : USD: symbol: '4.0' }}</p>
               </ion-card-content>
             </ion-card>
           </ion-col>

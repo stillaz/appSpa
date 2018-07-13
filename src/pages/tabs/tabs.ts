@@ -103,8 +103,6 @@ export class TabsPage {
           let cantidadactual = this.cantidadesanteriores[usuario.id] ? this.cantidadesanteriores[usuario.id] : 0;
 
           let diferencia = cantidad - cantidadactual;
-          console.log(cantidad);
-          console.log(cantidadactual);
           this.tabs[1].badge += diferencia;
 
           this.cantidadesanteriores[usuario.id] = cantidad;
