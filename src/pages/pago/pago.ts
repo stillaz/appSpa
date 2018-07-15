@@ -24,6 +24,8 @@ import { AngularFireAuth } from '../../../node_modules/angularfire2/auth';
 export class PagoPage {
 
   pendientesPago: any[];
+  usuarioSeleccionado: string;
+  private contador: number;
   private constantes = DataProvider;
   private usuarioDoc: AngularFirestoreDocument<UsuarioOptions>;
   private usuarioLogueado: UsuarioOptions;
@@ -36,6 +38,7 @@ export class PagoPage {
     public alertCtrl: AlertController,
     public loadingCtrl: LoadingController
   ) {
+    this.pendientesPago = [];
     this.updateUsuario(this.afa.auth.currentUser.uid);
     this.updateServiciosUsuarios();
   }
@@ -68,74 +71,85 @@ export class PagoPage {
 
   private updateServiciosUsuarios() {
     this.afs.collection<UsuarioOptions>('usuarios').valueChanges().subscribe(data => {
-      this.pendientesPago = [];
       data.forEach(usuario => {
-        this.updatePendientesPago(usuario);
+        let pendientesCollection: AngularFirestoreCollection<ReservaOptions> = this.afs.doc('usuarios/' + usuario.id).collection<ReservaOptions>('pendientes', ref => ref.where('estado', '==', this.constantes.ESTADOS_RESERVA.PENDIENTE_PAGO));
+        pendientesCollection.valueChanges().subscribe(data => {
+          this.contador = -1;
+          if (data.length > 0) {
+            let pendientes = this.updatePendientesPago(data);
+            let item = this.pendientesPago ? this.pendientesPago.indexOf(pendiente => pendiente.id === data[0].idusuario) : null;
+            if (item && item >= 0) {
+              this.pendientesPago.splice(item, 1);
+            }
+            this.pendientesPago.push({ id: usuario.id, grupo: data[0].nombreusuario, data: pendientes });
+          } else if (this.pendientesPago) {
+            let pendientePago = this.pendientesPago.find(item => item.id === this.usuarioSeleccionado);
+            if (pendientePago) {
+              let item = this.pendientesPago.indexOf(pendientePago);
+              this.pendientesPago.splice(item, 1);
+            }
+          }
+        });
       });
     });
   }
 
-  private updatePendientesPago(usuario: UsuarioOptions) {
-    let pendientesCollection: AngularFirestoreCollection<ReservaOptions> = this.afs.doc('usuarios/' + usuario.id).collection<ReservaOptions>('pendientes', ref => ref.where('estado', '==', this.constantes.ESTADOS_RESERVA.PENDIENTE_PAGO));
-    return new Promise(resolve => {
-      let read = pendientesCollection.valueChanges().subscribe(pendientes => {
-        let pendientesMap = [];
-        let contador = -1;
-        let contadoranterior = contador;
-        if (pendientes.length > 0) {
-          pendientes.forEach(pendiente => {
-            let id = 'id' + pendiente.idcarrito;
-            if (!pendientesMap[id]) {
-              contador++;
-              pendientesMap[id] = [];
-              this.pendientesPago[contador] = {
-                total: 0,
-                idcarrito: pendiente.idcarrito,
-                nombrecliente: pendiente.cliente.nombre,
-                nombreusuario: pendiente.nombreusuario,
-                idusuario: pendiente.idusuario,
-                nombreservicios: '',
-                servicios: 0,
-                reservas: []
-              };
-            }
-
-            let servicios = pendiente.servicio;
-
-            let total: number;
-            let nombreservicios: string;
-
-            if (servicios.length > 1) {
-              total = servicios.map(servicio => Number(servicio.valor)).reduce((a, b) => a + b);
-              nombreservicios = servicios.map(servicio => Number(servicio.nombre)).join(' - ');
-            } else {
-              total = Number(servicios[0].valor);
-              nombreservicios = servicios[0].nombre;
-              if (contador === contadoranterior) {
-                nombreservicios = ' - ' + nombreservicios;
-              }
-            }
-
-            this.pendientesPago[contador].total += total;
-            this.pendientesPago[contador].servicios += servicios.length;
-            this.pendientesPago[contador].nombreservicios += nombreservicios;
-            this.pendientesPago[contador].reservas.push(pendiente);
-
-            contadoranterior = contador;
-          });
+  private updatePendientesPago(pendientes: ReservaOptions[]) {
+    let pendientesPago = [];
+    let pendientesMap = [];
+    let contadoranterior = this.contador;
+    if (pendientes.length > 0) {
+      pendientes.forEach(pendiente => {
+        let id = 'id' + pendiente.idcarrito;
+        if (!pendientesMap[id]) {
+          this.contador++;
+          pendientesMap[id] = [];
+          pendientesPago[this.contador] = {
+            total: 0,
+            idcarrito: pendiente.idcarrito,
+            nombrecliente: pendiente.cliente.nombre,
+            nombreusuario: pendiente.nombreusuario,
+            idusuario: pendiente.idusuario,
+            nombreservicios: '',
+            servicios: 0,
+            reservas: []
+          };
         }
 
-        read.unsubscribe();
-        resolve('ok');
+        let servicios = pendiente.servicio;
+
+        let total: number;
+        let nombreservicios: string;
+
+        if (servicios.length > 1) {
+          total = servicios.map(servicio => Number(servicio.valor)).reduce((a, b) => a + b);
+          nombreservicios = servicios.map(servicio => Number(servicio.nombre)).join(' - ');
+        } else {
+          total = Number(servicios[0].valor);
+          nombreservicios = servicios[0].nombre;
+          if (this.contador === contadoranterior) {
+            nombreservicios = ' - ' + nombreservicios;
+          }
+        }
+
+        pendientesPago[this.contador].total += total;
+        pendientesPago[this.contador].servicios += servicios.length;
+        pendientesPago[this.contador].nombreservicios += nombreservicios;
+        pendientesPago[this.contador].reservas.push(pendiente);
       });
-    });
+    }
+    return pendientesPago;
   }
 
-  private pagarServicio(reserva: ReservaOptions, usuario: UsuarioOptions) {
+  private pagarServicio(reserva: ReservaOptions) {
     let fechainicio = reserva.fechaInicio.toDate();
 
+    let usuarioreserva = reserva.idusuario;
+
+    let usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + usuarioreserva);
+
     let iddisponibilidad = moment(fechainicio).startOf('day').toDate().getTime().toString();
-    let disponibilidadDoc = this.usuarioDoc.collection('disponibilidades').doc(iddisponibilidad);
+    let disponibilidadDoc = usuarioDoc.collection('disponibilidades').doc(iddisponibilidad);
 
     reserva.estado = this.constantes.ESTADOS_RESERVA.FINALIZADO;
 
@@ -147,7 +161,7 @@ export class PagoPage {
 
     batch.set(disponibilidadDoc.collection('finalizados').doc(id).ref, reserva);
 
-    batch.delete(this.usuarioDoc.collection('pendientes').doc(id).ref);
+    batch.delete(usuarioDoc.collection('pendientes').doc(id).ref);
 
     let mesServicio = moment(fechainicio).startOf('month');
 
@@ -168,7 +182,7 @@ export class PagoPage {
         totalesServiciosDoc.ref.get().then(() => {
           batch.set(totalesServiciosDoc.ref, { ultimaactualizacion: new Date() });
 
-          let totalesServiciosUsuarioDoc = totalesServiciosDoc.collection('totalesServiciosUsuarios').doc<TotalesServiciosOptions>(usuario.id);
+          let totalesServiciosUsuarioDoc = totalesServiciosDoc.collection('totalesServiciosUsuarios').doc<TotalesServiciosOptions>(usuarioreserva);
 
           totalesServiciosUsuarioDoc.ref.get().then(datos => {
             if (datos.exists) {
@@ -177,9 +191,9 @@ export class PagoPage {
               batch.update(totalesServiciosUsuarioDoc.ref, { totalServicios: Number(totalActual) + totalServiciosReserva, cantidadServicios: Number(cantidadActual) + 1, fecha: new Date() });
             } else {
               let totalServicioUsuario: TotalesServiciosOptions = {
-                idusuario: usuario.id,
-                usuario: usuario.nombre,
-                imagenusuario: usuario.imagen,
+                idusuario: usuarioreserva,
+                usuario: reserva.nombreusuario,
+                imagenusuario: '',
                 totalServicios: totalServiciosReserva,
                 cantidadServicios: 1,
                 fecha: new Date()
@@ -195,10 +209,10 @@ export class PagoPage {
     });
   }
 
-  private pagarReservas(reservas: ReservaOptions[], usuario: UsuarioOptions) {
+  private pagarReservas(reservas: ReservaOptions[]) {
     return new Promise((resolve, reject) => {
       reservas.forEach(reserva => {
-        this.pagarServicio(reserva, usuario).then(batch => {
+        this.pagarServicio(reserva).then(batch => {
           batch.commit().then(() => {
             resolve('ok');
           }).catch(err => reject(err));
@@ -207,34 +221,27 @@ export class PagoPage {
     });
   }
 
-  updateUsuarioServicio(id: string) {
-    return new Promise<UsuarioOptions>(resolve => {
-      this.afs.doc<UsuarioOptions>('usuarios/' + id).valueChanges().subscribe(data => {
-        resolve(data);
-      });
-    });
-  }
-
   pagar(pendientesPago) {
-    this.updateUsuarioServicio(pendientesPago.idusuario).then(data => {
-      this.pagarReservas(pendientesPago.reservas, data).then(() => {
-        let loading = this.loadingCtrl.create({
-          spinner: 'crescent',
-          content: 'Procesando'
-        });
-
-        loading.present();
-        let total = pendientesPago.total;
-
-        this.genericAlert('Servicio finalizado', 'El servicio ha sido pagado satisfactoriamente.');
-
-        this.genericAlert('Servicio finalizado', 'Valor servicios: ' + total);
-
-        this.updateServiciosUsuarios();
-
-        loading.dismiss();
-      }).catch(err => this.genericAlert('Error al pagar', err));
+    let loading = this.loadingCtrl.create({
+      spinner: 'crescent',
+      content: 'Procesando',
+      duration: 5000
     });
+
+    loading.present();
+
+    this.usuarioSeleccionado = pendientesPago.idusuario;
+
+    this.pagarReservas(pendientesPago.reservas).then(() => {
+
+      let total = pendientesPago.total;
+
+      loading.dismiss();
+
+      this.genericAlert('Servicio finalizado', 'El servicio ha sido pagado satisfactoriamente.');
+
+      this.genericAlert('Servicio finalizado', 'Valor servicios: ' + total);
+    }).catch(err => this.genericAlert('Error al pagar', err));
   }
 
 }

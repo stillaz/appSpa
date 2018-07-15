@@ -15,12 +15,19 @@
 
 <ion-content padding>
   <ion-list>
-    <ion-item *ngFor="let pendiente of pendientesPago">
-      <h2 style="color: #f53d3d">{{pendiente.nombrecliente}} - {{pendiente.total | currency:'USD':'symbol':'4.0'}}</h2>
-      <p>{{pendiente.nombreservicios}}</p>
-      <p>Realizado por: {{pendiente.nombreusuario}}</p>
+    <ion-item-group *ngFor="let pendientes of pendientesPago">
+      <ion-item-divider sticky color="light" *ngIf="pendientes.data.length > 0">
+        <ion-label>
+          {{pendientes.grupo}}
+        </ion-label>
+      </ion-item-divider>
+      <ion-item *ngFor="let pendiente of pendientes.data">
+        <h2 style="color: #f53d3d">{{pendiente.nombrecliente}} - {{pendiente.total | currency:'USD':'symbol':'4.0'}}</h2>
+        <p>{{pendiente.nombreservicios}}</p>
+        <p>Realizado por: {{pendiente.nombreusuario}}</p>
 
-      <button ion-button color="danger" item-end (click)="pagar(pendiente)">Pagar</button>
-    </ion-item>
+        <button ion-button color="danger" item-end (click)="pagar(pendiente)">Pagar</button>
+      </ion-item>
+    </ion-item-group>
   </ion-list>
 </ion-content>
