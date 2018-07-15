@@ -75,17 +75,22 @@ export class PagoPage {
         let pendientesCollection: AngularFirestoreCollection<ReservaOptions> = this.afs.doc('usuarios/' + usuario.id).collection<ReservaOptions>('pendientes', ref => ref.where('estado', '==', this.constantes.ESTADOS_RESERVA.PENDIENTE_PAGO));
         pendientesCollection.valueChanges().subscribe(data => {
           this.contador = -1;
+          let pendientePago;
+          let item;
           if (data.length > 0) {
             let pendientes = this.updatePendientesPago(data);
-            let item = this.pendientesPago ? this.pendientesPago.indexOf(pendiente => pendiente.id === data[0].idusuario) : null;
-            if (item && item >= 0) {
-              this.pendientesPago.splice(item, 1);
-            }
-            this.pendientesPago.push({ id: usuario.id, grupo: data[0].nombreusuario, data: pendientes });
-          } else if (this.pendientesPago) {
-            let pendientePago = this.pendientesPago.find(item => item.id === this.usuarioSeleccionado);
+            pendientePago = this.pendientesPago.find(item => item.id === this.usuarioSeleccionado);
             if (pendientePago) {
-              let item = this.pendientesPago.indexOf(pendientePago);
+              item = this.pendientesPago.indexOf(pendientePago);
+              this.pendientesPago.splice(item, 1);
+              pendientePago.data = pendientes;
+            } else {
+              this.pendientesPago.push({ id: usuario.id, grupo: data[0].nombreusuario, data: pendientes });
+            }
+          } else if (this.pendientesPago.length > 0) {
+            pendientePago = this.pendientesPago.find(item => item.id === this.usuarioSeleccionado);
+            if (pendientePago) {
+              item = this.pendientesPago.indexOf(pendientePago);
               this.pendientesPago.splice(item, 1);
             }
           }
@@ -123,7 +128,7 @@ export class PagoPage {
 
         if (servicios.length > 1) {
           total = servicios.map(servicio => Number(servicio.valor)).reduce((a, b) => a + b);
-          nombreservicios = servicios.map(servicio => Number(servicio.nombre)).join(' - ');
+          nombreservicios = servicios.map(servicio => servicio.nombre).join(' - ');
         } else {
           total = Number(servicios[0].valor);
           nombreservicios = servicios[0].nombre;
