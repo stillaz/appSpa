@@ -116,7 +116,7 @@ export class PerfilPage {
       configuracion: this.usuario.configuracion
     };
 
-    this.usuarioDoc.update({ telefono: usuario.telefono });
+    this.usuarioDoc.update({ telefono: usuario.telefono, imagen: usuario.imagen });
     let alert = this.alertCtrl.create({
       title: 'Usuario actualizado',
       message: 'El usuario ha sido actualizado exitosamente',
