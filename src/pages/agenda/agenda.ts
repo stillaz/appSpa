@@ -12,6 +12,7 @@ import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection 
 import { AngularFireAuth } from 'angularfire2/auth';
 import { PerfilOptions } from '../../interfaces/perfil-options';
 import { PaginaOptions } from '../../interfaces/pagina-options';
+import { TotalesServiciosOptions } from '../../interfaces/totales-servicios-options';
 
 /**
  * Generated class for the AgendaPage page.
@@ -258,11 +259,11 @@ export class AgendaPage {
       message: 'Desea cancelar la cita el día: ' + fechaInicio + ' a las ' + horaInicio,
       buttons: [
         {
-          text: 'Cancelar',
+          text: 'No',
           role: 'cancel'
         },
         {
-          text: 'OK',
+          text: 'Si',
           handler: () => {
             let batch = this.afs.firestore.batch();
             let canceladoDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('cancelados').doc(new Date().getTime().toString());
@@ -273,12 +274,36 @@ export class AgendaPage {
 
             batch.delete(disponibilidadCancelarDoc.ref);
 
-            let pendienteDoc: AngularFirestoreDocument = this.usuarioDoc.collection('pendientes').doc(reserva.fechaInicio.getTime().toString());
+            let mesServicio = moment(reserva.fechaInicio).startOf('month');
 
-            batch.delete(pendienteDoc.ref);
+            let totalesServiciosDoc = this.afs.doc('totalesservicios/' + mesServicio);
 
-            batch.commit().then(() => {
-              this.genericAlert('Cita cancelada', 'La cita con ' + nombreCliente + ' ha sido cancelada');
+            let totalServiciosReserva = reserva.servicio.map(servicioReserva => Number(servicioReserva.valor)).reduce((a, b) => a + b);
+
+            disponibilidadCancelarDoc.ref.get().then(datosDiarios => {
+              let totalDiarioActual = datosDiarios.get('totalServicios');
+              let cantidadDiarioActual = datosDiarios.get('cantidadServicios');
+              let totalDiario = Number(totalDiarioActual) - totalServiciosReserva;
+              let cantidadDiario = Number(cantidadDiarioActual) - 1;
+              batch.update(disponibilidadCancelarDoc.ref, { totalServicios: totalDiario, cantidadServicios: cantidadDiario, fecha: new Date() });
+
+              totalesServiciosDoc.ref.get().then(() => {
+                batch.set(totalesServiciosDoc.ref, { ultimaactualizacion: new Date() });
+
+                let totalesServiciosUsuarioDoc = totalesServiciosDoc.collection('totalesServiciosUsuarios').doc<TotalesServiciosOptions>(this.usuario.id);
+
+                totalesServiciosUsuarioDoc.ref.get().then(datos => {
+                  let totalActual = datos.get('totalServicios');
+                  let cantidadActual = datos.get('cantidadServicios');
+                  batch.update(totalesServiciosUsuarioDoc.ref, { totalServicios: Number(totalActual) - totalServiciosReserva, cantidadServicios: Number(cantidadActual) - 1, fecha: new Date() });
+
+                  batch.commit().then(() => {
+                    this.genericAlert('Cita cancelada', 'La cita con ' + nombreCliente + ' ha sido cancelada');
+                  }).catch(err => this.genericAlert('Error', err));
+
+                  this.navCtrl.pop();
+                });
+              });
             });
           }
         }
