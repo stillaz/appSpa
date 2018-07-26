@@ -5,22 +5,11 @@
   Ionic pages and navigation.
 -->
 <ion-header>
-  <ion-navbar>
+  <ion-navbar color="primary">
     <ion-title>Reservar para {{cliente.nombre}}</ion-title>
     <ion-row>
       <ion-col col-8>
         <br/> {{horaSeleccionada}}
-      </ion-col>
-      <ion-col>
-        <button ion-button icon-right color="danger" clear float-right *ngIf="idcarrito && cantidad !== 0" (tap)="ver($event)">
-          {{cantidad}}
-          <ion-icon name="list" item-end></ion-icon>
-        </button>
-      </ion-col>
-      <ion-col>
-        <button ion-button icon-right color="danger" outline float-right *ngIf="idcarrito && cantidad === 0" (tap)="reservarVacio()">
-          Reservar sin servicio
-        </button>
       </ion-col>
     </ion-row>
   </ion-navbar>
@@ -28,20 +17,20 @@
 
 <ion-content padding>
   <ion-list class="grid-full" *ngFor="let servicio of servicios">
-    <ion-card>
-      <img *ngIf="servicio.imagen" [src]="servicio.imagen" width="100%">
+    <ion-card color="dark">
       <ion-card-content>
-        <h2>{{servicio.nombre}}</h2>
+        <h2>
+          <b>{{servicio.nombre}}</b>
+        </h2>
         <p>{{servicio.descripcion}}.
           <br/>Duración: {{servicio.duracion_MIN}} min.</p>
+        <ion-item color="dark">
+          <p item-start>Valor: {{servicio.valor| currency : USD: symbol: '4.0' }}</p>
+          <button ion-button item-end icon-start (tap)="agregar(servicio)" [disabled]="!servicio.activo">
+            Agregar
+          </button>
+        </ion-item>
       </ion-card-content>
-
-      <ion-item>
-        <p item-start>Precio: {{servicio.valor| currency : USD: symbol: '4.0' }}</p>
-        <button ion-button item-end icon-start outline (tap)="agregar(servicio)" [disabled]="!servicio.activo">
-          Agregar
-        </button>
-      </ion-item>
     </ion-card>
   </ion-list>
 </ion-content>

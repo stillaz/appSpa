@@ -26,7 +26,6 @@ import { AngularFireStorageModule } from 'angularfire2/storage';
 import { SearchPipe } from '../pipes/search/search';
 import { GastoPage } from '../pages/gasto/gasto';
 import { JoinsPipe } from '../pipes/joins/joins';
-import { PagoPage } from '../pages/pago/pago';
 
 
 @NgModule({
@@ -35,7 +34,6 @@ import { PagoPage } from '../pages/pago/pago';
     AgendaPage,
     ConfiguracionPage,
     GastoPage,
-    PagoPage,
     ReportesPage,
     TabsPage,
     SearchPipe,
@@ -56,7 +54,6 @@ import { PagoPage } from '../pages/pago/pago';
     AgendaPage,
     ConfiguracionPage,
     GastoPage,
-    PagoPage,
     ReportesPage,
     TabsPage
   ],

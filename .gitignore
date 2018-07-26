@@ -29,7 +29,9 @@ plugins/android.json
 plugins/ios.json
 www/
 $RECYCLE.BIN/
+src/app/config.firebase.ts
 
 .DS_Store
 Thumbs.db
 UserInterfaceState.xcuserstate
+google-services.json

@@ -35,7 +35,7 @@ export class DetalleReportePage {
   total: number;
   cantidad: number;
   read;
-  modo: string = 'finalizados';
+  modo: string = 'disponibilidades';
 
   constructor(
     public navCtrl: NavController,
@@ -121,7 +121,7 @@ export class DetalleReportePage {
 
   updateServicios(fecha: Date) {
     let fechaInicio = moment(fecha).startOf('month').toDate();
-    let fechaFin = fecha.getMonth() == new Date().getMonth() ? new Date() : moment(fecha).endOf('month').toDate();
+    let fechaFin = moment(fecha).endOf('month').toDate();
     let disponibilidadesCollection: AngularFirestoreCollection<DisponibilidadOptions> = this.usuarioDoc.collection('disponibilidades', ref => ref.where('id', '<=', fechaFin.getTime()).orderBy('id', 'desc').where('id', '>=', fechaInicio.getTime()));
     this.read = disponibilidadesCollection.valueChanges().subscribe(data => {
       this.disponibilidades = [];

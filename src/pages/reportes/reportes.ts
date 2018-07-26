@@ -34,7 +34,6 @@ export class ReportesPage {
   total: number;
   cantidad: number;
   read;
-  modo: string = 'finalizados';
   totalesDoc: AngularFirestoreDocument;
   constantes = DataProvider;
   filtros: string[];

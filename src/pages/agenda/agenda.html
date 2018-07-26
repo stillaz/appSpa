@@ -53,8 +53,6 @@
 
           <button ion-button [hidden]="disponibilidad.estado !== constantes.ESTADOS_RESERVA.DISPONIBLE || disponibilidad.fechaFin < actual"
             clear item-end (click)="reservar(disponibilidad)">Reservar</button>
-          <button ion-button [hidden]="disponibilidad.estado !== constantes.ESTADOS_RESERVA.EJECUTANDO" color="danger" clear item-end
-            (tap)="terminar(disponibilidad)">Terminar</button>
         </ion-item>
 
         <ion-item-options>

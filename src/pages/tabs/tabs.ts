@@ -1,14 +1,12 @@
 import { Component } from '@angular/core';
 import { IonicPage, NavController, AlertController } from 'ionic-angular';
 import { AngularFireAuth } from 'angularfire2/auth';
-import { AngularFirestore, AngularFirestoreCollection } from 'angularfire2/firestore';
+import { AngularFirestore } from 'angularfire2/firestore';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
 import { AgendaPage } from '../agenda/agenda';
 import { ReportesPage } from '../reportes/reportes';
 import { ConfiguracionPage } from '../configuracion/configuracion';
 import { GastoPage } from '../gasto/gasto';
-import { PagoPage } from '../pago/pago';
-import { ReservaOptions } from '../../interfaces/reserva-options';
 import * as DataProvider from '../../providers/constants';
 
 /**
@@ -70,11 +68,9 @@ export class TabsPage {
     } else {
       this.updateTabs(user.uid).then(data => {
         if (data) {
-          this.tabs.push({ root: PagoPage, title: 'Pagos', icon: 'logo-usd', badge: 0 });
           this.tabs.push({ root: ReportesPage, title: 'Reportes', icon: 'list', badge: 0 });
           this.tabs.push({ root: GastoPage, title: 'Gastos', icon: 'trending-down', badge: 0 });
           this.tabs.push({ root: ConfiguracionPage, title: 'Configuración', icon: 'options', badge: 0 });
-          this.updateServiciosUsuarios();
         } else {
           this.tabs.push({ root: ConfiguracionPage, title: 'Configuración', icon: 'options', badge: 0 });
         }
@@ -83,32 +79,6 @@ export class TabsPage {
         this.navCtrl.setRoot('LogueoPage');
       });
     }
-  }
-
-  private updateServiciosUsuarios() {
-    this.afs.collection<UsuarioOptions>('usuarios').valueChanges().subscribe(data => {
-      data.forEach(usuario => {
-        let pendientesCollection: AngularFirestoreCollection<ReservaOptions> = this.afs.doc('usuarios/' + usuario.id).collection<ReservaOptions>('pendientes', ref => ref.where('estado', '==', this.constantes.ESTADOS_RESERVA.PENDIENTE_PAGO));
-        pendientesCollection.valueChanges().subscribe(pendientes => {
-          let pendientesMap = [];
-          let cantidad = 0;
-          pendientes.forEach(pendiente => {
-            let id = 'id' + pendiente.idcarrito;
-            if (!pendientesMap[id]) {
-              pendientesMap[id] = {};
-              cantidad++;
-            }
-          });
-
-          let cantidadactual = this.cantidadesanteriores[usuario.id] ? this.cantidadesanteriores[usuario.id] : 0;
-
-          let diferencia = cantidad - cantidadactual;
-          this.tabs[1].badge += diferencia;
-
-          this.cantidadesanteriores[usuario.id] = cantidad;
-        });
-      });
-    });
   }
 
 }

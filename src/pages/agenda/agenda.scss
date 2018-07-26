@@ -1,9 +1,7 @@
 $categories: (
     disponible: #3BC7C4,
     reservado: #FD8B2D,
-    finalizado: #69BB7B,
-    ejecutando: #FE4C52,
-    pendiente-pago: #FE4C52
+    ejecutando: #FE4C52
 );
     
 @function auxiliary-categories() {

@@ -9,6 +9,7 @@ import { UsuarioOptions } from '../../interfaces/usuario-options';
 import { AngularFirestore, AngularFirestoreDocument } from 'angularfire2/firestore';
 import { IndiceOptions } from '../../interfaces/indice-options';
 import { DisponibilidadOptions } from '../../interfaces/disponibilidad-options';
+import { TotalesServiciosOptions } from '../../interfaces/totales-servicios-options';
 
 /**
  * Generated class for the ReservaPage page.
@@ -64,7 +65,6 @@ export class ReservaPage {
     this.ultimoHorario = this.disponibilidadSeleccionada.fechaInicio;
     this.usuario = this.navParams.get('usuario');
     this.servicios = [];
-    this.updateCarrito();
     this.usuarioDoc = this.afs.doc('usuarios/' + this.usuario.id);
     let fecha = moment(this.ultimoHorario).startOf('day').toDate();
     this.usuarioDoc.valueChanges().subscribe(data => {
@@ -104,24 +104,32 @@ export class ReservaPage {
       }
     });
     clienteModal.present();
-    this.updateServicios();
+    this.updateCarrito();
+  }
+
+  loadIdCarrito() {
+    let indiceCarritoDoc = this.afs.doc<IndiceOptions>('indices/idcarrito');
+    return new Promise(resolve => {
+      indiceCarritoDoc.ref.get().then(data => {
+        if (data.exists) {
+          this.idcarrito = data.get('id');
+          indiceCarritoDoc.set({ id: this.idcarrito + 1 });
+        } else {
+          this.idcarrito = 0;
+          indiceCarritoDoc.set({ id: 1 });
+        }
+        resolve('ok');
+      });
+    })
   }
 
   updateCarrito() {
-    if (!this.disponibilidadSeleccionada || !this.disponibilidadSeleccionada.idcarrito) {
-      let indiceCarritoDoc = this.afs.doc<IndiceOptions>('indices/idcarrito');
-
-      if (!this.idcarrito) {
-        indiceCarritoDoc.ref.get().then(data => {
-          if (data.exists) {
-            this.idcarrito = data.get('id');
-            indiceCarritoDoc.set({ id: this.idcarrito + 1 });
-          } else {
-            this.idcarrito = 0;
-            indiceCarritoDoc.set({ id: 1 });
-          }
-        });
-      }
+    if (!this.idcarrito && (!this.disponibilidadSeleccionada || !this.disponibilidadSeleccionada.idcarrito)) {
+      this.loadIdCarrito().then(() => {
+        this.updateServicios();
+      });
+    } else {
+      this.updateServicios();
     }
   }
 
@@ -202,6 +210,7 @@ export class ReservaPage {
       });
       this.ultimoHorario = disponibilidadBloquear[disponibilidadBloquear.length - 1].fechaFin;
       this.totalServicios += Number(servicioSeleccionado.valor);
+      this.guardar();
     } else if (contador === 0) {
       this.genericAlert('Error al reservar', 'La cita se cruza con ' + disponibilidadEncontrada.cliente.nombre + ', la reserva ha sido cancelada');
     } else {
@@ -283,24 +292,60 @@ export class ReservaPage {
     this.validarReservaDisponible().then(() => {
       this.carrito.forEach(reservaNueva => {
         let reservaDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('disponibilidades').doc(reservaNueva.fechaInicio.getTime().toString());
-        let pendienteDoc = this.usuarioDoc.collection('pendientes').doc(reservaNueva.fechaInicio.getTime().toString());
         batch.set(reservaDoc.ref, reservaNueva);
-        batch.set(pendienteDoc.ref, reservaNueva);
-      });
 
-      batch.commit().then(() => {
-        this.genericAlert('Reserva registrada', 'Se ha registrado la reserva');
-        this.navCtrl.pop();
+        let mesServicio = moment(reservaNueva.fechaInicio).startOf('month');
+
+        let totalesServiciosDoc = this.afs.doc('totalesservicios/' + mesServicio);
+
+        let totalServiciosReserva = reservaNueva.servicio.map(servicioReserva => Number(servicioReserva.valor)).reduce((a, b) => a + b);
+
+        reservaDoc.ref.get().then(datosDiarios => {
+          if (datosDiarios.exists) {
+            let totalDiarioActual = datosDiarios.get('totalServicios');
+            let cantidadDiarioActual = datosDiarios.get('cantidadServicios');
+            let totalDiario = totalDiarioActual ? Number(totalDiarioActual) + totalServiciosReserva : totalServiciosReserva;
+            let cantidadDiario = cantidadDiarioActual ? Number(cantidadDiarioActual) + 1 : 1;
+            batch.update(reservaDoc.ref, { totalServicios: totalDiario, cantidadServicios: cantidadDiario, fecha: new Date() });
+          } else {
+            batch.update(reservaDoc.ref, { totalServicios: totalServiciosReserva, cantidadServicios: 1, fecha: new Date() });
+          }
+
+          totalesServiciosDoc.ref.get().then(() => {
+            batch.set(totalesServiciosDoc.ref, { ultimaactualizacion: new Date() });
+
+            let totalesServiciosUsuarioDoc = totalesServiciosDoc.collection('totalesServiciosUsuarios').doc<TotalesServiciosOptions>(this.usuario.id);
+
+            totalesServiciosUsuarioDoc.ref.get().then(datos => {
+              if (datos.exists) {
+                let totalActual = datos.get('totalServicios');
+                let cantidadActual = datos.get('cantidadServicios');
+                batch.update(totalesServiciosUsuarioDoc.ref, { totalServicios: Number(totalActual) + totalServiciosReserva, cantidadServicios: Number(cantidadActual) + 1, fecha: new Date() });
+              } else {
+                let totalServicioUsuario: TotalesServiciosOptions = {
+                  idusuario: this.usuario.id,
+                  usuario: reservaNueva.nombreusuario,
+                  imagenusuario: '',
+                  totalServicios: totalServiciosReserva,
+                  cantidadServicios: 1,
+                  fecha: new Date()
+                }
+                batch.set(totalesServiciosUsuarioDoc.ref, totalServicioUsuario);
+              }
+
+              batch.commit().then(() => {
+                this.genericAlert('Reserva registrada', 'Se ha registrado la reserva');
+              }).catch(err => this.genericAlert('Error', err));
+
+              this.navCtrl.pop();
+            });
+          });
+        });
       });
     }).catch(err => {
       this.genericAlert('Error reserva', err);
       this.navCtrl.pop();
     });
-  }
-
-  reservarVacio() {
-    this.agregar(null);
-    this.guardar();
   }
 
   ver(event) {

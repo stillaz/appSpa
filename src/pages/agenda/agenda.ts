@@ -1,6 +1,6 @@
 import moment from 'moment';
 import { Component, ViewChild } from '@angular/core';
-import { AlertController, Content, IonicPage, ItemSliding, NavController, ActionSheetController, PopoverController, LoadingController } from 'ionic-angular';
+import { AlertController, Content, IonicPage, ItemSliding, NavController, ActionSheetController, PopoverController } from 'ionic-angular';
 import * as DataProvider from '../../providers/constants';
 import { ClienteOptions } from '../../interfaces/cliente-options';
 import { ReservaOptions } from '../../interfaces/reserva-options';
@@ -8,7 +8,6 @@ import { ServicioOptions } from '../../interfaces/servicio-options';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/interval';
-import { ReservaProvider } from '../../providers/reserva';
 import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection } from 'angularfire2/firestore';
 import { AngularFireAuth } from 'angularfire2/auth';
 import { PerfilOptions } from '../../interfaces/perfil-options';
@@ -62,11 +61,9 @@ export class AgendaPage {
     public alertCtrl: AlertController,
     public actionSheetCtrl: ActionSheetController,
     public navCtrl: NavController,
-    private reservaCtrl: ReservaProvider,
     private afs: AngularFirestore,
     private afa: AngularFireAuth,
     public popoverCtrl: PopoverController,
-    public loadingCtrl: LoadingController
   ) {
     this.usuariosCollection = this.afs.collection<UsuarioOptions>('usuarios');
     let user = this.afa.auth.currentUser;
@@ -83,9 +80,6 @@ export class AgendaPage {
       this.initDate = new Date();
       this.initDate2 = new Date();
       this.updateHorariosInicial();
-      if (this.usuario.id === this.afa.auth.currentUser.uid) {
-        this.updatePendientes();
-      }
     });
   }
 
@@ -95,7 +89,6 @@ export class AgendaPage {
       this.navCtrl.setRoot('LogueoPage');
     } else {
       this.updateUsuario(user.uid);
-      this.updatePendientes();
     }
   }
 
@@ -183,13 +176,11 @@ export class AgendaPage {
           };
         }
 
-        if (moment(new Date()).isBetween(reserva.fechaInicio, reserva.fechaFin)) {
+        if (moment(ahora).isBetween(reserva.fechaInicio, reserva.fechaFin)) {
           reserva.evento = this.constantes.EVENTOS.ACTUAL;
           if (reserva.estado === this.constantes.ESTADOS_RESERVA.RESERVADO) {
             reserva.estado = this.constantes.ESTADOS_RESERVA.EJECUTANDO;
           }
-        } else if (reserva.estado == this.constantes.ESTADOS_RESERVA.RESERVADO && moment(ahora).isAfter(reserva.fechaInicio)) {
-          reserva.estado = this.constantes.ESTADOS_RESERVA.EJECUTANDO;
         }
 
         let grupo = moment(reserva.fechaInicio).startOf('hours').format('h:mm a');;
@@ -299,92 +290,6 @@ export class AgendaPage {
     slidingItem.close();
   }
 
-  private registrarServicio(reserva: ReservaOptions) {
-    let iddisponibilidad = moment(reserva.fechaInicio).startOf('day').toDate().getTime().toString();
-    let disponibilidadDoc = this.usuarioDoc.collection('disponibilidades').doc(iddisponibilidad);
-    let loading = this.loadingCtrl.create({
-      spinner: 'crescent',
-      content: 'Procesando',
-      duration: 5000
-    });
-
-    loading.present();
-
-    let reservado = this.constantes.ESTADOS_RESERVA.RESERVADO;
-    let tiempoSiguiente = null;
-    let siguiente = this.horario.find(function (disponiblidad) {
-      return disponiblidad.fechaInicio >= reserva.fechaFin && disponiblidad.estado === reservado;
-    });
-
-    if (siguiente) {
-      tiempoSiguiente = moment(siguiente.fechaInicio).diff(new Date(), 'minutes');
-    }
-
-    reserva.estado = this.constantes.ESTADOS_RESERVA.PENDIENTE_PAGO;
-
-    let id = reserva.fechaInicio.getTime().toString();
-
-    let batch = this.afs.firestore.batch();
-
-    batch.set(disponibilidadDoc.collection('disponibilidades').doc(id).ref, reserva);
-
-    batch.set(this.usuarioDoc.collection('pendientes').doc(id).ref, reserva);
-
-    batch.commit().then(() => {
-      let serviciosFinalizados = this.reservaCtrl.getReservasByIdServicioAndFinalizado(this.horario, reserva);
-
-      let totalServiciosReserva = reserva.servicio.map(servicioReserva => Number(servicioReserva.valor)).reduce((a, b) => a + b);
-
-      let total = serviciosFinalizados && serviciosFinalizados.length > 0 ? serviciosFinalizados.map(a => a ? totalServiciosReserva : 0).reduce((a, b) => a + b) : totalServiciosReserva;
-
-      let mensaje = tiempoSiguiente ? 'El próximo servicio empieza en: ' + tiempoSiguiente + ' minutos' : 'No hay más citas asignadas';
-
-      loading.dismiss();
-
-      this.genericAlert('Servicio finalizado', 'El servicio ha terminado satisfactoriamente. ' + mensaje);
-
-      this.genericAlert('Servicio finalizado', 'Valor servicios: ' + total);
-    }).catch(err => alert(err));
-  }
-
-  terminar(reserva: ReservaOptions) {
-    if (!reserva.servicio[0].id) {
-      let alertServicios = this.alertCtrl.create({
-        title: 'Servicios',
-        message: 'Selecciona los servicios aplicados a la reserva'
-      });
-
-      let serviciosUsuario = this.usuario.perfiles.find(perfil => perfil.nombre === 'Barbero').servicios;
-      serviciosUsuario.forEach((servicioUsuario, index) => {
-        alertServicios.addInput({
-          type: 'checkbox',
-          label: servicioUsuario.nombre + ' ' + servicioUsuario.valor,
-          value: index.toString()
-        });
-      });
-
-      alertServicios.addButton({
-        text: 'Cancelar',
-        role: 'cancel'
-      });
-
-      alertServicios.addButton({
-        text: 'OK',
-        handler: data => {
-          reserva.servicio = [];
-          data.forEach(i => {
-            reserva.servicio.push(serviciosUsuario[Number(i)]);
-          });
-          this.registrarServicio(reserva);
-        }
-      });
-
-      alertServicios.present();
-    } else {
-      this.registrarServicio(reserva);
-    }
-  }
-
   configActionSheet(title: string, filtros) {
     let actionSheet = this.actionSheetCtrl.create({
       title: title,
@@ -431,35 +336,6 @@ export class AgendaPage {
 
   ir(pagina: PaginaOptions) {
     this.navCtrl.push(pagina.component);
-  }
-
-  updatePendientes() {
-    let limite = moment(new Date()).add(-1, 'minute').toDate();
-    this.usuarioDoc.collection<ReservaOptions>('pendientes', ref => ref.where('estado', '==', this.constantes.ESTADOS_RESERVA.RESERVADO)).valueChanges().subscribe(pendientes => {
-      if (pendientes && pendientes.length > 0) {
-        let pendiente = pendientes[0];
-        pendiente.fechaInicio = pendiente.fechaInicio.toDate();
-        pendiente.fechaFin = pendiente.fechaFin.toDate();
-        if (pendiente.fechaFin < limite.getTime()) {
-          this.alertCtrl.create({
-            title: 'Reservas pendientes',
-            subTitle: 'Tienes una reserva el día ' + moment(pendiente.fechaInicio).locale('es').format('DD/MM/YYYY') + 'a las ' + moment(pendiente.fechaInicio).locale('es').format('h:mm a') + ' con ' + pendiente.cliente.nombre + ' que no ha sido finalizado',
-            message: '¿El servicio finalizó?',
-            buttons: [{
-              text: 'Si',
-              handler: () => {
-                this.terminar(pendiente);
-              }
-            }, {
-              text: 'No',
-              handler: () => {
-                this.eliminar(pendiente);
-              }
-            }]
-          }).present();
-        }
-      }
-    });
   }
 
   presentPopover(myEvent) {
