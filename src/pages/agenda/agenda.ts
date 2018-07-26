@@ -210,7 +210,9 @@ export class AgendaPage {
 
   scrollTo(element: string) {
     let yOffset = document.getElementById(element).offsetTop;
-    this.content.scrollTo(0, yOffset - 50, 1000)
+    if (this.content._scroll) {
+      this.content.scrollTo(0, yOffset - 50, 1000)
+    }
   }
 
   reservar(reserva: ReservaOptions) {
