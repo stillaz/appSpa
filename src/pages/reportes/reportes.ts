@@ -199,6 +199,8 @@ export class ReportesPage {
   updateTotalesSemana(fecha: Date) {
     let diaInicioSemana = moment(fecha).startOf('week').toDate();
     let diaFinSemana = moment(diaInicioSemana).endOf('week').toDate();
+    diaInicioSemana = moment(diaInicioSemana).add(1, 'days').toDate();
+    diaFinSemana = moment(diaFinSemana).add(1, 'days').toDate();
     let init = diaInicioSemana;
 
     this.textoSemana = moment(diaInicioSemana).locale('es').format('[Del] DD ') + moment(diaFinSemana).locale('es').format('[al] DD [de] MMMM');

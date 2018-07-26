@@ -26,9 +26,20 @@
         <ion-col>
           <button *ngIf="administrador" color="light" float-end ion-button outline (click)="filtroPerfiles()">{{usuario.nombre}}</button>
         </ion-col>
-
-        <ion-searchbar placeholder="Buscar reserva" [(ngModel)]="terms"></ion-searchbar>
       </ion-row>
+      <ion-segment [(ngModel)]="modo" (ionChange)="updateSeleccionado(mesSeleccionado)" color="light">
+        <ion-segment-button value="todo">
+          Todo
+        </ion-segment-button>
+
+        <ion-segment-button value="disponible">
+          Disponible
+        </ion-segment-button>
+
+        <ion-segment-button value="reservado">
+          Reservado
+        </ion-segment-button>
+      </ion-segment>
     </ion-toolbar>
   </ion-navbar>
 </ion-header>

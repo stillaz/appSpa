@@ -52,6 +52,7 @@ export class AgendaPage {
   perfiles: PerfilOptions[];
   usuarios: UsuarioOptions[];
   private disponibilidadDoc: AngularFirestoreDocument;
+  modo: string = 'todo';
 
   opciones: any[] = [
     { title: 'Configuración', component: 'ConfiguracionAgendaPage', icon: 'stats' }
@@ -138,6 +139,16 @@ export class AgendaPage {
   }
 
   updateHorariosInicial() {
+    switch (this.modo) {
+      case 'disponible':
+        break;
+
+      case 'reservado':
+        break;
+
+      case 'todo':
+        break;
+    }
     this.disponibilidadDoc.collection<ReservaOptions>('disponibilidades').valueChanges().subscribe(data => {
       this.horario = [];
       this.horarios = [];

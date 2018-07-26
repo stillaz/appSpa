@@ -300,15 +300,15 @@ export class ReservaPage {
 
         let totalServiciosReserva = reservaNueva.servicio.map(servicioReserva => Number(servicioReserva.valor)).reduce((a, b) => a + b);
 
-        reservaDoc.ref.get().then(datosDiarios => {
+        this.disponibilidadDoc.ref.get().then(datosDiarios => {
           if (datosDiarios.exists) {
             let totalDiarioActual = datosDiarios.get('totalServicios');
             let cantidadDiarioActual = datosDiarios.get('cantidadServicios');
             let totalDiario = totalDiarioActual ? Number(totalDiarioActual) + totalServiciosReserva : totalServiciosReserva;
             let cantidadDiario = cantidadDiarioActual ? Number(cantidadDiarioActual) + 1 : 1;
-            batch.update(reservaDoc.ref, { totalServicios: totalDiario, cantidadServicios: cantidadDiario, fecha: new Date() });
+            batch.update(this.disponibilidadDoc.ref, { totalServicios: totalDiario, cantidadServicios: cantidadDiario, fecha: new Date() });
           } else {
-            batch.update(reservaDoc.ref, { totalServicios: totalServiciosReserva, cantidadServicios: 1, fecha: new Date() });
+            batch.update(this.disponibilidadDoc.ref, { totalServicios: totalServiciosReserva, cantidadServicios: 1, fecha: new Date() });
           }
 
           totalesServiciosDoc.ref.get().then(() => {
