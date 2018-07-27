@@ -58,6 +58,23 @@
         <p>El tiempo de alerta no es válida</p>
       </ion-item>
 
+      <ion-item>
+        <ion-label>Hora no disponible desde:</ion-label>
+        <ion-input type="number" formControlName="horaNoDisponibleInicio"></ion-input>
+      </ion-item>
+
+      <ion-item>
+        <ion-label>Hora no disponible hasta:</ion-label>
+        <ion-input type="number" formControlName="horaNoDisponibleFin"></ion-input>
+      </ion-item>
+
+      <ion-item>
+        <ion-label>Día(s) no disponible:</ion-label>
+        <ion-select formControlName="diasNoDisponible" multiple="true" [compareWith]="compareFn">
+          <ion-option *ngFor="let perfil of perfiles" [value]="perfil">{{perfil.nombre}}</ion-option>
+        </ion-select>
+      </ion-item>
+
       <br/>
       <br/>
 

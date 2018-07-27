@@ -27,8 +27,8 @@
           <button *ngIf="administrador" color="light" float-end ion-button outline (click)="filtroPerfiles()">{{usuario.nombre}}</button>
         </ion-col>
       </ion-row>
-      <ion-segment [(ngModel)]="modo" (ionChange)="updateSeleccionado(mesSeleccionado)" color="light">
-        <ion-segment-button value="todo">
+      <ion-segment [(ngModel)]="terms" color="light" (ionChange)="updateHorariosInicial()">
+        <ion-segment-button value="">
           Todo
         </ion-segment-button>
 
@@ -38,6 +38,10 @@
 
         <ion-segment-button value="reservado">
           Reservado
+        </ion-segment-button>
+
+        <ion-segment-button value="">
+          No disponible
         </ion-segment-button>
       </ion-segment>
     </ion-toolbar>

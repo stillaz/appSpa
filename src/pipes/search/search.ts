@@ -14,11 +14,21 @@ export class SearchPipe implements PipeTransform {
     if (!items) return [];
     if (!terms) return items;
     terms = terms.toLowerCase();
+    let itemsList = items.map(i => i.disponibilidad);
+
+    const itemsL = itemsList;
+    itemsL.forEach((item, index) => {
+      item.forEach((reserva) => {
+        if(reserva.estado.toLowerCase() !== terms){
+          let nitem = item.indexOf(reserva);
+          itemsList[index].splice(nitem, 1);
+        }
+      });
+    });
+    
     return items.filter(it => {
       return it.disponibilidad.some(reserva => {
-        if (reserva.cliente && reserva.cliente.nombre) {
-          return reserva.cliente.nombre.toLowerCase().includes(terms);
-        }
+          return reserva.estado.toLowerCase() === terms;
       });
     });
   }

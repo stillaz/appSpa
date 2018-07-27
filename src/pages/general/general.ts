@@ -74,19 +74,6 @@ export class GeneralPage {
     }
   }
 
-  form() {
-    this.todo = this.formBuilder.group({
-      horaInicio: [this.configuracion.horaInicio, Validators.compose([Validators.required, Validators.min(0), Validators.max(24)])],
-      horaFin: [this.configuracion.horaFin, Validators.compose([Validators.required, Validators.min(0), Validators.max(24)]), this.validarFechaFinMayor()],
-      tiempoDisponibilidad: [this.configuracion.tiempoDisponibilidad, Validators.compose([Validators.required, Validators.min(1), Validators.max(60)])],
-      tiempoAlerta: [this.configuracion.tiempoAlerta, Validators.compose([Validators.required, Validators.min(1), Validators.max(1440)])]
-    });
-  }
-
-  isPresent(obj: any): boolean {
-    return obj !== undefined && obj !== null;
-  }
-
   validarFechaFinMayor(): ValidatorFn {
     return (control: AbstractControl): { [key: string]: any } => {
       if (this.isPresent(Validators.required(control))) return null;
@@ -98,6 +85,63 @@ export class GeneralPage {
         resolve(Number(fin) <= Number(inicio) ? { validarFechaFinMayor: true } : null);
       });
     }
+  }
+
+  validarHoraNoDisponibleInicio() {
+    return (control: AbstractControl): { [key: string]: any } => {
+      let valor = control.value;
+
+      if (!valor) return null;
+
+      let inicio = this.todo && this.todo.value.horaInicio ? this.todo.value.horaInicio : -1;
+      let fin = this.todo && this.todo.value.horaFin ? this.todo.value.horaFin : 24;
+
+      return new Promise((resolve) => {
+        if (Number(valor) < Number(inicio)) {
+          resolve({ validarHoraNoDisponibleInicioMenor: true });
+        } else if (Number(valor) > Number(fin)) {
+          resolve({ validarHoraNoDisponibleInicioMayor: true });
+        } else {
+          resolve(null);
+        }
+      });
+    }
+  }
+
+  validarHoraNoDisponibleFin() {
+    return (control: AbstractControl): { [key: string]: any } => {
+      let valor = control.value;
+      if (!valor) return null;
+
+      let inicio = this.todo && this.todo.value.horaNoDisponibleInicio ? this.todo.value.horaNoDisponibleInicio : -1;
+      let fin = this.todo && this.todo.value.horaFin ? this.todo.value.horaFin : 24;
+
+      return new Promise((resolve) => {
+        if (Number(valor) < Number(inicio)) {
+          resolve({ validarHoraNoDisponibleFinMenor: true });
+        } else if (Number(valor) > Number(fin)) {
+          resolve({ validarHoraNoDisponibleFinMayor: true });
+        } else {
+          resolve(null);
+        }
+      });
+    }
+  }
+
+  form() {
+    this.todo = this.formBuilder.group({
+      horaInicio: [this.configuracion.horaInicio, Validators.compose([Validators.required, Validators.min(0), Validators.max(24)])],
+      horaFin: [this.configuracion.horaFin, Validators.compose([Validators.required, Validators.min(0), Validators.max(24)]), this.validarFechaFinMayor()],
+      tiempoDisponibilidad: [this.configuracion.tiempoDisponibilidad, Validators.compose([Validators.required, Validators.min(1), Validators.max(60)])],
+      tiempoAlerta: [this.configuracion.tiempoAlerta, Validators.compose([Validators.required, Validators.min(1), Validators.max(1440)])],
+      horaNoDisponibleInicio: [this.configuracion.horaNoDisponibleInicio],
+      horaNoDisponibleFin: [this.configuracion.horaNoDisponibleFin],
+      diasNoDisponible: [this.configuracion.diasNoDisponible]
+    });
+  }
+
+  isPresent(obj: any): boolean {
+    return obj !== undefined && obj !== null;
   }
 
   guardar() {
