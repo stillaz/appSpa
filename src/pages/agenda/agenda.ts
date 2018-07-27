@@ -281,12 +281,12 @@ export class AgendaPage {
 
             let totalServiciosReserva = reserva.servicio.map(servicioReserva => Number(servicioReserva.valor)).reduce((a, b) => a + b);
 
-            disponibilidadCancelarDoc.ref.get().then(datosDiarios => {
+            this.disponibilidadDoc.ref.get().then(datosDiarios => {
               let totalDiarioActual = datosDiarios.get('totalServicios');
               let cantidadDiarioActual = datosDiarios.get('cantidadServicios');
               let totalDiario = Number(totalDiarioActual) - totalServiciosReserva;
               let cantidadDiario = Number(cantidadDiarioActual) - 1;
-              batch.update(disponibilidadCancelarDoc.ref, { totalServicios: totalDiario, cantidadServicios: cantidadDiario, fecha: new Date() });
+              batch.update(this.disponibilidadDoc.ref, { totalServicios: totalDiario, cantidadServicios: cantidadDiario, fecha: new Date() });
 
               totalesServiciosDoc.ref.get().then(() => {
                 batch.set(totalesServiciosDoc.ref, { ultimaactualizacion: new Date() });
@@ -301,8 +301,6 @@ export class AgendaPage {
                   batch.commit().then(() => {
                     this.genericAlert('Cita cancelada', 'La cita con ' + nombreCliente + ' ha sido cancelada');
                   }).catch(err => this.genericAlert('Error', err));
-
-                  this.navCtrl.pop();
                 });
               });
             });

@@ -59,20 +59,20 @@
       </ion-item>
 
       <ion-item>
-        <ion-label>Hora no disponible desde:</ion-label>
-        <ion-input type="number" formControlName="horaNoDisponibleInicio"></ion-input>
-      </ion-item>
-
-      <ion-item>
-        <ion-label>Hora no disponible hasta:</ion-label>
-        <ion-input type="number" formControlName="horaNoDisponibleFin"></ion-input>
-      </ion-item>
-
-      <ion-item>
         <ion-label>Día(s) no disponible:</ion-label>
         <ion-select formControlName="diasNoDisponible" multiple="true" [compareWith]="compareFn">
-          <ion-option *ngFor="let perfil of perfiles" [value]="perfil">{{perfil.nombre}}</ion-option>
+          <ion-option *ngFor="let dia of dias" [value]="dia">{{dia.dia}}</ion-option>
         </ion-select>
+      </ion-item>
+
+      <ion-item>
+        <p>Horario no disponible</p>
+        <button ion-button item-end icon-right color="dark" (click)="agregarNoDisponible()">
+          Agregar
+        </button>
+        <button ion-button item-end icon-only clear (click)="irNoDisponible()">
+          <ion-icon name="eye"></ion-icon>
+        </button>
       </ion-item>
 
       <br/>

@@ -1,10 +1,11 @@
 import { Component } from '@angular/core';
-import { IonicPage, NavController, NavParams, AlertController } from 'ionic-angular';
+import { IonicPage, NavController, NavParams, AlertController, ModalController } from 'ionic-angular';
 import { ConfiguracionOptions } from '../../interfaces/configuracion-options';
 import { AngularFireAuth } from 'angularfire2/auth';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
 import { AngularFirestoreDocument, AngularFirestore } from 'angularfire2/firestore';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
+import * as DataProvider from '../../providers/constants';
 
 /**
  * Generated class for the ConfiguracionPage page.
@@ -27,6 +28,7 @@ export class GeneralPage {
   administrador: boolean;
   todo: FormGroup;
   read;
+  dias = DataProvider.DIAS;
 
   constructor(
     public navCtrl: NavController,
@@ -34,7 +36,8 @@ export class GeneralPage {
     private afa: AngularFireAuth,
     private afs: AngularFirestore,
     public alertCtrl: AlertController,
-    private formBuilder: FormBuilder
+    private formBuilder: FormBuilder,
+    public modalCtrl: ModalController
   ) {
     this.form();
   }
@@ -87,55 +90,12 @@ export class GeneralPage {
     }
   }
 
-  validarHoraNoDisponibleInicio() {
-    return (control: AbstractControl): { [key: string]: any } => {
-      let valor = control.value;
-
-      if (!valor) return null;
-
-      let inicio = this.todo && this.todo.value.horaInicio ? this.todo.value.horaInicio : -1;
-      let fin = this.todo && this.todo.value.horaFin ? this.todo.value.horaFin : 24;
-
-      return new Promise((resolve) => {
-        if (Number(valor) < Number(inicio)) {
-          resolve({ validarHoraNoDisponibleInicioMenor: true });
-        } else if (Number(valor) > Number(fin)) {
-          resolve({ validarHoraNoDisponibleInicioMayor: true });
-        } else {
-          resolve(null);
-        }
-      });
-    }
-  }
-
-  validarHoraNoDisponibleFin() {
-    return (control: AbstractControl): { [key: string]: any } => {
-      let valor = control.value;
-      if (!valor) return null;
-
-      let inicio = this.todo && this.todo.value.horaNoDisponibleInicio ? this.todo.value.horaNoDisponibleInicio : -1;
-      let fin = this.todo && this.todo.value.horaFin ? this.todo.value.horaFin : 24;
-
-      return new Promise((resolve) => {
-        if (Number(valor) < Number(inicio)) {
-          resolve({ validarHoraNoDisponibleFinMenor: true });
-        } else if (Number(valor) > Number(fin)) {
-          resolve({ validarHoraNoDisponibleFinMayor: true });
-        } else {
-          resolve(null);
-        }
-      });
-    }
-  }
-
   form() {
     this.todo = this.formBuilder.group({
       horaInicio: [this.configuracion.horaInicio, Validators.compose([Validators.required, Validators.min(0), Validators.max(24)])],
       horaFin: [this.configuracion.horaFin, Validators.compose([Validators.required, Validators.min(0), Validators.max(24)]), this.validarFechaFinMayor()],
       tiempoDisponibilidad: [this.configuracion.tiempoDisponibilidad, Validators.compose([Validators.required, Validators.min(1), Validators.max(60)])],
       tiempoAlerta: [this.configuracion.tiempoAlerta, Validators.compose([Validators.required, Validators.min(1), Validators.max(1440)])],
-      horaNoDisponibleInicio: [this.configuracion.horaNoDisponibleInicio],
-      horaNoDisponibleFin: [this.configuracion.horaNoDisponibleFin],
       diasNoDisponible: [this.configuracion.diasNoDisponible]
     });
   }
@@ -170,6 +130,18 @@ export class GeneralPage {
     this.read.unsubscribe();
     this.updateConfiguracion();
     this.navCtrl.pop();
+  }
+
+  compareFn(p1: any, p2: any): boolean {
+    return p1 && p2 ? p1.id === p2.id : p1 === p2;
+  }
+
+  agregarNoDisponible() {
+    this.modalCtrl.create('DetalleNodisponibilidadPage').present();
+  }
+
+  irNoDisponible() {
+    this.navCtrl.push('NodisponiblePage');
   }
 
 }
