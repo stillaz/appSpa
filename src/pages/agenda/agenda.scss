@@ -1,7 +1,8 @@
 $categories: (
     disponible: #3BC7C4,
     reservado: #FD8B2D,
-    ejecutando: #FE4C52
+    ejecutando: #FE4C52,
+    no-disponible: #222
 );
     
 @function auxiliary-categories() {

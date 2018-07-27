@@ -53,6 +53,7 @@ export class AgendaPage {
   usuarios: UsuarioOptions[];
   private disponibilidadDoc: AngularFirestoreDocument;
   terms: string = '';
+  private indisponibles;
 
   opciones: any[] = [
     { title: 'Configuración', component: 'ConfiguracionAgendaPage', icon: 'stats' }
@@ -109,7 +110,7 @@ export class AgendaPage {
         this.administrador = this.usuarioLogueado.perfiles.some(perfil => perfil.nombre === 'Administrador');
         let fecha = moment(this.initDate).startOf('days').toDate().getTime().toString();
         this.disponibilidadDoc = this.usuarioDoc.collection('disponibilidades').doc(fecha);
-        this.updateHorariosInicial();
+        this.updateHorarioNoDisponible();
       } else {
         this.genericAlert('Error usuario', 'Usuario no encontrado');
         this.navCtrl.setRoot('LogueoPage');
@@ -138,6 +139,39 @@ export class AgendaPage {
     this.updateHorariosInicial();
   }
 
+  loadHorarioNoDisponible(fecha: Date): ServicioOptions {
+    let encontrado = this.indisponibles.find(item => {
+      let fechaDesde: Date = moment(new Date(item.fechaDesde)).startOf('day').toDate();
+      let fechaFin: Date = item.indefinido ? moment(new Date(item.fechaDesde)).endOf('day').toDate() : moment(new Date(item.fechaHasta)).endOf('day').toDate();
+
+      if (moment(this.initDate).isBetween(fechaDesde, fechaFin)) {
+        let horaInicio = item.todoDia ? this.horaInicio : moment(item.horaDesde, 'HH:mm').toDate().getHours();
+        let horaFin = item.todoDia ? this.horaFin - 1 : moment(item.horaHasta, 'HH:mm').toDate().getHours() - 1;
+        let horaReserva = fecha.getHours();
+        if (horaReserva >= horaInicio && horaReserva <= horaFin) {
+          return item;
+        }
+      }
+    });
+
+    let servicio: ServicioOptions;
+
+    if (encontrado) {
+      servicio = {} as ServicioOptions;
+      servicio.nombre = encontrado.descripcion;
+    }
+
+    return servicio;
+  }
+
+  updateHorarioNoDisponible() {
+    let indisponibilidadCollection = this.usuarioDoc.collection('indisponibilidades');
+    indisponibilidadCollection.valueChanges().subscribe(indisponibilidades => {
+      this.indisponibles = indisponibilidades;
+      this.updateHorariosInicial();
+    });
+  }
+
   updateHorariosInicial() {
     this.disponibilidadDoc.collection<ReservaOptions>('disponibilidades').valueChanges().subscribe(data => {
       this.horario = [];
@@ -150,32 +184,47 @@ export class AgendaPage {
       while (fechaInicio.isSameOrBefore(fechaFin.toDate())) {
         let fechaInicioReserva = fechaInicio.toDate();
         let fechaFinReserva = moment(fechaInicio).add(this.tiempoServicio, 'minutes').toDate();
-        let reservaEnc = reservas.find(item => item.fechaInicio.toDate().getTime() === fechaInicioReserva.getTime());
+        let noDisponible = this.loadHorarioNoDisponible(fechaInicioReserva);
         let reserva: ReservaOptions;
-        if (!reservaEnc) {
+        if (noDisponible) {
           reserva = {
             fechaInicio: fechaInicioReserva,
             fechaFin: fechaFinReserva,
-            estado: this.constantes.ESTADOS_RESERVA.DISPONIBLE,
+            estado: this.constantes.ESTADOS_RESERVA.NO_DISPONIBLE,
             evento: this.constantes.EVENTOS.OTRO,
             idcarrito: null,
             cliente: this.cliente,
-            servicio: [this.servicio],
+            servicio: [noDisponible],
             idusuario: this.usuario.id,
             nombreusuario: this.usuario.nombre
           };
         } else {
-          reserva = {
-            fechaInicio: reservaEnc.fechaInicio.toDate(),
-            fechaFin: reservaEnc.fechaFin.toDate(),
-            estado: reservaEnc.estado,
-            evento: null,
-            idcarrito: reservaEnc.idcarrito,
-            cliente: reservaEnc.cliente,
-            servicio: reservaEnc.servicio,
-            idusuario: reservaEnc.idusuario,
-            nombreusuario: reservaEnc.nombreusuario
-          };
+          let reservaEnc = reservas.find(item => item.fechaInicio.toDate().getTime() === fechaInicioReserva.getTime());
+          if (!reservaEnc) {
+            reserva = {
+              fechaInicio: fechaInicioReserva,
+              fechaFin: fechaFinReserva,
+              estado: this.constantes.ESTADOS_RESERVA.DISPONIBLE,
+              evento: this.constantes.EVENTOS.OTRO,
+              idcarrito: null,
+              cliente: this.cliente,
+              servicio: [this.servicio],
+              idusuario: this.usuario.id,
+              nombreusuario: this.usuario.nombre
+            };
+          } else {
+            reserva = {
+              fechaInicio: reservaEnc.fechaInicio.toDate(),
+              fechaFin: reservaEnc.fechaFin.toDate(),
+              estado: reservaEnc.estado,
+              evento: null,
+              idcarrito: reservaEnc.idcarrito,
+              cliente: reservaEnc.cliente,
+              servicio: reservaEnc.servicio,
+              idusuario: reservaEnc.idusuario,
+              nombreusuario: reservaEnc.nombreusuario
+            };
+          }
         }
 
         if (moment(ahora).isBetween(reserva.fechaInicio, reserva.fechaFin)) {
