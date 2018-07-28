@@ -33,6 +33,7 @@ export class TabsPage {
     public alertCtrl: AlertController
   ) {
     this.tabs.push({ root: AgendaPage, title: 'Agenda', icon: 'bookmarks', badge: 0 });
+    this.tabs.push({ root: ReportesPage, title: 'Reportes', icon: 'list', badge: 0 });
     this.cantidadesanteriores = [];
     this.updateUsuario();
   }
@@ -68,7 +69,6 @@ export class TabsPage {
     } else {
       this.updateTabs(user.uid).then(data => {
         if (data) {
-          this.tabs.push({ root: ReportesPage, title: 'Reportes', icon: 'list', badge: 0 });
           this.tabs.push({ root: GastoPage, title: 'Gastos', icon: 'trending-down', badge: 0 });
           this.tabs.push({ root: ConfiguracionPage, title: 'Configuración', icon: 'options', badge: 0 });
         } else {

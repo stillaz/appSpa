@@ -63,7 +63,6 @@ export class ReportesPage {
     ];
     this.updateFechasMes(new Date());
     this.updateUsuario();
-    this.usuarioDiarioCollection = this.afs.collection<UsuarioOptions>('usuarios');
   }
 
   genericAlert(titulo: string, mensaje: string) {
@@ -87,6 +86,7 @@ export class ReportesPage {
           this.usuarioLogueado = data;
           this.usuario = data;
           this.administrador = this.usuarioLogueado.perfiles.some(perfil => perfil.nombre === 'Administrador');
+          this.usuarioDiarioCollection = this.administrador ? this.afs.collection<UsuarioOptions>('usuarios') : this.afs.collection<UsuarioOptions>('usuarios', ref => ref.where('id', '==', this.usuario.id));
           this.updateTotalesMes(this.mesSeleccionado.fecha);
         } else {
           this.genericAlert('Error usuario', 'Usuario no encontrado');
@@ -116,7 +116,7 @@ export class ReportesPage {
   updateTotalesMes(fecha: Date) {
     let fechaInicio = moment(fecha).startOf('month').toDate();
     this.totalesDoc = this.afs.doc('totalesservicios/' + fechaInicio.getTime().toString());
-    let totalesServiciosUsuariosCollection: AngularFirestoreCollection<TotalesServiciosOptions> = this.totalesDoc.collection('totalesServiciosUsuarios');
+    let totalesServiciosUsuariosCollection: AngularFirestoreCollection<TotalesServiciosOptions> = this.administrador ? this.totalesDoc.collection('totalesServiciosUsuarios') : this.totalesDoc.collection('totalesServiciosUsuarios', ref => ref.where('idusuario', '==', this.usuarioLogueado.id));
     this.read = totalesServiciosUsuariosCollection.valueChanges().subscribe(data => {
       this.totalesUsuarios = [];
       this.total = 0;
@@ -237,7 +237,7 @@ export class ReportesPage {
     while (moment(init).isSameOrBefore(diaFinAno)) {
       let mesInit = moment(init).startOf('month').toDate();
       this.totalesDoc = this.afs.doc('totalesservicios/' + mesInit.getTime().toString());
-      let totalesServiciosUsuariosCollection: AngularFirestoreCollection<TotalesServiciosOptions> = this.totalesDoc.collection('totalesServiciosUsuarios');
+      let totalesServiciosUsuariosCollection: AngularFirestoreCollection<TotalesServiciosOptions> = this.administrador ? this.totalesDoc.collection('totalesServiciosUsuarios') : this.totalesDoc.collection('totalesServiciosUsuarios', ref => ref.where('idusuario', '==', this.usuarioLogueado.id));
       this.read = totalesServiciosUsuariosCollection.valueChanges().subscribe(data => {
         data.forEach(totalData => {
           if (this.totalesUsuarios.length === 0 || !this.totalesUsuarios.some(usuarioT => usuarioT.idusuario === totalData.idusuario)) {
