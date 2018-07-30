@@ -26,6 +26,7 @@ import { AngularFireStorageModule } from 'angularfire2/storage';
 import { SearchPipe } from '../pipes/search/search';
 import { GastoPage } from '../pages/gasto/gasto';
 import { JoinsPipe } from '../pipes/joins/joins';
+import { UsuarioProvider } from '../providers/usuario';
 
 
 @NgModule({
@@ -73,7 +74,8 @@ import { JoinsPipe } from '../pipes/joins/joins';
     FileChooser,
     FilePath,
     Push,
-    ReservaProvider
+    ReservaProvider,
+    UsuarioProvider
   ]
 })
 export class AppModule { }

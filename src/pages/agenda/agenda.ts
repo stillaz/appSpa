@@ -8,11 +8,12 @@ import { ServicioOptions } from '../../interfaces/servicio-options';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/interval';
-import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection } from 'angularfire2/firestore';
+import { AngularFirestore, AngularFirestoreDocument } from 'angularfire2/firestore';
 import { AngularFireAuth } from 'angularfire2/auth';
 import { PerfilOptions } from '../../interfaces/perfil-options';
 import { PaginaOptions } from '../../interfaces/pagina-options';
 import { TotalesServiciosOptions } from '../../interfaces/totales-servicios-options';
+import { UsuarioProvider } from '../../providers/usuario';
 
 /**
  * Generated class for the AgendaPage page.
@@ -48,34 +49,33 @@ export class AgendaPage {
   cliente = {} as ClienteOptions;
   servicio = {} as ServicioOptions;
   administrador: boolean;
-  private usuariosCollection: AngularFirestoreCollection<UsuarioOptions>;
   perfiles: PerfilOptions[];
   usuarios: UsuarioOptions[];
   private disponibilidadDoc: AngularFirestoreDocument;
   terms: string = '';
   private indisponibles;
+  private filePathEmpresa: string;
 
   opciones: any[] = [
     { title: 'Configuración', component: 'ConfiguracionAgendaPage', icon: 'stats' }
   ];
-
 
   constructor(
     public alertCtrl: AlertController,
     public actionSheetCtrl: ActionSheetController,
     public navCtrl: NavController,
     private afs: AngularFirestore,
-    private afa: AngularFireAuth,
     public popoverCtrl: PopoverController,
+    private usuarioService: UsuarioProvider,
+    public afa: AngularFireAuth
   ) {
-    this.usuariosCollection = this.afs.collection<UsuarioOptions>('usuarios');
-    let user = this.afa.auth.currentUser;
-    if (!user) {
-      this.navCtrl.setRoot('LogueoPage');
+    this.usuarioLogueado = this.usuarioService.getUsuario();
+    this.filePathEmpresa = 'negocios/' + this.usuarioLogueado.idempresa;
+    this.administrador = this.usuarioService.isAdministrador();
+    if (this.administrador) {
+      this.updateUsuarios();
+      this.updatePerfiles();
     }
-
-    this.updateUsuarios();
-    this.updatePerfiles();
   }
 
   ionViewDidLoad() {
@@ -87,19 +87,29 @@ export class AgendaPage {
   }
 
   ionViewDidEnter() {
-    let user = this.afa.auth.currentUser;
-    if (!user) {
-      this.navCtrl.setRoot('LogueoPage');
-    } else {
-      this.updateUsuario(user.uid);
-    }
+    this.updateUsuario(this.usuarioLogueado.id);
+  }
+
+  updateUsuarios() {
+    let filePathUsuarios = this.filePathEmpresa + '/usuarios';
+    let usuariosCollection = this.afs.collection<UsuarioOptions>(filePathUsuarios);
+    usuariosCollection.valueChanges().subscribe(data => {
+      this.usuarios = data;
+    });
+  }
+
+  private updatePerfiles() {
+    let filePathPerfiles = this.filePathEmpresa + '/perfiles';
+    let perfilesCollection = this.afs.collection<PerfilOptions>(filePathPerfiles);
+    perfilesCollection.valueChanges().subscribe(data => {
+      this.perfiles = data;
+    });
   }
 
   updateUsuario(id: string) {
-    this.usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + id);
+    this.usuarioDoc = this.afs.doc<UsuarioOptions>(this.filePathEmpresa + '/usuarios/' + id);
     this.usuarioDoc.valueChanges().subscribe(data => {
       if (data) {
-        this.usuarioLogueado = data;
         this.usuario = data;
         let configuracion = this.usuario.configuracion;
         if (configuracion) {
@@ -107,28 +117,14 @@ export class AgendaPage {
           this.horaFin = configuracion.horaFin;
           this.tiempoServicio = configuracion.tiempoDisponibilidad;
         }
-        this.administrador = this.usuarioLogueado.perfiles.some(perfil => perfil.nombre === 'Administrador');
         let fecha = moment(this.initDate).startOf('days').toDate().getTime().toString();
         this.disponibilidadDoc = this.usuarioDoc.collection('disponibilidades').doc(fecha);
+        console.log();
         this.updateHorarioNoDisponible();
       } else {
         this.genericAlert('Error usuario', 'Usuario no encontrado');
-        this.navCtrl.setRoot('LogueoPage');
+        this.afa.auth.signOut();
       }
-    });
-  }
-
-  updateUsuarios() {
-    this.usuariosCollection.valueChanges().subscribe(data => {
-      this.usuarios = data;
-    });
-  }
-
-  private updatePerfiles() {
-    let perfilesCollection: AngularFirestoreCollection<PerfilOptions>;
-    perfilesCollection = this.afs.collection<PerfilOptions>('perfiles');
-    perfilesCollection.valueChanges().subscribe(data => {
-      this.perfiles = data;
     });
   }
 
@@ -377,7 +373,7 @@ export class AgendaPage {
     let filtros: any = [];
     usuarios.forEach(usuario => {
       filtros.push({
-        text: usuario.nombre + ': ' + usuario.perfiles.map(perfil => perfil.nombre).join(" - "), handler: () => {
+        text: usuario.nombre, handler: () => {
           this.usuario = usuario;
           this.updateUsuario(usuario.id);
         }

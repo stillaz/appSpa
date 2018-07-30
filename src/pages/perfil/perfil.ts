@@ -73,16 +73,7 @@ export class PerfilPage {
   }
 
   updateUsuario() {
-    this.usuario = {
-      id: null,
-      nombre: null,
-      telefono: null,
-      email: null,
-      imagen: null,
-      activo: true,
-      perfiles: [],
-      configuracion: null
-    };
+    this.usuario = {} as UsuarioOptions;
 
     this.form();
     this.usuariologueado = this.afa.auth.currentUser;
@@ -113,7 +104,8 @@ export class PerfilPage {
       imagen: usuario.imagen,
       activo: true,
       perfiles: this.usuario.perfiles,
-      configuracion: this.usuario.configuracion
+      configuracion: this.usuario.configuracion,
+      idempresa: this.usuario.idempresa
     };
 
     this.usuarioDoc.update({ telefono: usuario.telefono, imagen: usuario.imagen });

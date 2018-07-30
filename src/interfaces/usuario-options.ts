@@ -9,5 +9,6 @@ export interface UsuarioOptions{
     perfiles: PerfilOptions[],
     configuracion: ConfiguracionOptions,
     imagen: string,
-    activo: boolean
+    activo: boolean,
+    idempresa: string
 }
