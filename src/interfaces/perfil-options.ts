@@ -5,5 +5,6 @@ export interface PerfilOptions{
     nombre: string,
     imagen: string,
     servicios: ServicioOptions[],
-    activo: boolean
+    activo: boolean,
+    grupo: string[]
 }
