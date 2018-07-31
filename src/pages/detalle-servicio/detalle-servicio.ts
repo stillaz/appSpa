@@ -8,8 +8,8 @@ import { finalize } from 'rxjs/operators';
 import { Camera, CameraOptions } from '@ionic-native/camera';
 import { PerfilOptions } from '../../interfaces/perfil-options';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
-import { AngularFireAuth } from 'angularfire2/auth';
 import firebase from 'firebase';
+import { UsuarioProvider } from '../../providers/usuario';
 
 /**
  * Generated class for the DetalleServicioPage page.
@@ -26,21 +26,14 @@ import firebase from 'firebase';
 export class DetalleServicioPage {
 
   todo: FormGroup;
-
   nuevo: boolean = true;
-
   mobile: boolean;
-
   filePathData: string;
-
   public servicio: ServicioOptions;
+  grupos: string[];
 
   private servicioDoc: AngularFirestoreDocument<ServicioOptions>;
-  private perfilesCollection: AngularFirestoreCollection<PerfilOptions>;
-  private usuariosCollection: AngularFirestoreCollection<UsuarioOptions>;
-  private usuarioDoc: AngularFirestoreDocument<UsuarioOptions>;
-  private usuario: UsuarioOptions;
-  private control_usuarios: boolean;
+  private filePathEmpresa: string;
 
   constructor(
     public navCtrl: NavController,
@@ -53,39 +46,23 @@ export class DetalleServicioPage {
     public plt: Platform,
     private storage: AngularFireStorage,
     private camera: Camera,
-    private afa: AngularFireAuth
+    private usuarioServicio: UsuarioProvider
   ) {
-    this.mobile = plt.is('android');
     this.servicio = this.navParams.get('servicio');
-    this.updateUsuario();
+    this.filePathEmpresa = this.usuarioServicio.getFilePathEmpresa();
+    this.filePathData = this.filePathEmpresa + '/servicios/' + this.servicio.id;
+    this.servicioDoc = this.afs.doc(this.filePathData);
+    this.mobile = plt.is('android');
+    this.updateGrupos();
     this.updateServicio();
   }
 
-  updateUsuario() {
-    let user = this.afa.auth.currentUser;
-    if (!user) {
-      this.navCtrl.setRoot('LogueoPage');
-    } else {
-      this.usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + user.uid);
-      this.usuarioDoc.valueChanges().subscribe(data => {
-        if (data) {
-          this.usuario = data;
-          let administrador = this.usuario.perfiles.some(perfil => perfil.nombre === 'Administrador');
-          if (administrador) {
-            let configuracion = this.usuario.configuracion;
-            if (configuracion) {
-              this.control_usuarios = configuracion.control_usuarios;
-            }
-          } else {
-            this.genericAlert('Error usuario', 'Usuario no es administrador');
-            this.navCtrl.pop();
-          }
-        } else {
-          this.genericAlert('Error usuario', 'Usuario no encontrado');
-          this.navCtrl.setRoot('LogueoPage');
-        }
-      });
-    }
+  updateGrupos() {
+    this.afs.doc<any>('clases/Grupos').valueChanges().subscribe(data => {
+      if (data) {
+        this.grupos = data.data;
+      }
+    });
   }
 
   form() {
@@ -95,7 +72,7 @@ export class DetalleServicioPage {
       descripcion: [this.servicio.descripcion, Validators.required],
       duracion_MIN: [this.servicio.duracion_MIN, Validators.required],
       valor: [this.servicio.valor, Validators.required],
-      grupo: [this.servicio.grupo],
+      grupo: [this.servicio.grupo, Validators.required],
       imagen: [this.servicio.imagen],
       activo: [this.servicio.activo, Validators.required]
     });
@@ -115,7 +92,6 @@ export class DetalleServicioPage {
       };
     }
 
-    this.filePathData = 'servicios/' + this.servicio.id;
     this.servicioDoc = this.afs.doc<ServicioOptions>(this.filePathData);
     this.servicioDoc.valueChanges().subscribe(data => {
       if (data) {
@@ -184,93 +160,6 @@ export class DetalleServicioPage {
     }).catch(err => alert('Upload Failed' + err));
   }
 
-  guardar() {
-    let modo = this.nuevo ? 'actualizado' : 'registrado';
-    this.servicio = this.todo.value;
-    let batch = this.afs.firestore.batch();
-    batch.set(this.servicioDoc.ref, this.servicio);
-    if (!this.control_usuarios) {
-      this.perfilesCollection = this.afs.collection<PerfilOptions>('perfiles', ref => ref.where('nombre', '==', 'Barbero'));
-      this.perfilesCollection.ref.get().then(data => {
-        data.forEach(perfil => {
-          if (perfil.get('nombre') === 'Barbero') {
-            let servicios: ServicioOptions[] = perfil.get('servicios');
-            let servicioEncontrado: ServicioOptions = servicios.find(servicio => {
-              return servicio.id === this.servicio.id;
-            });
-            if (servicioEncontrado) {
-              let item = servicios.indexOf(servicioEncontrado);
-              servicios.splice(item, 1, this.servicio);
-            } else {
-              servicios.push(this.servicio);
-            }
-
-            batch.update(perfil.ref, { servicios: servicios });
-
-            this.usuariosCollection = this.afs.collection('usuarios');
-            this.usuariosCollection.ref.get().then(usuariodata => {
-              usuariodata.forEach(usuario => {
-                let perfilesusuario: PerfilOptions[] = usuario.get('perfiles');
-                let perfilusuario: PerfilOptions = perfilesusuario.find(perfilu => perfilu.id === perfil.id);
-                if (perfilusuario) {
-                  let itemperfil = perfilesusuario.indexOf(perfilusuario);
-                  let serviciosperfilusuario = perfilusuario.servicios ? perfilusuario.servicios : [];
-                  let servicioUsuarioEncontrado: ServicioOptions = serviciosperfilusuario.find(servicio => servicio.id === this.servicio.id);
-
-                  if (servicioUsuarioEncontrado) {
-                    let item = serviciosperfilusuario.indexOf(servicioUsuarioEncontrado);
-                    serviciosperfilusuario.splice(item, 1, this.servicio);
-                  } else {
-                    serviciosperfilusuario.push(this.servicio);
-                  }
-
-                  perfilusuario.servicios = serviciosperfilusuario;
-
-                  perfilesusuario.splice(itemperfil, 1, perfilusuario);
-
-                  batch.update(usuario.ref, { perfiles: perfilesusuario });
-                }
-              });
-
-              batch.commit().then(() => {
-                let alert = this.alertCtrl.create({
-                  title: 'Servicio ' + modo,
-                  message: 'El servicio ha sido ' + modo + ' exitosamente',
-                  buttons: ['OK']
-                });
-                alert.present();
-                this.viewCtrl.dismiss();
-              });
-            });
-          }
-        });
-      });
-    } else {
-      batch.commit().then(() => {
-        let alert = this.alertCtrl.create({
-          title: 'Servicio ' + modo,
-          message: 'El servicio ha sido ' + modo + ' exitosamente',
-          buttons: ['OK']
-        });
-        alert.present();
-        this.viewCtrl.dismiss();
-      });
-    }
-  }
-
-  menu() {
-    let grupo = this.todo.value.grupo;
-    let menu = this.modalCtrl.create('GruposServicioPage', { grupo: grupo });
-    menu.present();
-    menu.onDidDismiss(data => {
-      this.todo.patchValue({ grupo: data });
-    });
-  }
-
-  cerrar() {
-    this.viewCtrl.dismiss();
-  }
-
   genericAlert(title: string, message: string) {
     let alert = this.alertCtrl.create({
       title: title,
@@ -283,6 +172,147 @@ export class DetalleServicioPage {
       }]
     });
     alert.present();
+  }
+
+  private loadUsuarioPerfil(idperfil: string) {
+    let usuariosCollection: AngularFirestoreCollection<UsuarioOptions> = this.afs.collection<UsuarioOptions>(this.filePathEmpresa + '/usuarios');
+    return new Promise<UsuarioOptions[]>(resolve => {
+      usuariosCollection.valueChanges().subscribe(data => {
+        if (data[0]) {
+          let usuarios = data.filter(usuario => usuario.perfiles.some(perfil => perfil.id === idperfil));
+          resolve(usuarios);
+        }
+        resolve(data);
+      });
+    });
+  }
+
+  private loadPerfilesGrupo(grupo: string) {
+    let perfilesCollection: AngularFirestoreCollection<PerfilOptions> = this.afs.collection<PerfilOptions>(this.filePathEmpresa + '/perfiles', ref => ref.where('grupo', '==', grupo));
+    return new Promise<PerfilOptions[]>(resolve => {
+      perfilesCollection.valueChanges().subscribe(data => {
+        resolve(data);
+      });
+    });
+  }
+
+  private registrarPerfilUsuario(batch, modo: string) {
+    let perfilDoc: AngularFirestoreDocument<PerfilOptions>;
+    let usuarioDoc: AngularFirestoreDocument<UsuarioOptions>;
+    this.loadPerfilesGrupo('').then(perfiles => {
+      perfiles.forEach(perfil => {
+        let servicios: ServicioOptions[] = perfil.servicios;
+        let servicioEncontrado: ServicioOptions = servicios.find(servicio => {
+          return servicio.id === this.servicio.id;
+        });
+        if (servicioEncontrado) {
+          let item = servicios.indexOf(servicioEncontrado);
+          servicios.splice(item, 1, this.servicio);
+        } else {
+          servicios.push(this.servicio);
+        }
+
+        perfilDoc = this.afs.doc(this.filePathEmpresa + '/perfiles/' + perfil.id);
+
+        batch.update(perfilDoc.ref, { servicios: servicios });
+
+        this.loadUsuarioPerfil(perfil.id).then(usuarios => {
+          usuarios.forEach(usuario => {
+            let perfilesusuario = usuario.perfiles;
+            let perfilusuario: PerfilOptions = perfilesusuario.find(perfilUsuario => perfilUsuario.id === perfil.id);
+            if (perfilusuario) {
+              let itemperfil = usuario.perfiles.indexOf(perfilusuario);
+              let serviciosperfilusuario = perfilusuario.servicios ? perfilusuario.servicios : [];
+              let servicioUsuarioEncontrado: ServicioOptions = serviciosperfilusuario.find(servicio => servicio.id === this.servicio.id);
+
+              if (servicioUsuarioEncontrado) {
+                let itemservicio = serviciosperfilusuario.indexOf(servicioUsuarioEncontrado);
+                serviciosperfilusuario.splice(itemservicio, 1, this.servicio);
+              } else {
+                serviciosperfilusuario.push(this.servicio);
+              }
+
+              perfilusuario.servicios = serviciosperfilusuario;
+
+              perfilesusuario.splice(itemperfil, 1, perfilusuario);
+
+              batch.update(usuarioDoc.ref, { perfiles: perfilesusuario });
+            }
+          });
+
+          batch.commit().then(() => {
+            let alert = this.alertCtrl.create({
+              title: 'Servicio ' + modo,
+              message: 'El servicio ha sido ' + modo + ' exitosamente',
+              buttons: ['OK']
+            });
+            alert.present();
+            this.viewCtrl.dismiss();
+          });
+        });
+      });
+    });
+  }
+
+  guardar() {
+    let modo = this.nuevo ? 'actualizado' : 'registrado';
+    this.servicio = this.todo.value;
+    let batch = this.afs.firestore.batch();
+    batch.set(this.servicioDoc.ref, this.servicio);
+    this.registrarPerfilUsuario(batch, modo);
+  }
+
+  cerrar() {
+    this.viewCtrl.dismiss();
+  }
+
+  private eliminarPerfilUsuario(batch) {
+    let perfilDoc: AngularFirestoreDocument<PerfilOptions>;
+    let usuarioDoc: AngularFirestoreDocument<UsuarioOptions>;
+    this.loadPerfilesGrupo('').then(perfiles => {
+      perfiles.forEach(perfil => {
+        let servicios: ServicioOptions[] = perfil.servicios;
+        let servicioEncontrado: ServicioOptions = servicios.find(servicio => {
+          return servicio.id === this.servicio.id;
+        });
+        if (servicioEncontrado) {
+          let item = servicios.indexOf(servicioEncontrado);
+          servicios.splice(item, 1);
+        }
+
+        perfilDoc = this.afs.doc(this.filePathEmpresa + '/perfiles/' + perfil.id);
+
+        batch.update(perfilDoc.ref, { servicios: servicios });
+
+        this.loadUsuarioPerfil(perfil.id).then(usuarios => {
+          usuarios.forEach(usuario => {
+            let perfilesusuario = usuario.perfiles;
+            let perfilusuario: PerfilOptions = perfilesusuario.find(perfilUsuario => perfilUsuario.id === perfil.id);
+            if (perfilusuario) {
+              let itemperfil = usuario.perfiles.indexOf(perfilusuario);
+              let serviciosperfilusuario = perfilusuario.servicios ? perfilusuario.servicios : [];
+              let servicioUsuarioEncontrado: ServicioOptions = serviciosperfilusuario.find(servicio => servicio.id === this.servicio.id);
+
+              if (servicioUsuarioEncontrado) {
+                let itemservicio = serviciosperfilusuario.indexOf(servicioUsuarioEncontrado);
+                serviciosperfilusuario.splice(itemservicio, 1);
+              }
+
+              perfilusuario.servicios = serviciosperfilusuario;
+
+              perfilesusuario.splice(itemperfil, 1, perfilusuario);
+
+              batch.update(usuarioDoc.ref, { perfiles: perfilesusuario });
+            }
+          });
+
+          batch.commit().then(() => {
+            this.genericAlert('Eliminar servicio', 'El servicio ha sido eliminado');
+            this.viewCtrl.dismiss();
+          });
+        });
+      });
+    });
   }
 
   eliminar() {
@@ -300,61 +330,7 @@ export class DetalleServicioPage {
           handler: () => {
             let batch = this.afs.firestore.batch();
             batch.delete(this.servicioDoc.ref);
-            if (!this.control_usuarios) {
-              this.perfilesCollection = this.afs.collection<PerfilOptions>('perfiles', ref => ref.where('nombre', '==', 'Barbero'));
-              this.perfilesCollection.ref.get().then(data => {
-                data.forEach(perfil => {
-                  let servicios: ServicioOptions[] = perfil.get('servicios');
-                  let servicioEncontrado: ServicioOptions = servicios.find(servicio => servicio.id === this.servicio.id);
-                  if (servicioEncontrado) {
-                    let item = servicios.indexOf(servicioEncontrado);
-                    servicios.splice(item, 1);
-                  }
-
-                  batch.update(perfil.ref, { servicios: servicios });
-
-                  this.usuariosCollection = this.afs.collection('usuarios');
-                  this.usuariosCollection.ref.get().then(usuariodata => {
-                    usuariodata.forEach(usuario => {
-                      let perfilesusuario: PerfilOptions[] = usuario.get('perfiles');
-                      let perfilusuario: PerfilOptions = perfilesusuario.find(perfilu => perfilu.id === perfil.id);
-                      if (perfilusuario) {
-                        let itemperfil = perfilesusuario.indexOf(perfilusuario);
-                        let serviciosperfilusuario = perfilusuario.servicios ? perfilusuario.servicios : [];
-                        let servicioUsuarioEncontrado: ServicioOptions = serviciosperfilusuario.find(servicio => servicio.id === this.servicio.id);
-
-                        if (servicioUsuarioEncontrado) {
-                          let item = serviciosperfilusuario.indexOf(servicioUsuarioEncontrado);
-                          serviciosperfilusuario.splice(item, 1);
-                        }
-
-                        perfilusuario.servicios = serviciosperfilusuario;
-
-                        perfilesusuario.splice(itemperfil, 1, perfilusuario);
-
-                        batch.update(usuario.ref, { perfiles: perfilesusuario });
-                      }
-                    });
-
-                    batch.commit().then(() => {
-                      if (servicio.imagen) {
-                        this.storage.ref(this.filePathData).delete();
-                      }
-                      this.genericAlert('Eliminar servicio', 'El servicio ha sido eliminado');
-                      this.viewCtrl.dismiss();
-                    });
-                  });
-                });
-              });
-            } else {
-              batch.commit().then(() => {
-                if (servicio.imagen) {
-                  this.storage.ref(this.filePathData).delete();
-                }
-                this.genericAlert('Eliminar servicio', 'El servicio ha sido eliminado');
-                this.viewCtrl.dismiss();
-              });
-            }
+            this.eliminarPerfilUsuario(batch);
           }
         }
       ]

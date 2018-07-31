@@ -58,13 +58,15 @@
           <p>El valor del servicio no es válido</p>
         </ion-item>
 
-        <ion-item (click)="menu('Grupos')">
+        <ion-item>
           <ion-label floating>Grupo:</ion-label>
-          <ion-input type="text" disabled="true" formControlName="grupo"></ion-input>
+          <ion-select formControlName="grupo" multiple="true">
+            <ion-option *ngFor="let item of grupos" [value]="item">{{item}}</ion-option>
+          </ion-select>
         </ion-item>
 
         <ion-item color="danger" *ngIf="todo.controls.grupo.errors && todo.controls.grupo.touched">
-          <p>El grupo del producto no es válido</p>
+          <p>Debe seleccionar al menos un grupo</p>
         </ion-item>
 
         <ion-item>

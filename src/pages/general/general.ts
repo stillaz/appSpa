@@ -1,11 +1,11 @@
 import { Component } from '@angular/core';
 import { IonicPage, NavController, NavParams, AlertController, ModalController } from 'ionic-angular';
 import { ConfiguracionOptions } from '../../interfaces/configuracion-options';
-import { AngularFireAuth } from 'angularfire2/auth';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
 import { AngularFirestoreDocument, AngularFirestore } from 'angularfire2/firestore';
 import { AbstractControl, FormBuilder, FormGroup, ValidatorFn, Validators } from '@angular/forms';
 import * as DataProvider from '../../providers/constants';
+import { UsuarioProvider } from '../../providers/usuario';
 
 /**
  * Generated class for the ConfiguracionPage page.
@@ -23,27 +23,26 @@ export class GeneralPage {
 
   configuracion = {} as ConfiguracionOptions;
   usuarioDoc: AngularFirestoreDocument<UsuarioOptions>;
-  usuarioLogueado: UsuarioOptions;
-  usuario: UsuarioOptions;
-  administrador: boolean;
   todo: FormGroup;
   read;
   dias = DataProvider.DIAS;
+  usuario: UsuarioOptions;
+  filePathUsuario: string;
 
   constructor(
     public navCtrl: NavController,
     public navParams: NavParams,
-    private afa: AngularFireAuth,
     private afs: AngularFirestore,
     public alertCtrl: AlertController,
     private formBuilder: FormBuilder,
-    public modalCtrl: ModalController
+    public modalCtrl: ModalController,
+    private usuarioServicio: UsuarioProvider
   ) {
+    this.usuario = this.navParams.get('usuario');
+    this.filePathUsuario = this.usuarioServicio.getFilePathUsuario();
+    this.usuarioDoc = this.afs.doc(this.filePathUsuario + this.usuario.id);
     this.form();
-  }
-
-  ionViewWillEnter() {
-    this.updateConfiguracion();
+    this.updateConfiguracion(this.usuario);
   }
 
   genericAlert(titulo: string, mensaje: string) {
@@ -56,25 +55,9 @@ export class GeneralPage {
     mensajeAlert.present();
   }
 
-  updateConfiguracion() {
-    let user = this.afa.auth.currentUser;
-    if (!user) {
-      this.navCtrl.setRoot('LogueoPage');
-    } else {
-      this.usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + user.uid);
-      this.read = this.usuarioDoc.valueChanges().subscribe(data => {
-        if (data) {
-          this.usuarioLogueado = data;
-          this.usuario = data;
-          this.administrador = this.usuarioLogueado.perfiles.some(perfil => perfil.nombre === 'Administrador');
-          this.configuracion = this.usuario.configuracion ? this.usuario.configuracion : {} as ConfiguracionOptions;
-        } else {
-          this.genericAlert('Error usuario', 'Usuario no encontrado');
-        }
-
-        this.form();
-      });
-    }
+  updateConfiguracion(usuario: UsuarioOptions) {
+    this.configuracion = usuario.configuracion ? usuario.configuracion : {} as ConfiguracionOptions;
+    this.form();
   }
 
   validarFechaFinMayor(): ValidatorFn {
@@ -128,7 +111,7 @@ export class GeneralPage {
 
   cancelar() {
     this.read.unsubscribe();
-    this.updateConfiguracion();
+    this.updateConfiguracion(this.usuario);
     this.navCtrl.pop();
   }
 
@@ -137,11 +120,15 @@ export class GeneralPage {
   }
 
   agregarNoDisponible() {
-    this.modalCtrl.create('DetalleNodisponibilidadPage').present();
+    this.modalCtrl.create('DetalleNodisponibilidadPage', {
+      usuario: this.usuario
+    }).present();
   }
 
   irNoDisponible() {
-    this.navCtrl.push('NodisponiblePage');
+    this.navCtrl.push('NodisponiblePage', {
+      usuario: this.usuario
+    });
   }
 
 }

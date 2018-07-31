@@ -133,7 +133,7 @@ export class AgendaPage {
 
       if (moment(this.initDate).isBetween(fechaDesde, fechaFin)) {
         let horaInicio = item.todoDia ? this.horaInicio : moment(item.horaDesde, 'HH:mm').toDate().getHours();
-        let horaFin = item.todoDia ? this.horaFin - 1 : moment(item.horaHasta, 'HH:mm').toDate().getHours() - 1;
+        let horaFin = item.todoDia ? this.horaFin : moment(item.horaHasta, 'HH:mm').toDate().getHours() - 1;
         let horaReserva = fecha.getHours();
         if (horaReserva >= horaInicio && horaReserva <= horaFin) {
           return item;

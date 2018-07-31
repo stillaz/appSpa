@@ -5,7 +5,7 @@ export interface ServicioOptions {
     descripcion: string,
     duracion_MIN: number,
     valor: number,
-    grupo: string,
+    grupo: any,
     imagen: string,
-    activo: boolean
+    activo: boolean,
 }

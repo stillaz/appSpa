@@ -1,8 +1,8 @@
 import { Component } from '@angular/core';
 import { IonicPage, NavController, NavParams, AlertController } from 'ionic-angular';
-import { AngularFireAuth } from '../../../node_modules/angularfire2/auth';
 import { AngularFirestoreDocument, AngularFirestore, AngularFirestoreCollection } from '../../../node_modules/angularfire2/firestore';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
+import { UsuarioProvider } from '../../providers/usuario';
 
 /**
  * Generated class for the NodisponiblePage page.
@@ -19,20 +19,22 @@ import { UsuarioOptions } from '../../interfaces/usuario-options';
 export class NodisponiblePage {
 
   usuarioDoc: AngularFirestoreDocument<UsuarioOptions>;
-  usuarioLogueado: UsuarioOptions;
   usuario: UsuarioOptions;
-  administrador: boolean;
   noDisponibleColection: AngularFirestoreCollection;
   noDisponible: any[];
+  filePathUsuario: string;
 
   constructor(
     public navCtrl: NavController,
     public navParams: NavParams,
-    private afa: AngularFireAuth,
     private afs: AngularFirestore,
-    public alertCtrl: AlertController
+    public alertCtrl: AlertController,
+    private usuarioServicio: UsuarioProvider
   ) {
-    this.updateUsuario();
+    this.usuario = this.navParams.get('usuario');
+    this.filePathUsuario = this.usuarioServicio.getFilePathUsuario() + this.usuario.id;
+    this.usuarioDoc = this.afs.doc(this.filePathUsuario);
+    this.updateHorarioNoDisponible();
   }
 
   genericAlert(titulo: string, mensaje: string) {
@@ -43,25 +45,6 @@ export class NodisponiblePage {
     });
 
     mensajeAlert.present();
-  }
-
-  updateUsuario() {
-    let user = this.afa.auth.currentUser;
-    if (!user) {
-      this.navCtrl.setRoot('LogueoPage');
-    } else {
-      this.usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + user.uid);
-      this.usuarioDoc.valueChanges().subscribe(data => {
-        if (data) {
-          this.usuarioLogueado = data;
-          this.usuario = data;
-          this.administrador = this.usuarioLogueado.perfiles.some(perfil => perfil.nombre === 'Administrador');
-          this.updateHorarioNoDisponible();
-        } else {
-          this.genericAlert('Error usuario', 'Usuario no encontrado');
-        }
-      });
-    }
   }
 
   updateHorarioNoDisponible() {

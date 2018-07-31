@@ -8,6 +8,7 @@ import { User } from '@firebase/auth-types';
 import { CameraOptions, Camera } from '../../../node_modules/@ionic-native/camera';
 import { AngularFireStorage } from '../../../node_modules/angularfire2/storage';
 import firebase from 'firebase';
+import { UsuarioProvider } from '../../providers/usuario';
 
 /**
  * Generated class for the PerfilPage page.
@@ -25,12 +26,14 @@ export class PerfilPage {
 
   usuario: UsuarioOptions;
   private usuarioDoc: AngularFirestoreDocument<UsuarioOptions>;
+  private usuarioEmpresaDoc: AngularFirestoreDocument<UsuarioOptions>;
   todo: FormGroup;
   actualizar_email: boolean = false;
   actualizar_clave: boolean = false;
-  private usuariologueado: User;
   mobile: boolean;
   filePathData: string;
+  filePathUsuario: string;
+  private user: User;
 
   constructor(
     public navCtrl: NavController,
@@ -41,11 +44,18 @@ export class PerfilPage {
     private afa: AngularFireAuth,
     private plt: Platform,
     private camera: Camera,
-    private storage: AngularFireStorage
+    private storage: AngularFireStorage,
+    private usuarioServicio: UsuarioProvider
   ) {
+    this.user = this.afa.auth.currentUser;
+    this.usuario = this.usuarioServicio.getUsuario();
+    this.filePathData = 'usuarios/' + this.usuario.id;
+    this.filePathUsuario = this.usuarioServicio.getFilePathUsuario() + this.usuario.id;
+    this.usuarioDoc = this.afs.doc(this.filePathData);
+    this.usuarioEmpresaDoc = this.afs.doc(this.filePathUsuario);
     this.mobile = this.plt.is('android');
     this.todo = {} as FormGroup;
-    this.updateUsuario();
+    this.form();
   }
 
   genericAlert(title: string, message: string) {
@@ -72,50 +82,19 @@ export class PerfilPage {
     });
   }
 
-  updateUsuario() {
-    this.usuario = {} as UsuarioOptions;
-
-    this.form();
-    this.usuariologueado = this.afa.auth.currentUser;
-    if (!this.usuariologueado) {
-      this.navCtrl.setRoot('LogueoPage');
-    } else {
-      this.filePathData = 'usuarios/' + this.usuariologueado.uid;
-      this.usuarioDoc = this.afs.doc<UsuarioOptions>(this.filePathData);
-      this.usuarioDoc.valueChanges().subscribe(data => {
-        if (data) {
-          this.usuario = data;
-          this.form();
-        } else {
-          this.genericAlert('Error usuario', 'Usuario no encontrado');
-          this.navCtrl.setRoot('LogueoPage');
-        }
-      });
-    }
-  }
-
   guardar() {
+    let batch = this.afs.firestore.batch();
     let usuario = this.todo.value;
-    this.usuario = {
-      id: this.usuario.id,
-      nombre: usuario.nombre,
-      telefono: usuario.telefono,
-      email: usuario.email,
-      imagen: usuario.imagen,
-      activo: true,
-      perfiles: this.usuario.perfiles,
-      configuracion: this.usuario.configuracion,
-      idempresa: this.usuario.idempresa
-    };
-
-    this.usuarioDoc.update({ telefono: usuario.telefono, imagen: usuario.imagen });
-    let alert = this.alertCtrl.create({
-      title: 'Usuario actualizado',
-      message: 'El usuario ha sido actualizado exitosamente',
-      buttons: ['OK']
+    batch.update(this.usuarioDoc.ref, { telefono: usuario.telefono, imagen: usuario.imagen });
+    batch.update(this.usuarioEmpresaDoc.ref, { telefono: usuario.telefono, imagen: usuario.imagen });
+    batch.commit().then(() => {
+      this.alertCtrl.create({
+        title: 'Usuario actualizado',
+        message: 'El usuario ha sido actualizado exitosamente',
+        buttons: ['OK']
+      }).present();
+      this.navCtrl.pop();
     });
-    alert.present();
-    this.navCtrl.pop();
   }
 
   actualizarEmail() {
@@ -150,7 +129,7 @@ export class PerfilPage {
                   handler: data => {
                     if (data && data.email) {
                       let email = data.email;
-                      this.usuariologueado.updateEmail(email).then(() => {
+                      this.user.updateEmail(email).then(() => {
                         this.usuarioDoc.update({ email: email }).then(() => {
                           this.alertCtrl.create({
                             title: 'Actualizar correo',
@@ -278,7 +257,7 @@ export class PerfilPage {
                           }).present();
                         } else {
                           let clave = data.clave1;
-                          this.usuariologueado.updatePassword(clave).then(() => {
+                          this.user.updatePassword(clave).then(() => {
                             this.alertCtrl.create({
                               title: 'Cambio de clave',
                               message: 'Clave actualizada',

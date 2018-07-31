@@ -1,8 +1,9 @@
 import { Component } from '@angular/core';
-import { NavController, AlertController, Platform } from 'ionic-angular';
-import { UsuarioOptions } from '../../interfaces/usuario-options';
-import { AngularFirestoreDocument, AngularFirestore } from 'angularfire2/firestore';
+import { NavController, Platform } from 'ionic-angular';
 import { AngularFireAuth } from 'angularfire2/auth';
+import { UsuarioProvider } from '../../providers/usuario';
+import { UsuarioOptions } from '../../interfaces/usuario-options';
+import { AngularFirestore } from '../../../node_modules/angularfire2/firestore';
 
 @Component({
   selector: 'page-configuracion',
@@ -10,67 +11,46 @@ import { AngularFireAuth } from 'angularfire2/auth';
 })
 export class ConfiguracionPage {
 
-  pages: any[] = [];
-
-  private usuarioDoc: AngularFirestoreDocument<UsuarioOptions>;
-  private usuario: UsuarioOptions;
-
+  pages: any[];
+  filePathUsuario: string;
+  usuario: UsuarioOptions;
 
   constructor(
     public navCtrl: NavController,
     private afa: AngularFireAuth,
-    public alertCtrl: AlertController,
-    private afs: AngularFirestore,
-    private platform: Platform
+    private platform: Platform,
+    private usuarioServicio: UsuarioProvider,
+    private afs: AngularFirestore
   ) {
-    this.pages.push({ title: 'Horario', component: 'GeneralPage', icon: 'timer', color: 'secondary' });
-    this.pages.push({ title: 'Perfil', component: 'PerfilPage', icon: 'person', color: 'primary' });
-    this.updateUsuario();
-  }
-
-  genericAlert(title: string, message: string) {
-    let alert = this.alertCtrl.create({
-      title: title,
-      message: message,
-      buttons: [{
-        text: 'OK'
-      }]
-    });
-    alert.present();
-  }
-
-  updateItems(id: string) {
-    return new Promise<boolean>((resolve, reject) => {
-      this.usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + id);
-      this.usuarioDoc.valueChanges().subscribe(data => {
-        if (data) {
-          this.usuario = data;
-          resolve(this.usuario.perfiles.some(perfil => perfil.nombre === 'Administrador'));
-        } else {
-          reject('Usuario no encontrado');
-        }
-      });
-    });
-  }
-
-  updateUsuario() {
-    let user = this.afa.auth.currentUser;
-    if (!user) {
-      this.navCtrl.setRoot('LogueoPage');
+    if (this.usuarioServicio.isAdministrador()) {
+      this.pages = [
+        { title: 'Horario', component: 'GeneralPage', icon: 'timer', color: 'secondary' },
+        { title: 'Perfil', component: 'PerfilPage', icon: 'person', color: 'primary' },
+        { title: 'Servicios', component: 'ServicioPage', icon: 'share', color: 'dark' }
+      ];
     } else {
-      this.updateItems(user.uid).then(data => {
-        if (data) {
-          this.pages.push({ title: 'Servicios', component: 'ServicioPage', icon: 'share', color: 'dark' });
-        }
-      }).catch(err => {
-        this.genericAlert('Error usuario', err);
-        this.navCtrl.setRoot('LogueoPage');
-      });
+      this.pages = [
+        { title: 'Horario', component: 'GeneralPage', icon: 'timer', color: 'secondary' },
+        { title: 'Perfil', component: 'PerfilPage', icon: 'person', color: 'primary' }
+      ];
     }
+
+    this.filePathUsuario = this.usuarioServicio.getFilePathUsuario();
+
+    this.updateUsuario(this.usuarioServicio.getUsuario());
+  }
+
+  updateUsuario(usuario: UsuarioOptions) {
+    let usuarioDoc = this.afs.doc<UsuarioOptions>(this.filePathUsuario + usuario.id);
+    usuarioDoc.valueChanges().subscribe(data => {
+      this.usuario = data;
+    });
   }
 
   openPage(page) {
-    this.navCtrl.push(page.component);
+    this.navCtrl.push(page.component, {
+      usuario: this.usuario
+    });
   }
 
   salir() {

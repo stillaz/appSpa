@@ -3,8 +3,7 @@ import { IonicPage, NavController, NavParams, AlertController } from 'ionic-angu
 import * as DataProvider from '../../providers/constants';
 import { FormGroup, FormBuilder, Validators } from '../../../node_modules/@angular/forms';
 import moment from 'moment';
-import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection } from '../../../node_modules/angularfire2/firestore';
-import { AngularFireAuth } from '../../../node_modules/angularfire2/auth';
+import { AngularFirestore, AngularFirestoreDocument } from '../../../node_modules/angularfire2/firestore';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
 
 /**
@@ -27,24 +26,22 @@ export class DetalleNodisponibilidadPage {
   fechaMinima = moment(new Date()).locale('es').format('YYYY-MM-DD');
   fechaMaxima = moment(new Date()).add(1, 'year').locale('es').format('YYYY-MM-DD');
   usuarioDoc: AngularFirestoreDocument<UsuarioOptions>;
-  usuarioLogueado: UsuarioOptions;
   usuario: UsuarioOptions;
-  administrador: boolean;
-  noDisponibleCollection: AngularFirestoreCollection;
+  filePathNoDisponible: string;
 
   constructor(
     public navCtrl: NavController,
     public navParams: NavParams,
     private formBuilder: FormBuilder,
     private afs: AngularFirestore,
-    private afa: AngularFireAuth,
     public alertCtrl: AlertController
   ) {
+    this.usuario = this.navParams.get('usuario');
+    this.filePathNoDisponible = 'negocios/' + this.usuario.idempresa + '/usuarios/' + this.usuario.id + '/indisponibilidades/';
     this.repetir.splice(0, 0, { id: 10, dia: 'Todos los días' });
     this.repetir.splice(0, 0, { id: -1, dia: 'No repetir' });
     this.updateData();
     this.form();
-    this.updateUsuario();
   }
 
   genericAlert(titulo: string, mensaje: string) {
@@ -55,27 +52,6 @@ export class DetalleNodisponibilidadPage {
     });
 
     mensajeAlert.present();
-  }
-
-  updateUsuario() {
-    let user = this.afa.auth.currentUser;
-    if (!user) {
-      this.navCtrl.setRoot('LogueoPage');
-    } else {
-      this.usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + user.uid);
-      this.usuarioDoc.valueChanges().subscribe(data => {
-        if (data) {
-          this.usuarioLogueado = data;
-          this.usuario = data;
-          this.administrador = this.usuarioLogueado.perfiles.some(perfil => perfil.nombre === 'Administrador');
-          this.noDisponibleCollection = this.usuarioDoc.collection('indisponibilidades');
-        } else {
-          this.genericAlert('Error usuario', 'Usuario no encontrado');
-        }
-        this.updateData();
-        this.form();
-      });
-    }
   }
 
   updateData() {
@@ -140,10 +116,11 @@ export class DetalleNodisponibilidadPage {
   guardar() {
     this.noDisponibilidad = this.todo.value;
     this.noDisponibilidad.id = this.noDisponibilidad.id ? this.noDisponibilidad.id : this.afs.createId();
-    let noDisponibilidadDoc = this.noDisponibleCollection.doc(this.noDisponibilidad.id);
-    noDisponibilidadDoc.set(this.noDisponibilidad);
-    this.genericAlert('Horario no disponible', 'Se ha registrado éxitosamente');
-    this.navCtrl.pop();
+    let noDisponibilidadDoc = this.afs.doc(this.filePathNoDisponible + this.noDisponibilidad.id);
+    noDisponibilidadDoc.set(this.noDisponibilidad).then(() => {
+      this.genericAlert('Horario no disponible', 'Se ha registrado éxitosamente');
+      this.navCtrl.pop();
+    });
   }
 
   cancelar() {
