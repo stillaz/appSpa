@@ -2,11 +2,11 @@ import { Component } from '@angular/core';
 import { IonicPage, NavController, NavParams, AlertController } from 'ionic-angular';
 import moment from 'moment';
 import { FechaOptions } from '../../interfaces/fecha-options';
-import { AngularFireAuth } from 'angularfire2/auth';
 import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection } from 'angularfire2/firestore';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
 import { DisponibilidadOptions } from '../../interfaces/disponibilidad-options';
 import { ReservaOptions } from '../../interfaces/reserva-options';
+import { UsuarioProvider } from '../../providers/usuario';
 
 /**
  * Generated class for the ReportesPage page.
@@ -27,7 +27,6 @@ export class DetalleReportePage {
   atras: boolean = true;
   fechas: FechaOptions[];
   usuarioDoc: AngularFirestoreDocument<UsuarioOptions>;
-  usuarioLogueado: UsuarioOptions;
   usuario = {} as UsuarioOptions;
   administrador: boolean;
   disponibilidadesCollection: AngularFirestoreCollection;
@@ -40,11 +39,12 @@ export class DetalleReportePage {
   constructor(
     public navCtrl: NavController,
     public navParams: NavParams,
-    private afa: AngularFireAuth,
     private afs: AngularFirestore,
-    public alertCtrl: AlertController
+    public alertCtrl: AlertController,
+    private usuarioServicio: UsuarioProvider
   ) {
     let idususario = this.navParams.get('idusuario');
+    this.administrador = this.usuarioServicio.isAdministrador();
     this.updateFechas(new Date());
     this.updateUsuario(idususario);
   }
@@ -60,25 +60,11 @@ export class DetalleReportePage {
   }
 
   updateUsuario(idusuario: string) {
-    let user = this.afa.auth.currentUser;
-    if (!user) {
-      this.navCtrl.setRoot('LogueoPage');
-    } else {
-      let usuarioLogueadoDoc = this.afs.doc<UsuarioOptions>('usuarios/' + user.uid);
-      this.usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + idusuario);
-      usuarioLogueadoDoc.valueChanges().subscribe(data => {
-        if (data) {
-          this.usuarioLogueado = data;
-          this.administrador = this.usuarioLogueado.perfiles.some(perfil => perfil.nombre === 'Administrador');
-          this.usuarioDoc.valueChanges().subscribe(datosusuario => {
-            this.usuario = datosusuario;
-            this.updateServicios(this.mesSeleccionado.fecha);
-          });
-        } else {
-          this.genericAlert('Error usuario', 'Usuario no encontrado');
-        }
-      });
-    }
+    this.usuarioDoc = this.afs.doc<UsuarioOptions>(this.usuarioServicio.getFilePathUsuario() + idusuario);
+    this.usuarioDoc.valueChanges().subscribe(datosusuario => {
+      this.usuario = datosusuario;
+      this.updateServicios(this.mesSeleccionado.fecha);
+    });
   }
 
   updateFechas(fechaSeleccionada: Date) {

@@ -24,17 +24,23 @@ export class MyApp {
       splashScreen.hide();
 
       timer(3000).subscribe(() => {
-        this.showSplash = false;
         this.afa.auth.onAuthStateChanged(user => {
           if (user) {
             this.afs.doc<UsuarioOptions>('usuarios/' + user.uid).valueChanges().subscribe(data => {
-              this.usuarioService.setUsuario(data);
-              this.rootPage = TabsPage;
+              if (data) {
+                this.usuarioService.setUsuario(data);
+                this.rootPage = TabsPage;
+              } else {
+                this.afa.auth.signOut();
+                alert('Usuario no encontrado');
+              }
+              this.showSplash = false;
             });
           } else {
             this.rootPage = 'LogueoPage';
+            this.showSplash = false;
           }
-        })
+        });
       });
     });
   }

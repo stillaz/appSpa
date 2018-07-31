@@ -9,9 +9,7 @@ import { UsuarioOptions } from '../../interfaces/usuario-options';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/interval';
 import { AngularFirestore, AngularFirestoreDocument } from 'angularfire2/firestore';
-import { AngularFireAuth } from 'angularfire2/auth';
 import { PerfilOptions } from '../../interfaces/perfil-options';
-import { PaginaOptions } from '../../interfaces/pagina-options';
 import { TotalesServiciosOptions } from '../../interfaces/totales-servicios-options';
 import { UsuarioProvider } from '../../providers/usuario';
 
@@ -46,15 +44,13 @@ export class AgendaPage {
   horario: ReservaOptions[];
   horarios: any[];
   private usuarioDoc: AngularFirestoreDocument<UsuarioOptions>;
-  cliente = {} as ClienteOptions;
-  servicio = {} as ServicioOptions;
-  administrador: boolean;
   perfiles: PerfilOptions[];
   usuarios: UsuarioOptions[];
   private disponibilidadDoc: AngularFirestoreDocument;
   terms: string = '';
   private indisponibles;
   private filePathEmpresa: string;
+  administrador: boolean;
 
   opciones: any[] = [
     { title: 'Configuración', component: 'ConfiguracionAgendaPage', icon: 'stats' }
@@ -67,7 +63,6 @@ export class AgendaPage {
     private afs: AngularFirestore,
     public popoverCtrl: PopoverController,
     private usuarioService: UsuarioProvider,
-    public afa: AngularFireAuth
   ) {
     this.usuarioLogueado = this.usuarioService.getUsuario();
     this.filePathEmpresa = 'negocios/' + this.usuarioLogueado.idempresa;
@@ -106,6 +101,13 @@ export class AgendaPage {
     });
   }
 
+  setDate(date: Date) {
+    this.initDate = date;
+    let fecha: Date = moment(date).startOf('day').toDate();
+    this.disponibilidadDoc = this.usuarioDoc.collection('disponibilidades').doc(fecha.getTime().toString());
+    this.updateHorariosInicial();
+  }
+
   updateUsuario(id: string) {
     this.usuarioDoc = this.afs.doc<UsuarioOptions>(this.filePathEmpresa + '/usuarios/' + id);
     this.usuarioDoc.valueChanges().subscribe(data => {
@@ -119,20 +121,9 @@ export class AgendaPage {
         }
         let fecha = moment(this.initDate).startOf('days').toDate().getTime().toString();
         this.disponibilidadDoc = this.usuarioDoc.collection('disponibilidades').doc(fecha);
-        console.log();
         this.updateHorarioNoDisponible();
-      } else {
-        this.genericAlert('Error usuario', 'Usuario no encontrado');
-        this.afa.auth.signOut();
       }
     });
-  }
-
-  setDate(date: Date) {
-    this.initDate = date;
-    let fecha: Date = moment(date).startOf('day').toDate();
-    this.disponibilidadDoc = this.usuarioDoc.collection('disponibilidades').doc(fecha.getTime().toString());
-    this.updateHorariosInicial();
   }
 
   loadHorarioNoDisponible(fecha: Date): ServicioOptions {
@@ -189,7 +180,7 @@ export class AgendaPage {
             estado: this.constantes.ESTADOS_RESERVA.NO_DISPONIBLE,
             evento: this.constantes.EVENTOS.OTRO,
             idcarrito: null,
-            cliente: this.cliente,
+            cliente: {} as ClienteOptions,
             servicio: [noDisponible],
             idusuario: this.usuario.id,
             nombreusuario: this.usuario.nombre
@@ -203,8 +194,8 @@ export class AgendaPage {
               estado: this.constantes.ESTADOS_RESERVA.DISPONIBLE,
               evento: this.constantes.EVENTOS.OTRO,
               idcarrito: null,
-              cliente: this.cliente,
-              servicio: [this.servicio],
+              cliente: {} as ClienteOptions,
+              servicio: [{} as ServicioOptions],
               idusuario: this.usuario.id,
               nombreusuario: this.usuario.nombre
             };
@@ -322,7 +313,7 @@ export class AgendaPage {
 
             let mesServicio = moment(reserva.fechaInicio).startOf('month');
 
-            let totalesServiciosDoc = this.afs.doc('totalesservicios/' + mesServicio);
+            let totalesServiciosDoc = this.afs.doc(this.filePathEmpresa + '/totalesservicios/' + mesServicio);
 
             let totalServiciosReserva = reserva.servicio.map(servicioReserva => Number(servicioReserva.valor)).reduce((a, b) => a + b);
 
@@ -403,10 +394,6 @@ export class AgendaPage {
     });
 
     this.configActionSheet('Selecciona perfil', filtros);
-  }
-
-  ir(pagina: PaginaOptions) {
-    this.navCtrl.push(pagina.component);
   }
 
   presentPopover(myEvent) {

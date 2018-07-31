@@ -3,6 +3,7 @@ import { IonicPage, NavController, ViewController, ToastController } from 'ionic
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
 import { AngularFirestore, AngularFirestoreDocument } from 'angularfire2/firestore';
 import { ClienteOptions } from '../../interfaces/cliente-options';
+import { UsuarioProvider } from '../../providers/usuario';
 
 /**
  * Generated class for the DetallePersonaPage page.
@@ -28,7 +29,9 @@ export class ClientePage {
     public viewCtrl: ViewController,
     private formBuilder: FormBuilder,
     public toastCtrl: ToastController,
-    private afs: AngularFirestore) {
+    private afs: AngularFirestore,
+    private usuarioService: UsuarioProvider
+  ) {
     this.cliente = { identificacion: null, nombre: null, telefono: null, correoelectronico: null };
     this.form();
   }
@@ -45,7 +48,7 @@ export class ClientePage {
   cargar() {
     let id = this.todo.value.telefono;
     if (id) {
-      this.clienteDoc = this.afs.doc<ClienteOptions>('clientes/' + id);
+      this.clienteDoc = this.afs.doc<ClienteOptions>('negocios/' + this.usuarioService.getUsuario().idempresa + '/clientes/' + id);
       this.clienteDoc.valueChanges().subscribe(data => {
         if (data) {
           this.cliente = data;

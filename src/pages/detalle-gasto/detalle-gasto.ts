@@ -1,12 +1,11 @@
 import { Component } from '@angular/core';
-import { IonicPage, NavController, NavParams, AlertController, ViewController } from 'ionic-angular';
+import { IonicPage, NavParams, AlertController, ViewController } from 'ionic-angular';
 import { GastoOptions } from '../../interfaces/gasto-options';
 import { TipoOptions } from '../../interfaces/tipo-options';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
 import moment from 'moment';
 import { AngularFirestore } from 'angularfire2/firestore';
-import { AngularFireAuth } from 'angularfire2/auth';
-import { UsuarioOptions } from '../../interfaces/usuario-options';
+import { UsuarioProvider } from '../../providers/usuario';
 
 /**
  * Generated class for the DetalleGastoPage page.
@@ -27,18 +26,17 @@ export class DetalleGastoPage {
   todo: FormGroup;
   nuevo: boolean = true;
   valorAnterior: number = 0;
-  usuarioLogueado: UsuarioOptions;
-  administrador: boolean;
+  private filePathEmpresa: string;
 
   constructor(
-    public navCtrl: NavController,
     public navParams: NavParams,
     private formBuilder: FormBuilder,
     private afs: AngularFirestore,
     private alertCtrl: AlertController,
     public viewCtrl: ViewController,
-    private afa: AngularFireAuth
+    private usuarioServicio: UsuarioProvider
   ) {
+    this.filePathEmpresa = this.usuarioServicio.getFilePathEmpresa();
     this.gasto = this.navParams.get('gasto');
     this.especies.push(
       { icon: 'restaurant', descripcion: 'Alimentación' },
@@ -48,7 +46,6 @@ export class DetalleGastoPage {
       { icon: 'football', descripcion: 'Otro' }
     );
     this.updateGasto();
-    this.updateUsuario();
   }
 
   form() {
@@ -59,24 +56,6 @@ export class DetalleGastoPage {
       fecha: [this.gasto.fecha, Validators.required],
       especie: [this.gasto.especie, Validators.required]
     });
-  }
-
-  updateUsuario() {
-    let user = this.afa.auth.currentUser;
-    if (!user) {
-      this.navCtrl.setRoot('LogueoPage');
-    } else {
-      let usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + user.uid);
-      usuarioDoc.valueChanges().subscribe(data => {
-        if (data) {
-          this.usuarioLogueado = data;
-          this.administrador = this.usuarioLogueado.perfiles.some(perfil => perfil.nombre === 'Administrador');
-        } else {
-          this.genericAlert('Error usuario', 'Usuario no encontrado');
-          this.navCtrl.setRoot('LogueoPage');
-        }
-      });
-    }
   }
 
   updateGasto() {
@@ -114,15 +93,16 @@ export class DetalleGastoPage {
   }
 
   guardar() {
-    this.gasto.usuario = this.usuarioLogueado.nombre;
-    this.gasto.idusuario = this.usuarioLogueado.id;
-    this.gasto.imagenusuario = this.usuarioLogueado.imagen;
+    let usuario = this.usuarioServicio.getUsuario();
+    this.gasto.usuario = usuario.nombre;
+    this.gasto.idusuario = usuario.id;
+    this.gasto.imagenusuario = usuario.imagen;
     let actual = new Date();
     let batch = this.afs.firestore.batch();
     let mes = moment(new Date()).startOf('month').toDate().getTime().toString();
     let dia = moment(new Date()).startOf('day').toDate().getTime().toString();
     this.gasto = this.todo.value;
-    let gastoDoc = this.afs.doc('gastos/' + mes);
+    let gastoDoc = this.afs.doc(this.filePathEmpresa + '/gastos/' + mes);
 
     gastoDoc.ref.get().then(dataGastos => {
       if (!dataGastos.exists) {
@@ -226,7 +206,7 @@ export class DetalleGastoPage {
     }).present();
   }
 
-  cerrar(){
+  cerrar() {
     this.viewCtrl.dismiss();
   }
 

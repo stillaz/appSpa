@@ -42,6 +42,7 @@ export class ReservaPage {
   disponibilidadDoc: AngularFirestoreDocument;
   horaSeleccionada: string;
   tiempoDisponibilidad: number;
+  filePathEmpresa: string;
 
   public cliente: ClienteOptions = {
     identificacion: null,
@@ -60,12 +61,13 @@ export class ReservaPage {
     private afs: AngularFirestore
   ) {
     this.disponibilidadSeleccionada = this.navParams.get('disponibilidad');
-    this.horaSeleccionada = moment(this.disponibilidadSeleccionada.fechaInicio).locale("es").format("dddd, DD [de] MMMM [de] YYYY [a las] h:mm a")
     this.horario = this.navParams.get('horario');
-    this.ultimoHorario = this.disponibilidadSeleccionada.fechaInicio;
     this.usuario = this.navParams.get('usuario');
+    this.filePathEmpresa = 'negocios/' + this.usuario.idempresa;
+    this.horaSeleccionada = moment(this.disponibilidadSeleccionada.fechaInicio).locale("es").format("dddd, DD [de] MMMM [de] YYYY [a las] h:mm a")
+    this.ultimoHorario = this.disponibilidadSeleccionada.fechaInicio;
     this.servicios = [];
-    this.usuarioDoc = this.afs.doc('usuarios/' + this.usuario.id);
+    this.usuarioDoc = this.afs.doc(this.filePathEmpresa + '/usuarios/' + this.usuario.id);
     let fecha = moment(this.ultimoHorario).startOf('day').toDate();
     this.usuarioDoc.valueChanges().subscribe(data => {
       if (data) {
@@ -108,16 +110,11 @@ export class ReservaPage {
   }
 
   loadIdCarrito() {
-    let indiceCarritoDoc = this.afs.doc<IndiceOptions>('indices/idcarrito');
+    let indiceCarritoDoc = this.afs.doc<IndiceOptions>(this.filePathEmpresa + '/indices/idcarrito');
     return new Promise(resolve => {
       indiceCarritoDoc.ref.get().then(data => {
-        if (data.exists) {
-          this.idcarrito = data.get('id');
-          indiceCarritoDoc.set({ id: this.idcarrito + 1 });
-        } else {
-          this.idcarrito = 0;
-          indiceCarritoDoc.set({ id: 1 });
-        }
+        this.idcarrito = data.exists ? data.get('id') : 1;
+        indiceCarritoDoc.set({ id: this.idcarrito + 1 });
         resolve('ok');
       });
     })
@@ -157,6 +154,82 @@ export class ReservaPage {
     });
 
     mensajeAlert.present();
+  }
+
+  validarReservaDisponible(): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.carrito.forEach(reservaNueva => {
+        let reservaDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('disponibilidades').doc(reservaNueva.fechaInicio.getTime().toString());
+        let read = reservaDoc.valueChanges().subscribe(data => {
+          if (data) {
+            reject('La disponibilidad ' + moment(reservaNueva.fechaInicio).locale('es').format('h:mm a') + ' fue reservada.');
+          }
+        });
+        read.unsubscribe();
+        resolve('ok');
+      });
+    });
+  }
+
+  guardar() {
+    let batch = this.afs.firestore.batch();
+    this.validarReservaDisponible().then(() => {
+      this.carrito.forEach(reservaNueva => {
+        let reservaDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('disponibilidades').doc(reservaNueva.fechaInicio.getTime().toString());
+        batch.set(reservaDoc.ref, reservaNueva);
+
+        let mesServicio = moment(reservaNueva.fechaInicio).startOf('month');
+
+        let totalesServiciosDoc = this.afs.doc(this.filePathEmpresa + '/totalesservicios/' + mesServicio);
+
+        let totalServiciosReserva = reservaNueva.servicio.map(servicioReserva => Number(servicioReserva.valor)).reduce((a, b) => a + b);
+
+        this.disponibilidadDoc.ref.get().then(datosDiarios => {
+          if (datosDiarios.exists) {
+            let totalDiarioActual = datosDiarios.get('totalServicios');
+            let cantidadDiarioActual = datosDiarios.get('cantidadServicios');
+            let totalDiario = totalDiarioActual ? Number(totalDiarioActual) + totalServiciosReserva : totalServiciosReserva;
+            let cantidadDiario = cantidadDiarioActual ? Number(cantidadDiarioActual) + 1 : 1;
+            batch.update(this.disponibilidadDoc.ref, { totalServicios: totalDiario, cantidadServicios: cantidadDiario, fecha: new Date() });
+          } else {
+            batch.update(this.disponibilidadDoc.ref, { totalServicios: totalServiciosReserva, cantidadServicios: 1, fecha: new Date() });
+          }
+
+          totalesServiciosDoc.ref.get().then(() => {
+            batch.set(totalesServiciosDoc.ref, { ultimaactualizacion: new Date() });
+
+            let totalesServiciosUsuarioDoc = totalesServiciosDoc.collection('totalesServiciosUsuarios').doc<TotalesServiciosOptions>(this.usuario.id);
+
+            totalesServiciosUsuarioDoc.ref.get().then(datos => {
+              if (datos.exists) {
+                let totalActual = datos.get('totalServicios');
+                let cantidadActual = datos.get('cantidadServicios');
+                batch.update(totalesServiciosUsuarioDoc.ref, { totalServicios: Number(totalActual) + totalServiciosReserva, cantidadServicios: Number(cantidadActual) + 1, fecha: new Date() });
+              } else {
+                let totalServicioUsuario: TotalesServiciosOptions = {
+                  idusuario: this.usuario.id,
+                  usuario: reservaNueva.nombreusuario,
+                  imagenusuario: '',
+                  totalServicios: totalServiciosReserva,
+                  cantidadServicios: 1,
+                  fecha: new Date()
+                }
+                batch.set(totalesServiciosUsuarioDoc.ref, totalServicioUsuario);
+              }
+
+              batch.commit().then(() => {
+                this.genericAlert('Reserva registrada', 'Se ha registrado la reserva');
+              }).catch(err => this.genericAlert('Error', err));
+
+              this.navCtrl.pop();
+            });
+          });
+        });
+      });
+    }).catch(err => {
+      this.genericAlert('Error reserva', err);
+      this.navCtrl.pop();
+    });
   }
 
   agregar(servicio: ServicioOptions) {
@@ -252,119 +325,6 @@ export class ReservaPage {
       });
       cruceAlert.present();
     }
-  }
-
-  eliminar(servicio: ReservaOptions) {
-    this.disponibilidadBloquear = [];
-    let item = this.carrito.indexOf(servicio);
-    let carrito = this.carrito;
-    carrito.splice(item, 1);
-
-    this.carrito = [];
-    this.cantidad = 0;
-    this.totalServicios = 0;
-    this.ultimoHorario = this.disponibilidadSeleccionada.fechaInicio;
-
-    carrito.forEach(servicioAdquirido => {
-      this.agregar(servicioAdquirido.servicio[0]);
-    });
-
-    servicio.servicio[0].activo = true;
-  }
-
-  validarReservaDisponible(): Promise<any> {
-    return new Promise((resolve, reject) => {
-      this.carrito.forEach(reservaNueva => {
-        let reservaDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('disponibilidades').doc(reservaNueva.fechaInicio.getTime().toString());
-        let read = reservaDoc.valueChanges().subscribe(data => {
-          if (data) {
-            reject('La disponibilidad ' + moment(reservaNueva.fechaInicio).locale('es').format('h:mm a') + ' fue reservada.');
-          }
-        });
-        read.unsubscribe();
-        resolve('ok');
-      });
-    });
-  }
-
-  guardar() {
-    let batch = this.afs.firestore.batch();
-    this.validarReservaDisponible().then(() => {
-      this.carrito.forEach(reservaNueva => {
-        let reservaDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('disponibilidades').doc(reservaNueva.fechaInicio.getTime().toString());
-        batch.set(reservaDoc.ref, reservaNueva);
-
-        let mesServicio = moment(reservaNueva.fechaInicio).startOf('month');
-
-        let totalesServiciosDoc = this.afs.doc('totalesservicios/' + mesServicio);
-
-        let totalServiciosReserva = reservaNueva.servicio.map(servicioReserva => Number(servicioReserva.valor)).reduce((a, b) => a + b);
-
-        this.disponibilidadDoc.ref.get().then(datosDiarios => {
-          if (datosDiarios.exists) {
-            let totalDiarioActual = datosDiarios.get('totalServicios');
-            let cantidadDiarioActual = datosDiarios.get('cantidadServicios');
-            let totalDiario = totalDiarioActual ? Number(totalDiarioActual) + totalServiciosReserva : totalServiciosReserva;
-            let cantidadDiario = cantidadDiarioActual ? Number(cantidadDiarioActual) + 1 : 1;
-            batch.update(this.disponibilidadDoc.ref, { totalServicios: totalDiario, cantidadServicios: cantidadDiario, fecha: new Date() });
-          } else {
-            batch.update(this.disponibilidadDoc.ref, { totalServicios: totalServiciosReserva, cantidadServicios: 1, fecha: new Date() });
-          }
-
-          totalesServiciosDoc.ref.get().then(() => {
-            batch.set(totalesServiciosDoc.ref, { ultimaactualizacion: new Date() });
-
-            let totalesServiciosUsuarioDoc = totalesServiciosDoc.collection('totalesServiciosUsuarios').doc<TotalesServiciosOptions>(this.usuario.id);
-
-            totalesServiciosUsuarioDoc.ref.get().then(datos => {
-              if (datos.exists) {
-                let totalActual = datos.get('totalServicios');
-                let cantidadActual = datos.get('cantidadServicios');
-                batch.update(totalesServiciosUsuarioDoc.ref, { totalServicios: Number(totalActual) + totalServiciosReserva, cantidadServicios: Number(cantidadActual) + 1, fecha: new Date() });
-              } else {
-                let totalServicioUsuario: TotalesServiciosOptions = {
-                  idusuario: this.usuario.id,
-                  usuario: reservaNueva.nombreusuario,
-                  imagenusuario: '',
-                  totalServicios: totalServiciosReserva,
-                  cantidadServicios: 1,
-                  fecha: new Date()
-                }
-                batch.set(totalesServiciosUsuarioDoc.ref, totalServicioUsuario);
-              }
-
-              batch.commit().then(() => {
-                this.genericAlert('Reserva registrada', 'Se ha registrado la reserva');
-              }).catch(err => this.genericAlert('Error', err));
-
-              this.navCtrl.pop();
-            });
-          });
-        });
-      });
-    }).catch(err => {
-      this.genericAlert('Error reserva', err);
-      this.navCtrl.pop();
-    });
-  }
-
-  ver(event) {
-    let carritoOptions = this.popoverCtrl.create('CarritoPage', {
-      servicios: this.carrito,
-      total: this.totalServicios
-    });
-
-    carritoOptions.present({
-      ev: event
-    });
-
-    carritoOptions.onDidDismiss(data => {
-      if (data && data.metodo === 'eliminar') {
-        this.eliminar(data.servicio);
-      } else if (data && data.metodo === 'guardar') {
-        this.guardar();
-      }
-    });
   }
 
 }

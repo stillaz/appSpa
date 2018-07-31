@@ -2,11 +2,11 @@ import { Component } from '@angular/core';
 import { IonicPage, NavController, NavParams, AlertController } from 'ionic-angular';
 import moment from 'moment';
 import { FechaOptions } from '../../interfaces/fecha-options';
-import { AngularFireAuth } from 'angularfire2/auth';
 import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection } from 'angularfire2/firestore';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
 import { TotalesServiciosOptions } from '../../interfaces/totales-servicios-options';
 import * as DataProvider from '../../providers/constants';
+import { UsuarioProvider } from '../../providers/usuario';
 
 /**
  * Generated class for the ReportesPage page.
@@ -22,6 +22,13 @@ import * as DataProvider from '../../providers/constants';
 })
 export class ReportesPage {
 
+  filtros = [
+    'DIARIO',
+    'SEMANAL',
+    'MENSUAL',
+    'ANUAL'
+  ];
+
   mesSeleccionado: FechaOptions;
   adelante: boolean = false;
   atras: boolean = true;
@@ -36,7 +43,6 @@ export class ReportesPage {
   read;
   totalesDoc: AngularFirestoreDocument;
   constantes = DataProvider;
-  filtros: string[];
   filtroSeleccionado: string = 'MENSUAL';
   initDate: Date = new Date();
   disabledDates: Date[] = [];
@@ -47,20 +53,19 @@ export class ReportesPage {
   semanaSeleccionada: Date;
   anoSeleccionado: Date;
   textoAno: string;
+  filePathEmpresa: string;
+  filePathUsuarios: string;
 
   constructor(
     public navCtrl: NavController,
     public navParams: NavParams,
-    private afa: AngularFireAuth,
     private afs: AngularFirestore,
-    public alertCtrl: AlertController
+    public alertCtrl: AlertController,
+    private usuarioServicio: UsuarioProvider
   ) {
-    this.filtros = [
-      'DIARIO',
-      'SEMANAL',
-      'MENSUAL',
-      'ANUAL'
-    ];
+    this.administrador = this.usuarioServicio.isAdministrador();
+    this.filePathEmpresa = this.usuarioServicio.getFilePathEmpresa();
+    this.filePathUsuarios = this.usuarioServicio.getFilePathUsuarios();
     this.updateFechasMes(new Date());
     this.updateUsuario();
   }
@@ -76,24 +81,8 @@ export class ReportesPage {
   }
 
   updateUsuario() {
-    let user = this.afa.auth.currentUser;
-    if (!user) {
-      this.navCtrl.setRoot('LogueoPage');
-    } else {
-      this.usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + user.uid);
-      this.usuarioDoc.valueChanges().subscribe(data => {
-        if (data) {
-          this.usuarioLogueado = data;
-          this.usuario = data;
-          this.administrador = this.usuarioLogueado.perfiles.some(perfil => perfil.nombre === 'Administrador');
-          this.usuarioDiarioCollection = this.administrador ? this.afs.collection<UsuarioOptions>('usuarios') : this.afs.collection<UsuarioOptions>('usuarios', ref => ref.where('id', '==', this.usuario.id));
-          this.updateTotalesMes(this.mesSeleccionado.fecha);
-        } else {
-          this.genericAlert('Error usuario', 'Usuario no encontrado');
-          this.navCtrl.setRoot('LogueoPage');
-        }
-      });
-    }
+    this.usuarioDiarioCollection = this.administrador ? this.afs.collection<UsuarioOptions>(this.filePathUsuarios) : this.afs.collection<UsuarioOptions>(this.filePathUsuarios, ref => ref.where('id', '==', this.usuario.id));
+    this.updateTotalesMes(this.mesSeleccionado.fecha);
   }
 
 
@@ -115,7 +104,7 @@ export class ReportesPage {
 
   updateTotalesMes(fecha: Date) {
     let fechaInicio = moment(fecha).startOf('month').toDate();
-    this.totalesDoc = this.afs.doc('totalesservicios/' + fechaInicio.getTime().toString());
+    this.totalesDoc = this.afs.doc(this.filePathEmpresa + '/totalesservicios/' + fechaInicio.getTime().toString());
     let totalesServiciosUsuariosCollection: AngularFirestoreCollection<TotalesServiciosOptions> = this.administrador ? this.totalesDoc.collection('totalesServiciosUsuarios') : this.totalesDoc.collection('totalesServiciosUsuarios', ref => ref.where('idusuario', '==', this.usuarioLogueado.id));
     this.read = totalesServiciosUsuariosCollection.valueChanges().subscribe(data => {
       this.totalesUsuarios = [];
@@ -153,7 +142,7 @@ export class ReportesPage {
       this.total = 0;
       this.cantidad = 0;
       data.forEach(usuario => {
-        let disponibilidadUsuarioDoc = this.afs.doc('usuarios/' + usuario.id + '/disponibilidades/' + fechaInicio.getTime().toString());
+        let disponibilidadUsuarioDoc = this.afs.doc(this.filePathUsuarios + '/' + usuario.id + '/disponibilidades/' + fechaInicio.getTime().toString());
         disponibilidadUsuarioDoc.ref.get().then(totalDia => {
           if (totalDia.exists) {
             let totalesDia = totalDia.get('totalServicios');
@@ -175,7 +164,7 @@ export class ReportesPage {
 
   updateDataSemana(usuario: UsuarioOptions, init: Date, fin: Date) {
     while (moment(init).isSameOrBefore(fin)) {
-      let disponibilidadUsuarioDoc = this.afs.doc('usuarios/' + usuario.id + '/disponibilidades/' + init.getTime().toString());
+      let disponibilidadUsuarioDoc = this.afs.doc(this.filePathUsuarios + '/' + usuario.id + '/disponibilidades/' + init.getTime().toString());
       disponibilidadUsuarioDoc.ref.get().then(totalDia => {
         if (totalDia.exists) {
           let totalesDia = totalDia.get('totalServicios');
@@ -236,7 +225,7 @@ export class ReportesPage {
 
     while (moment(init).isSameOrBefore(diaFinAno)) {
       let mesInit = moment(init).startOf('month').toDate();
-      this.totalesDoc = this.afs.doc('totalesservicios/' + mesInit.getTime().toString());
+      this.totalesDoc = this.afs.doc(this.filePathEmpresa + '/totalesservicios/' + mesInit.getTime().toString());
       let totalesServiciosUsuariosCollection: AngularFirestoreCollection<TotalesServiciosOptions> = this.administrador ? this.totalesDoc.collection('totalesServiciosUsuarios') : this.totalesDoc.collection('totalesServiciosUsuarios', ref => ref.where('idusuario', '==', this.usuarioLogueado.id));
       this.read = totalesServiciosUsuariosCollection.valueChanges().subscribe(data => {
         data.forEach(totalData => {

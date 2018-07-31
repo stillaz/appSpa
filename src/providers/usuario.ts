@@ -26,4 +26,16 @@ export class UsuarioProvider {
     return this.usuario ? this.usuario.perfiles.some(perfil => perfil.nombre === 'Administrador') : false;
   }
 
+  getFilePathEmpresa() {
+    return 'negocios/' + this.usuario.idempresa;
+  }
+
+  getFilePathUsuarios() {
+    return this.getFilePathEmpresa() + '/usuarios';
+  }
+
+  getFilePathUsuario() {
+    return this.getFilePathEmpresa() + '/usuarios/';
+  }
+
 }

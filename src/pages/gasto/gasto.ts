@@ -2,10 +2,9 @@ import { Component } from '@angular/core';
 import { IonicPage, NavController, NavParams, AlertController, ModalController } from 'ionic-angular';
 import moment from 'moment';
 import { FechaOptions } from '../../interfaces/fecha-options';
-import { AngularFireAuth } from 'angularfire2/auth';
 import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection } from 'angularfire2/firestore';
-import { UsuarioOptions } from '../../interfaces/usuario-options';
 import { GastoOptions } from '../../interfaces/gasto-options';
+import { UsuarioProvider } from '../../providers/usuario';
 
 /**
  * Generated class for the ReportesPage page.
@@ -25,26 +24,26 @@ export class GastoPage {
   adelante: boolean = false;
   atras: boolean = true;
   fechas: FechaOptions[];
-  usuarioDoc: AngularFirestoreDocument<UsuarioOptions>;
-  usuarioLogueado: UsuarioOptions;
-  usuario = {} as UsuarioOptions;
-  administrador: boolean;
   gastos: any[];
   total: number;
   read;
   modo: string = 'finalizados';
+  filePathEmpresa: string;
 
   constructor(
     public navCtrl: NavController,
     public navParams: NavParams,
-    private afa: AngularFireAuth,
     private afs: AngularFirestore,
     public alertCtrl: AlertController,
-    public modalCtrl: ModalController
+    public modalCtrl: ModalController,
+    private usuarioServicio: UsuarioProvider
   ) {
-    let idususario = this.navParams.get('idusuario');
-    this.updateFechas(new Date());
-    this.updateUsuario(idususario);
+    this.filePathEmpresa = this.usuarioServicio.getFilePathEmpresa();
+    let ahora = new Date();
+    this.updateFechas(ahora);
+    if (this.usuarioServicio.isAdministrador) {
+      this.updateGastos(ahora);
+    }
   }
 
   crear() {
@@ -59,28 +58,6 @@ export class GastoPage {
     });
 
     mensajeAlert.present();
-  }
-
-  updateUsuario(idusuario: string) {
-    let user = this.afa.auth.currentUser;
-    if (!user) {
-      this.navCtrl.setRoot('LogueoPage');
-    } else {
-      let usuarioLogueadoDoc = this.afs.doc<UsuarioOptions>('usuarios/' + user.uid);
-      this.usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + idusuario);
-      usuarioLogueadoDoc.valueChanges().subscribe(data => {
-        if (data) {
-          this.usuarioLogueado = data;
-          this.administrador = this.usuarioLogueado.perfiles.some(perfil => perfil.nombre === 'Administrador');
-          this.usuarioDoc.valueChanges().subscribe(datosusuario => {
-            this.usuario = datosusuario;
-            this.updateGastos(this.mesSeleccionado.fecha);
-          });
-        } else {
-          this.genericAlert('Error usuario', 'Usuario no encontrado');
-        }
-      });
-    }
   }
 
   updateFechas(fechaSeleccionada: Date) {
@@ -100,7 +77,7 @@ export class GastoPage {
   }
 
   updateGasto(gastosdiarios) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       gastosdiarios.forEach(gasto => {
         gasto.ref.collection('gastos').get().then(gastos => {
           if (!gastos.empty) {
@@ -110,6 +87,7 @@ export class GastoPage {
               detalle.push(dato.data());
             })
             this.gastos.push({ grupo: fechaData, gastos: detalle });
+            resolve('ok');
           }
         });
       });
@@ -119,7 +97,7 @@ export class GastoPage {
   updateGastos(fecha: Date) {
     let fechaInicio = moment(fecha).startOf('month').toDate().getTime().toString();
 
-    let gastosMesDoc: AngularFirestoreDocument = this.afs.doc('gastos/' + fechaInicio);
+    let gastosMesDoc: AngularFirestoreDocument = this.afs.doc(this.filePathEmpresa + '/gastos/' + fechaInicio);
     this.read = gastosMesDoc.valueChanges().subscribe(gastosMes => {
       this.total = 0;
       this.gastos = [];

@@ -3,8 +3,6 @@ import { IonicPage, NavController, NavParams, AlertController } from 'ionic-angu
 import { LoginOptions } from '../../interfaces/login-options';
 import { AngularFireAuth } from 'angularfire2/auth';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
-import { AngularFirestoreDocument, AngularFirestore } from 'angularfire2/firestore';
-import { UsuarioOptions } from '../../interfaces/usuario-options';
 
 /**
  * Generated class for the LogueoPage page.
@@ -22,16 +20,13 @@ export class LogueoPage {
 
   login = {} as LoginOptions;
   todo: FormGroup;
-  usuarioDoc: AngularFirestoreDocument<UsuarioOptions>;
-  usuario: UsuarioOptions;
 
   constructor(
     public navCtrl: NavController,
     public navParams: NavParams,
     private afa: AngularFireAuth,
     private formBuilder: FormBuilder,
-    public alertCtrl: AlertController,
-    private afs: AngularFirestore
+    public alertCtrl: AlertController
   ) {
     this.form();
   }
