@@ -376,7 +376,7 @@ export class AgendaPage {
 
   filtroPerfiles() {
     let filtros: any = [];
-    let todosPerfiles: PerfilOptions = { id: '', nombre: 'Todos los perfiles', imagen: null, servicios: null, activo: null }
+    let todosPerfiles: PerfilOptions = { id: '', nombre: 'Todos los perfiles', imagen: null, servicios: null, activo: null, grupo: null }
     filtros.push({
       text: todosPerfiles.nombre, handler: () => {
         this.filtroUsuarios(this.usuarios);
