@@ -52,7 +52,6 @@ export class DetalleServicioPage {
     this.servicio = this.navParams.get('servicio');
     this.filePathEmpresa = this.usuarioServicio.getFilePathEmpresa();
     this.filePathUsuario = this.usuarioServicio.getFilePathUsuario();
-    this.servicioDoc = this.afs.doc(this.filePathData);
     this.mobile = plt.is('android');
     this.updateGrupos();
     this.updateServicio();
@@ -74,8 +73,7 @@ export class DetalleServicioPage {
       duracion_MIN: [this.servicio.duracion_MIN, Validators.required],
       valor: [this.servicio.valor, Validators.required],
       grupo: [this.servicio.grupo, Validators.required],
-      imagen: [this.servicio.imagen],
-      activo: [this.servicio.activo, Validators.required]
+      imagen: [this.servicio.imagen]
     });
   }
 
