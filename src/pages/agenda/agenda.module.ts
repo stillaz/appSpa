@@ -1,6 +1,8 @@
 import { NgModule } from '@angular/core';
 import { IonicPageModule } from 'ionic-angular';
 import { AgendaPage } from './agenda';
+import { PipesModule } from '../../pipes/pipes.module';
+import { DatePickerModule } from '../../../node_modules/ionic3-datepicker';
 
 @NgModule({
   declarations: [
@@ -8,6 +10,8 @@ import { AgendaPage } from './agenda';
   ],
   imports: [
     IonicPageModule.forChild(AgendaPage),
+    PipesModule,
+    DatePickerModule
   ],
 })
-export class AgendaPageModule {}
+export class AgendaPageModule { }

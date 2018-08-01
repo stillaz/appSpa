@@ -23,22 +23,19 @@ import { Camera } from '@ionic-native/camera';
 import { FileChooser } from '@ionic-native/file-chooser';
 import { FilePath } from '@ionic-native/file-path';
 import { AngularFireStorageModule } from 'angularfire2/storage';
-import { SearchPipe } from '../pipes/search/search';
 import { GastoPage } from '../pages/gasto/gasto';
-import { JoinsPipe } from '../pipes/joins/joins';
 import { UsuarioProvider } from '../providers/usuario';
+import { AgendaPageModule } from '../pages/agenda/agenda.module';
+import { ConfiguracionPageModule } from '../pages/configuracion/configuracion.module';
+import { GastoPageModule } from '../pages/gasto/gasto.module';
+import { ReportesPageModule } from '../pages/reportes/reportes.module';
+import { TabsPageModule } from '../pages/tabs/tabs.module';
+import { PipesModule } from '../pipes/pipes.module';
 
 
 @NgModule({
   declarations: [
-    MyApp,
-    AgendaPage,
-    ConfiguracionPage,
-    GastoPage,
-    ReportesPage,
-    TabsPage,
-    SearchPipe,
-    JoinsPipe
+    MyApp
   ],
   imports: [
     BrowserModule,
@@ -53,7 +50,13 @@ import { UsuarioProvider } from '../providers/usuario';
     AngularFireModule.initializeApp(firebaseConfig),
     AngularFirestoreModule.enablePersistence(),
     AngularFireAuthModule,
-    AngularFireStorageModule
+    AngularFireStorageModule,
+    AgendaPageModule,
+    ConfiguracionPageModule,
+    GastoPageModule,
+    ReportesPageModule,
+    TabsPageModule,
+    PipesModule
   ],
   bootstrap: [IonicApp],
   entryComponents: [

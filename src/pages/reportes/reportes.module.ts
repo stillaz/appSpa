@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { IonicPageModule } from 'ionic-angular';
 import { ReportesPage } from './reportes';
+import { DatePickerModule } from '../../../node_modules/ionic3-datepicker';
 
 @NgModule({
   declarations: [
@@ -8,6 +9,7 @@ import { ReportesPage } from './reportes';
   ],
   imports: [
     IonicPageModule.forChild(ReportesPage),
+    DatePickerModule
   ],
 })
-export class ReportesPageModule {}
+export class ReportesPageModule { }
