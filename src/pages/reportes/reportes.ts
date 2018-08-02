@@ -142,14 +142,20 @@ export class ReportesPage {
       this.total = 0;
       this.cantidad = 0;
       data.forEach(usuario => {
-        let disponibilidadUsuarioDoc = this.afs.doc(this.filePathUsuarios + '/' + usuario.id + '/disponibilidades/' + fechaInicio.getTime().toString());
-        disponibilidadUsuarioDoc.ref.get().then(totalDia => {
-          if (totalDia.exists) {
-            let totalesDia = totalDia.get('totalServicios');
-            let cantidadesDia = totalDia.get('cantidadServicios');
+        let disponibilidadUsuarioDoc = this.afs.doc<any>(this.filePathUsuarios + '/' + usuario.id + '/disponibilidades/' + fechaInicio.getTime().toString());
+        disponibilidadUsuarioDoc.valueChanges().subscribe(totalDia => {
+          if (totalDia) {
+            let totalesDia = totalDia.totalServicios;
+            let cantidadesDia = totalDia.cantidadServicios;
             this.total += totalesDia ? Number(totalesDia) : 0;
             this.cantidad += cantidadesDia ? Number(cantidadesDia) : 0;
-            this.totalesUsuarios.push(totalDia.data());
+            let totalUsuario = this.totalesUsuarios.find(totalUsuario => totalUsuario.idusuario === totalDia.idusuario);
+            if (!totalUsuario) {
+              this.totalesUsuarios.push(totalDia);
+            } else {
+              let item = this.totalesUsuarios.indexOf(totalUsuario);
+              this.totalesUsuarios.splice(item, 1, totalDia);
+            }
           }
         });
       });
@@ -163,25 +169,37 @@ export class ReportesPage {
   }
 
   updateDataSemana(usuario: UsuarioOptions, init: Date, fin: Date) {
-    while (moment(init).isSameOrBefore(fin)) {
-      let disponibilidadUsuarioDoc = this.afs.doc(this.filePathUsuarios + '/' + usuario.id + '/disponibilidades/' + init.getTime().toString());
-      disponibilidadUsuarioDoc.ref.get().then(totalDia => {
-        if (totalDia.exists) {
-          let totalesDia = totalDia.get('totalServicios');
-          let cantidadesDia = totalDia.get('cantidadServicios');
-          this.total += totalesDia ? Number(totalesDia) : 0;
-          this.cantidad += cantidadesDia ? Number(cantidadesDia) : 0;
-          if (this.totalesUsuarios.length === 0 || !this.totalesUsuarios.some(totalUsuario => totalUsuario.idusuario === usuario.id)) {
-            this.totalesUsuarios.push(totalDia.data());
+    let inicio = init;
+    while (moment(inicio).isSameOrBefore(fin)) {
+      let disponibilidadUsuarioDoc = this.afs.doc<any>(this.filePathUsuarios + '/' + usuario.id + '/disponibilidades/' + inicio.getTime().toString());
+      let totalSemana = 0;
+      let cantidadSemana = 0;
+      disponibilidadUsuarioDoc.valueChanges().subscribe(totalDia => {
+        if (totalDia) {
+          totalSemana += totalDia.totalServicios;
+          cantidadSemana += totalDia.cantidadServicios;
+          this.total += totalSemana ? Number(totalSemana) : 0;
+          this.cantidad += cantidadSemana ? Number(cantidadSemana) : 0;
+          totalDia.totalServicios = totalSemana;
+          totalDia.cantidadServicios = cantidadSemana;
+          let totalUsuarioEncontrado = this.totalesUsuarios.find(totalUsuario => totalUsuario.idusuario === usuario.id);
+          if (!totalUsuarioEncontrado) {
+            console.log('entra1')
+            console.log(totalDia);
+            this.totalesUsuarios.push(totalDia);
           } else {
-            let totalUsuarioEncontrado = this.totalesUsuarios.find(totalUsuario => totalUsuario.idusuario === usuario.id);
-            totalUsuarioEncontrado.totalServicios += totalesDia ? Number(totalesDia) : 0;
-            totalUsuarioEncontrado.cantidadServicios += cantidadesDia ? Number(cantidadesDia) : 0;
+            console.log('entra2')
+            console.log(totalDia);
+            let item = this.totalesUsuarios.indexOf(totalUsuarioEncontrado);
+            totalDia.totalServicios += totalSemana;
+            totalDia.cantidadServicios += cantidadSemana;
+
+            this.totalesUsuarios.splice(item, 1, totalDia);
           }
         }
       });
 
-      init = moment(init).add(1, 'days').toDate();
+      inicio = moment(inicio).add(1, 'days').toDate();
     }
   }
 
