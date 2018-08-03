@@ -154,6 +154,8 @@ export class ReportesPage {
               this.totalesUsuarios.push(totalDia);
             } else {
               let item = this.totalesUsuarios.indexOf(totalUsuario);
+              totalUsuario.totalServicios += totalDia.totalServicios;
+              totalUsuario.cantidadServicios += totalDia.cantidadServicios;
               this.totalesUsuarios.splice(item, 1, totalDia);
             }
           }
