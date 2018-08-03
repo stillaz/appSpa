@@ -186,12 +186,8 @@ export class ReportesPage {
           totalDia.cantidadServicios = cantidadSemana;
           let totalUsuarioEncontrado = this.totalesUsuarios.find(totalUsuario => totalUsuario.idusuario === usuario.id);
           if (!totalUsuarioEncontrado) {
-            console.log('entra1')
-            console.log(totalDia);
             this.totalesUsuarios.push(totalDia);
           } else {
-            console.log('entra2')
-            console.log(totalDia);
             let item = this.totalesUsuarios.indexOf(totalUsuarioEncontrado);
             totalDia.totalServicios += totalSemana;
             totalDia.cantidadServicios += cantidadSemana;
