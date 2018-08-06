@@ -154,8 +154,6 @@ export class ReportesPage {
               this.totalesUsuarios.push(totalDia);
             } else {
               let item = this.totalesUsuarios.indexOf(totalUsuario);
-              totalUsuario.totalServicios += totalDia.totalServicios;
-              totalUsuario.cantidadServicios += totalDia.cantidadServicios;
               this.totalesUsuarios.splice(item, 1, totalDia);
             }
           }
@@ -177,6 +175,7 @@ export class ReportesPage {
       let totalSemana = 0;
       let cantidadSemana = 0;
       disponibilidadUsuarioDoc.valueChanges().subscribe(totalDia => {
+        console.log(totalDia);
         if (totalDia) {
           totalSemana += totalDia.totalServicios;
           cantidadSemana += totalDia.cantidadServicios;
