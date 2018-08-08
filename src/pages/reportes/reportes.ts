@@ -175,7 +175,6 @@ export class ReportesPage {
       let totalSemana = 0;
       let cantidadSemana = 0;
       disponibilidadUsuarioDoc.valueChanges().subscribe(totalDia => {
-        console.log(totalDia);
         if (totalDia) {
           totalSemana += totalDia.totalServicios;
           cantidadSemana += totalDia.cantidadServicios;
