@@ -31,6 +31,8 @@ import { GastoPageModule } from '../pages/gasto/gasto.module';
 import { ReportesPageModule } from '../pages/reportes/reportes.module';
 import { TabsPageModule } from '../pages/tabs/tabs.module';
 import { PipesModule } from '../pipes/pipes.module';
+import { FmcProvider } from '../providers/fmc';
+import { Firebase } from '@ionic-native/firebase'
 
 
 @NgModule({
@@ -78,7 +80,9 @@ import { PipesModule } from '../pipes/pipes.module';
     FilePath,
     Push,
     ReservaProvider,
-    UsuarioProvider
+    UsuarioProvider,
+    FmcProvider,
+    Firebase
   ]
 })
 export class AppModule { }

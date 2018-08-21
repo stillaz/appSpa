@@ -1,6 +1,6 @@
 import moment from 'moment';
 import { Component, ViewChild } from '@angular/core';
-import { AlertController, Content, IonicPage, ItemSliding, NavController, ActionSheetController, PopoverController } from 'ionic-angular';
+import { AlertController, Content, IonicPage, ItemSliding, NavController, ActionSheetController, PopoverController, ToastController } from 'ionic-angular';
 import * as DataProvider from '../../providers/constants';
 import { ClienteOptions } from '../../interfaces/cliente-options';
 import { ReservaOptions } from '../../interfaces/reserva-options';
@@ -32,7 +32,6 @@ export class AgendaPage {
   horaInicio = 0;
   horaFin = 24;
   tiempoServicio = 30;
-  actual: Date;
   initDate: Date = new Date();
   initDate2: Date = new Date();
   disabledDates: Date[] = [];
@@ -63,6 +62,7 @@ export class AgendaPage {
     private afs: AngularFirestore,
     public popoverCtrl: PopoverController,
     private usuarioService: UsuarioProvider,
+    public toastCtrl: ToastController
   ) {
     this.usuarioLogueado = this.usuarioService.getUsuario();
     this.filePathEmpresa = 'negocios/' + this.usuarioLogueado.idempresa;
@@ -242,7 +242,6 @@ export class AgendaPage {
           this.scrollTo(this.constantes.EVENTOS.ACTUAL)
         }, 1);
       }
-      this.actual = new Date();
     });
   }
 

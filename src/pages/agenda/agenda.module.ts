@@ -2,7 +2,7 @@ import { NgModule } from '@angular/core';
 import { IonicPageModule } from 'ionic-angular';
 import { AgendaPage } from './agenda';
 import { PipesModule } from '../../pipes/pipes.module';
-import { DatePickerModule } from '../../../node_modules/ionic3-datepicker';
+import { DatePickerModule } from 'ionic3-datepicker';
 
 @NgModule({
   declarations: [

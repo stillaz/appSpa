@@ -10,5 +10,6 @@ export interface UsuarioOptions{
     configuracion: ConfiguracionOptions,
     imagen: string,
     activo: boolean,
-    idempresa: string
+    idempresa: string,
+    token: string
 }
