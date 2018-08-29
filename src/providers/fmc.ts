@@ -4,6 +4,7 @@ import { Platform } from 'ionic-angular';
 import { Firebase } from '@ionic-native/firebase'
 import { UsuarioProvider } from './usuario';
 import { UsuarioOptions } from '../interfaces/usuario-options';
+import { Observable, BehaviorSubject } from 'rxjs';
 
 /*
   Generated class for the FmcProvider provider.
@@ -14,12 +15,16 @@ import { UsuarioOptions } from '../interfaces/usuario-options';
 @Injectable()
 export class FmcProvider {
 
+  private notificaciones = 0;
+  private notificacionesObserv: BehaviorSubject<number>;
+
   constructor(
     public firebase: Firebase,
     public afs: AngularFirestore,
     private platform: Platform,
     private usuario: UsuarioProvider
   ) {
+    this.notificacionesObserv = new BehaviorSubject<number>(0);
   }
 
   async getToken() {
@@ -50,6 +55,15 @@ export class FmcProvider {
     const usuarioDoc = this.afs.doc<UsuarioOptions>(ruta);
 
     return usuarioDoc.update({ token: token });
+  }
+
+  public getNotificaciones(): Observable<number> {
+    return this.notificacionesObserv.asObservable();
+  }
+
+  public setNotificaciones(valor: number): void {
+    this.notificaciones += valor;
+    this.notificacionesObserv.next(this.notificaciones);
   }
 
 }

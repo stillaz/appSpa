@@ -50,6 +50,7 @@ export class AgendaPage {
   private indisponibles;
   private filePathEmpresa: string;
   administrador: boolean;
+  actual: Date = new Date();
 
   opciones: any[] = [
     { title: 'Configuración', component: 'ConfiguracionAgendaPage', icon: 'stats' }
@@ -75,6 +76,7 @@ export class AgendaPage {
 
   ionViewDidLoad() {
     Observable.interval(60000).subscribe(() => {
+      this.actual = new Date();
       this.initDate = new Date();
       this.initDate2 = new Date();
       this.updateHorariosInicial();
@@ -183,7 +185,10 @@ export class AgendaPage {
             cliente: {} as ClienteOptions,
             servicio: [noDisponible],
             idusuario: this.usuario.id,
-            nombreusuario: this.usuario.nombre
+            nombreusuario: this.usuario.nombre,
+            id: null,
+            fechaActualizacion: new Date(),
+            leido: null
           };
         } else {
           let reservaEnc = reservas.find(item => item.fechaInicio.toDate().getTime() === fechaInicioReserva.getTime());
@@ -197,7 +202,10 @@ export class AgendaPage {
               cliente: {} as ClienteOptions,
               servicio: [{} as ServicioOptions],
               idusuario: this.usuario.id,
-              nombreusuario: this.usuario.nombre
+              nombreusuario: this.usuario.nombre,
+              id: null,
+              fechaActualizacion: new Date(),
+              leido: null
             };
           } else {
             reserva = {
@@ -209,7 +217,10 @@ export class AgendaPage {
               cliente: reservaEnc.cliente,
               servicio: reservaEnc.servicio,
               idusuario: reservaEnc.idusuario,
-              nombreusuario: reservaEnc.nombreusuario
+              nombreusuario: reservaEnc.nombreusuario,
+              id: null,
+              fechaActualizacion: new Date(),
+              leido: null
             };
           }
         }
@@ -332,6 +343,13 @@ export class AgendaPage {
                   let totalActual = datos.get('totalServicios');
                   let cantidadActual = datos.get('cantidadServicios');
                   batch.update(totalesServiciosUsuarioDoc.ref, { totalServicios: Number(totalActual) - totalServiciosReserva, cantidadServicios: Number(cantidadActual) - 1, fecha: new Date() });
+
+                  let idreserva = reserva.id;
+                  if (idreserva) {
+                    const serviciosDoc = this.afs.doc('servicioscliente/' + idreserva);
+
+                    batch.update(serviciosDoc.ref, { estado: this.constantes.ESTADOS_RESERVA.CANCELADO, fechaActualizacion: new Date(), actualiza: 'usuario' });
+                  }
 
                   batch.commit().then(() => {
                     this.genericAlert('Cita cancelada', 'La cita con ' + nombreCliente + ' ha sido cancelada');

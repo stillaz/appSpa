@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { Platform, ToastController } from 'ionic-angular';
+import { Platform } from 'ionic-angular';
 import { StatusBar } from '@ionic-native/status-bar';
 import { SplashScreen } from '@ionic-native/splash-screen';
 import { timer } from 'rxjs/Observable/timer';
@@ -25,8 +25,7 @@ export class MyApp {
     private afa: AngularFireAuth,
     private afs: AngularFirestore,
     public usuarioService: UsuarioProvider,
-    fcm: FmcProvider,
-    toastCtrl: ToastController
+    fcm: FmcProvider
   ) {
     platform.ready().then(() => {
       // Okay, so the platform is ready and our plugins are available.
@@ -41,16 +40,12 @@ export class MyApp {
             usuarioDoc.valueChanges().subscribe(data => {
               fcm.getToken();
 
-              fcm.listenToNotifications().pipe(
-                tap(msg => {
-                  const toast = toastCtrl.create({
-                    message: msg.body,
-                    duration: 3000
-                  });
-                  toast.present();
-                })
-              )
-                .subscribe();
+              if (platform.is('cordova')) {
+                fcm.listenToNotifications().pipe(
+                  tap(() => {
+                    fcm.setNotificaciones(1);
+                  })).subscribe();
+              }
               if (data) {
                 this.usuarioService.setUsuario(data);
                 this.rootPage = TabsPage;

@@ -1,0 +1,28 @@
+<!--
+  Generated template for the NotificacionPage page.
+
+  See http://ionicframework.com/docs/components/#navigation for more info on
+  Ionic pages and navigation.
+-->
+<ion-header>
+
+  <ion-navbar>
+    <ion-title>Notificaciones</ion-title>
+  </ion-navbar>
+
+</ion-header>
+
+
+<ion-content padding>
+  <ion-list>
+    <ion-item *ngFor="let notificacion of notificaciones">
+      <ion-avatar *ngIf="notificacion.cliente.imagen" item-start>
+        <img [src]="notificacion.cliente.imagen" />
+      </ion-avatar>
+
+      <h2>{{notificacion.cliente.nombre}}</h2>
+      <p *ngIf="notificacion.estado === constantes.ESTADOS_RESERVA.RESERVADO">Ha reservado una cita para {{notificacion.fechaInicio.toDate() | date: 'mediumDate'}} a las {{notificacion.fechaInicio.toDate() | date: 'hh:mm a'}}</p>
+      <p *ngIf="notificacion.estado === constantes.ESTADOS_RESERVA.CANCELADO">Ha cancelado la cita de {{notificacion.fechaInicio.toDate() | date: 'mediumDate'}} a las {{notificacion.fechaInicio.toDate() | date: 'hh:mm a'}}</p>
+    </ion-item>
+  </ion-list>
+</ion-content>

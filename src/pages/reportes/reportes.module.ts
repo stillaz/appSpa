@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { IonicPageModule } from 'ionic-angular';
 import { ReportesPage } from './reportes';
-import { DatePickerModule } from '../../../node_modules/ionic3-datepicker';
+import { DatePickerModule } from 'ionic3-datepicker';
 
 @NgModule({
   declarations: [

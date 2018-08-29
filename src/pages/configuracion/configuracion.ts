@@ -3,7 +3,7 @@ import { NavController, Platform } from 'ionic-angular';
 import { AngularFireAuth } from 'angularfire2/auth';
 import { UsuarioProvider } from '../../providers/usuario';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
-import { AngularFirestore } from '../../../node_modules/angularfire2/firestore';
+import { AngularFirestore } from 'angularfire2/firestore';
 
 @Component({
   selector: 'page-configuracion',

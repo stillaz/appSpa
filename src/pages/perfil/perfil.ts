@@ -5,8 +5,8 @@ import { AngularFirestore, AngularFirestoreDocument } from 'angularfire2/firesto
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
 import { AngularFireAuth } from 'angularfire2/auth';
 import { User } from '@firebase/auth-types';
-import { CameraOptions, Camera } from '../../../node_modules/@ionic-native/camera';
-import { AngularFireStorage } from '../../../node_modules/angularfire2/storage';
+import { CameraOptions, Camera } from '@ionic-native/camera';
+import { AngularFireStorage } from 'angularfire2/storage';
 import firebase from 'firebase';
 import { UsuarioProvider } from '../../providers/usuario';
 

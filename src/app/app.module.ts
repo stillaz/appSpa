@@ -33,6 +33,7 @@ import { TabsPageModule } from '../pages/tabs/tabs.module';
 import { PipesModule } from '../pipes/pipes.module';
 import { FmcProvider } from '../providers/fmc';
 import { Firebase } from '@ionic-native/firebase'
+import { NotificacionPageModule } from '../pages/notificacion/notificacion.module';
 
 
 @NgModule({
@@ -56,6 +57,7 @@ import { Firebase } from '@ionic-native/firebase'
     AgendaPageModule,
     ConfiguracionPageModule,
     GastoPageModule,
+    NotificacionPageModule,
     ReportesPageModule,
     TabsPageModule,
     PipesModule

@@ -279,7 +279,10 @@ export class ReservaPage {
         evento: this.constantes.EVENTOS.OTRO,
         idcarrito: this.idcarrito,
         idusuario: this.usuario.id,
-        nombreusuario: this.usuario.nombre
+        nombreusuario: this.usuario.nombre,
+        fechaActualizacion: null,
+        id: null,
+        leido: null
       });
       this.ultimoHorario = disponibilidadBloquear[disponibilidadBloquear.length - 1].fechaFin;
       this.totalServicios += Number(servicioSeleccionado.valor);
@@ -314,7 +317,10 @@ export class ReservaPage {
                 evento: this.constantes.EVENTOS.OTRO,
                 idcarrito: this.idcarrito,
                 idusuario: this.usuario.id,
-                nombreusuario: this.usuario.nombre
+                nombreusuario: this.usuario.nombre,
+                fechaActualizacion: null,
+                id: null,
+                leido: null
               });
               this.cantidad++;
               this.ultimoHorario = disponibilidadBloquear[disponibilidadBloquear.length - 1].fechaFin;

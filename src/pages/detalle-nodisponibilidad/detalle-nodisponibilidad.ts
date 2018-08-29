@@ -1,9 +1,9 @@
 import { Component } from '@angular/core';
 import { IonicPage, NavController, NavParams, AlertController } from 'ionic-angular';
 import * as DataProvider from '../../providers/constants';
-import { FormGroup, FormBuilder, Validators } from '../../../node_modules/@angular/forms';
+import { FormGroup, FormBuilder, Validators } from '@angular/forms';
 import moment from 'moment';
-import { AngularFirestore, AngularFirestoreDocument } from '../../../node_modules/angularfire2/firestore';
+import { AngularFirestore, AngularFirestoreDocument } from 'angularfire2/firestore';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
 
 /**
