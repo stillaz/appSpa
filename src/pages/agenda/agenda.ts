@@ -287,16 +287,6 @@ export class AgendaPage {
     }
   }
 
-  genericAlert(titulo: string, mensaje: string) {
-    let mensajeAlert = this.alertCtrl.create({
-      title: titulo,
-      message: mensaje,
-      buttons: ['OK']
-    });
-
-    mensajeAlert.present();
-  }
-
   private eliminar(reserva: ReservaOptions) {
     let fechaInicio = moment(reserva.fechaInicio).locale("es").format("dddd, DD [de] MMMM [de] YYYY");
     let horaInicio = moment(reserva.fechaInicio).format("hh:mm a");
@@ -330,9 +320,11 @@ export class AgendaPage {
             this.disponibilidadDoc.ref.get().then(datosDiarios => {
               let totalDiarioActual = datosDiarios.get('totalServicios');
               let cantidadDiarioActual = datosDiarios.get('cantidadServicios');
+              let pendientesDiarioActual = datosDiarios.get('pendientes');
               let totalDiario = Number(totalDiarioActual) - totalServiciosReserva;
               let cantidadDiario = Number(cantidadDiarioActual) - 1;
-              batch.update(this.disponibilidadDoc.ref, { totalServicios: totalDiario, cantidadServicios: cantidadDiario, fecha: new Date() });
+              let pendientesDiario = Number(pendientesDiarioActual) - 1;
+              batch.update(this.disponibilidadDoc.ref, { totalServicios: totalDiario, cantidadServicios: cantidadDiario, pendientes: pendientesDiario, fecha: new Date() });
 
               totalesServiciosDoc.ref.get().then(() => {
                 batch.set(totalesServiciosDoc.ref, { ultimaactualizacion: new Date() });
@@ -349,11 +341,15 @@ export class AgendaPage {
                     const serviciosDoc = this.afs.doc('servicioscliente/' + idreserva);
 
                     batch.update(serviciosDoc.ref, { estado: this.constantes.ESTADOS_RESERVA.CANCELADO, fechaActualizacion: new Date(), actualiza: 'usuario' });
+
+                    const serviciosClienteDoc = this.afs.doc('clientes/' + reserva.cliente.correoelectronico + '/servicios/' + reserva.id);
+
+                    batch.update(serviciosClienteDoc.ref, { estado: this.constantes.ESTADOS_RESERVA.CANCELADO });
                   }
 
                   batch.commit().then(() => {
-                    this.genericAlert('Cita cancelada', 'La cita con ' + nombreCliente + ' ha sido cancelada');
-                  }).catch(err => this.genericAlert('Error', err));
+                    this.mensaje('La cita con ' + nombreCliente + ' ha sido cancelada');
+                  }).catch(err => alert(err));
                 });
               });
             });
@@ -418,6 +414,50 @@ export class AgendaPage {
     popover.present({
       ev: myEvent
     });
+  }
+
+  terminar(reserva: ReservaOptions) {
+    let batch = this.afs.firestore.batch();
+    let disponibilidadFinalizarDoc: AngularFirestoreDocument = this.disponibilidadDoc.collection('disponibilidades').doc(reserva.fechaInicio.getTime().toString());
+    batch.update(disponibilidadFinalizarDoc.ref, { estado: this.constantes.ESTADOS_RESERVA.FINALIZADO });
+
+    this.disponibilidadDoc.ref.get().then(datosDiarios => {
+      const pendientesDiarioActual = datosDiarios.get('pendientes');
+      const pendientesDiario = Number(pendientesDiarioActual) - 1;
+      batch.update(this.disponibilidadDoc.ref, { pendientes: pendientesDiario, fecha: new Date() });
+
+      let idreserva = reserva.id;
+      if (idreserva) {
+        const serviciosDoc = this.afs.doc('servicioscliente/' + idreserva);
+
+        batch.update(serviciosDoc.ref, { estado: this.constantes.ESTADOS_RESERVA.CANCELADO, fechaActualizacion: new Date(), actualiza: 'usuario' });
+
+        const serviciosClienteDoc = this.afs.doc('clientes/' + reserva.cliente.correoelectronico + '/servicios/' + reserva.id);
+
+        batch.update(serviciosClienteDoc.ref, { estado: this.constantes.ESTADOS_RESERVA.CANCELADO });
+      }
+
+      batch.commit().then(() => {
+        this.mensaje('Se ha terminado el servicio');
+      }).catch(err => alert(err));
+    });
+  }
+
+  mensaje(mensaje: string) {
+    this.toastCtrl.create({
+      message: mensaje,
+      duration: 3000
+    }).present();
+  }
+
+  genericAlert(titulo: string, mensaje: string) {
+    let mensajeAlert = this.alertCtrl.create({
+      title: titulo,
+      message: mensaje,
+      buttons: ['OK']
+    });
+
+    mensajeAlert.present();
   }
 
 }

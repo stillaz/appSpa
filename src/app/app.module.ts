@@ -33,7 +33,8 @@ import { TabsPageModule } from '../pages/tabs/tabs.module';
 import { PipesModule } from '../pipes/pipes.module';
 import { FmcProvider } from '../providers/fmc';
 import { Firebase } from '@ionic-native/firebase'
-import { NotificacionPageModule } from '../pages/notificacion/notificacion.module';
+import { PendientePageModule } from '../pages/pendiente/pendiente.module';
+import { PendientePage } from '../pages/pendiente/pendiente';
 
 
 @NgModule({
@@ -57,7 +58,7 @@ import { NotificacionPageModule } from '../pages/notificacion/notificacion.modul
     AgendaPageModule,
     ConfiguracionPageModule,
     GastoPageModule,
-    NotificacionPageModule,
+    PendientePageModule,
     ReportesPageModule,
     TabsPageModule,
     PipesModule
@@ -68,6 +69,7 @@ import { NotificacionPageModule } from '../pages/notificacion/notificacion.modul
     AgendaPage,
     ConfiguracionPage,
     GastoPage,
+    PendientePage,
     ReportesPage,
     TabsPage
   ],

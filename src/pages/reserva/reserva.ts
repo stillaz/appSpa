@@ -188,11 +188,13 @@ export class ReservaPage {
           if (datosDiarios.exists) {
             let totalDiarioActual = datosDiarios.get('totalServicios');
             let cantidadDiarioActual = datosDiarios.get('cantidadServicios');
+            let pendientesDiarioActual = datosDiarios.get('pendientes');
             let totalDiario = totalDiarioActual ? Number(totalDiarioActual) + totalServiciosReserva : totalServiciosReserva;
             let cantidadDiario = cantidadDiarioActual ? Number(cantidadDiarioActual) + 1 : 1;
-            batch.update(this.disponibilidadDoc.ref, { totalServicios: totalDiario, cantidadServicios: cantidadDiario, fecha: new Date() });
+            let pendientesDiario = pendientesDiarioActual ? Number(pendientesDiarioActual) + 1 : 1;
+            batch.update(this.disponibilidadDoc.ref, { totalServicios: totalDiario, cantidadServicios: cantidadDiario, pendientes: pendientesDiario, fecha: new Date() });
           } else {
-            batch.update(this.disponibilidadDoc.ref, { totalServicios: totalServiciosReserva, cantidadServicios: 1, fecha: new Date() });
+            batch.update(this.disponibilidadDoc.ref, { totalServicios: totalServiciosReserva, cantidadServicios: 1, pendientes: 1, fecha: new Date() });
           }
 
           totalesServiciosDoc.ref.get().then(() => {
@@ -204,7 +206,8 @@ export class ReservaPage {
               if (datos.exists) {
                 let totalActual = datos.get('totalServicios');
                 let cantidadActual = datos.get('cantidadServicios');
-                batch.update(totalesServiciosUsuarioDoc.ref, { totalServicios: Number(totalActual) + totalServiciosReserva, cantidadServicios: Number(cantidadActual) + 1, fecha: new Date() });
+                let pendientesActual = datos.get('pendientes');
+                batch.update(totalesServiciosUsuarioDoc.ref, { totalServicios: Number(totalActual) + totalServiciosReserva, cantidadServicios: Number(cantidadActual) + 1, pendientes: Number(pendientesActual) + 1, fecha: new Date() });
               } else {
                 let totalServicioUsuario: TotalesServiciosOptions = {
                   idusuario: this.usuario.id,
@@ -212,6 +215,7 @@ export class ReservaPage {
                   imagenusuario: '',
                   totalServicios: totalServiciosReserva,
                   cantidadServicios: 1,
+                  pendientes: 1,
                   fecha: new Date()
                 }
                 batch.set(totalesServiciosUsuarioDoc.ref, totalServicioUsuario);

@@ -13,8 +13,8 @@
     <ion-toolbar>
       <ion-row>
         <ion-col>
-          <span float-end ion-datepicker (ionChanged)="setDate($event);" [max]="maxDate" [min]="initDate2" [value]="initDate" [showMaxAndMin]="true"
-            [disabledDates]="disabledDates" clear class="ScheduleDate" [localeStrings]="constantes.LOCALE_STRINGS">
+          <span float-end ion-datepicker (ionChanged)="setDate($event);" [max]="maxDate" [min]="initDate2" [value]="initDate"
+            [showMaxAndMin]="true" [disabledDates]="disabledDates" clear class="ScheduleDate" [localeStrings]="constantes.LOCALE_STRINGS">
             <span>
               <button ion-button icon-left color="light" clear>
                 <ion-icon name="clipboard"></ion-icon>
@@ -63,11 +63,15 @@
 
         <ion-item>
           <h2>{{disponibilidad.fechaInicio | date: 'hh:mm a'}} &mdash; {{disponibilidad.fechaFin | date: 'hh:mm a'}}</h2>
-          <ion-note *ngIf="disponibilidad.cliente.nombre">{{disponibilidad.cliente.nombre}}: {{disponibilidad.servicio | joins}}</ion-note>
+          <p *ngIf="disponibilidad.cliente.nombre">{{disponibilidad.cliente.nombre}}: {{disponibilidad.servicio |
+            joins}}</p>
           <p>{{disponibilidad.estado}}</p>
 
           <button ion-button *ngIf="disponibilidad.estado === constantes.ESTADOS_RESERVA.DISPONIBLE && disponibilidad.fechaFin >= actual"
             clear item-end (click)="reservar(disponibilidad)">Reservar</button>
+
+          <button ion-button *ngIf="disponibilidad.estado === constantes.ESTADOS_RESERVA.EJECUTANDO" color="secondary"
+            clear item-end (tap)="terminar(disponibilidad)">Terminar</button>
         </ion-item>
 
         <ion-item-options>
