@@ -1,4 +1,4 @@
 <ion-tabs #mainTabs>
         <ion-tab *ngFor="let tab of tabs" [root]="tab.root" [tabTitle]="tab.title" [tabIcon]="tab.icon" [tabBadge]="tab.badge"
-                tabBadgeStyle="danger"></ion-tab>
+                tabBadgeStyle="danger" (ionSelect)="tapped()"></ion-tab>
 </ion-tabs>

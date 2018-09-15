@@ -24,6 +24,7 @@ export class TabsPage {
 
   @ViewChild('mainTabs') tabRef: Tabs;
   tabs;
+  watch;
 
   constructor(
     private usuarioService: UsuarioProvider,
@@ -46,10 +47,12 @@ export class TabsPage {
         { root: ConfiguracionPage, title: 'Configuración', icon: 'options', badge: 0 }
       ];
     }
+    this.updatePendientes();
+  }
 
+  updatePendientes() {
     const pendientesDoc = this.afs.collection<any>(this.usuarioService.getFilePathUsuario() + this.usuarioService.getUsuario().id + '/disponibilidades/', ref => ref.where('pendientes', '>=', 1));
-
-    pendientesDoc.valueChanges().subscribe(data => {
+    this.watch = pendientesDoc.valueChanges().subscribe(data => {
       if (data[0]) {
         this.tabs[1].badge = data.map(reservas => Number(reservas.pendientes)).reduce((a, b) => a + b);
       } else {
@@ -59,12 +62,16 @@ export class TabsPage {
   }
 
   tapped() {
-    console.log('hola')
-    console.log(this.tabRef.getSelected());
-  }
+    switch (this.tabRef.getSelected().root) {
+      case PendientePage:
+        this.watch.unsubscribe();
+        this.tabs[1].badge = 0;
+        break;
 
-  ionSelected(){
-    console.log('hola')
+      default:
+        this.updatePendientes();
+        break;
+    }
   }
 
 }
