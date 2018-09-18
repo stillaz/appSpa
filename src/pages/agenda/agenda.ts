@@ -218,7 +218,7 @@ export class AgendaPage {
               servicio: reservaEnc.servicio,
               idusuario: reservaEnc.idusuario,
               nombreusuario: reservaEnc.nombreusuario,
-              id: null,
+              id: reservaEnc.id,
               fechaActualizacion: new Date(),
               leido: null
             };
@@ -307,7 +307,9 @@ export class AgendaPage {
             reserva.estado = DataProvider.ESTADOS_RESERVA.CANCELADO;
             batch.set(canceladoDoc.ref, reserva);
 
-            let disponibilidadCancelarDoc: AngularFirestoreDocument = this.disponibilidadDoc.collection('disponibilidades').doc(reserva.fechaInicio.getTime().toString());
+            const idfecha = reserva.fechaInicio.getTime().toString();
+
+            let disponibilidadCancelarDoc: AngularFirestoreDocument = this.disponibilidadDoc.collection('disponibilidades').doc(idfecha);
 
             batch.delete(disponibilidadCancelarDoc.ref);
 
@@ -342,7 +344,7 @@ export class AgendaPage {
 
                     batch.update(serviciosDoc.ref, { estado: this.constantes.ESTADOS_RESERVA.CANCELADO, fechaActualizacion: new Date(), actualiza: 'usuario' });
 
-                    const serviciosClienteDoc = this.afs.doc('clientes/' + reserva.cliente.correoelectronico + '/servicios/' + reserva.id);
+                    const serviciosClienteDoc = this.afs.doc('clientes/' + reserva.cliente.correoelectronico + '/servicios/' + idfecha);
 
                     batch.update(serviciosClienteDoc.ref, { estado: this.constantes.ESTADOS_RESERVA.CANCELADO });
                   }
@@ -418,7 +420,8 @@ export class AgendaPage {
 
   terminar(reserva: ReservaOptions) {
     let batch = this.afs.firestore.batch();
-    let disponibilidadFinalizarDoc: AngularFirestoreDocument = this.disponibilidadDoc.collection('disponibilidades').doc(reserva.fechaInicio.getTime().toString());
+    const idfecha = reserva.fechaInicio.getTime().toString();
+    let disponibilidadFinalizarDoc: AngularFirestoreDocument = this.disponibilidadDoc.collection('disponibilidades').doc(idfecha);
     batch.update(disponibilidadFinalizarDoc.ref, { estado: this.constantes.ESTADOS_RESERVA.FINALIZADO });
 
     this.disponibilidadDoc.ref.get().then(datosDiarios => {
@@ -432,7 +435,7 @@ export class AgendaPage {
 
         batch.update(serviciosDoc.ref, { estado: this.constantes.ESTADOS_RESERVA.CANCELADO, fechaActualizacion: new Date(), actualiza: 'usuario' });
 
-        const serviciosClienteDoc = this.afs.doc('clientes/' + reserva.cliente.correoelectronico + '/servicios/' + reserva.id);
+        const serviciosClienteDoc = this.afs.doc('clientes/' + reserva.cliente.correoelectronico + '/servicios/' + idfecha);
 
         batch.update(serviciosClienteDoc.ref, { estado: this.constantes.ESTADOS_RESERVA.CANCELADO });
       }
