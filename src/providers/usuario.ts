@@ -11,6 +11,7 @@ import { UsuarioOptions } from '../interfaces/usuario-options';
 export class UsuarioProvider {
 
   private usuario: UsuarioOptions;
+  private empresa: string;
 
   constructor() { }
 
@@ -36,6 +37,14 @@ export class UsuarioProvider {
 
   getFilePathUsuario() {
     return this.getFilePathEmpresa() + '/usuarios/';
+  }
+
+  setEmpresa(empresa: string){
+    this.empresa = empresa;
+  }
+
+  getEmpresa(){
+    return this.empresa;
   }
 
 }

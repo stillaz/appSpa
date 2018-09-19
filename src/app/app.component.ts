@@ -42,8 +42,11 @@ export class MyApp {
                 })).subscribe();
             }
             if (data) {
-              this.usuarioService.setUsuario(data);
               this.rootPage = TabsPage;
+              this.usuarioService.setUsuario(data);
+              this.afs.doc<any>('negocios/' + data.idempresa).valueChanges().subscribe(dataEmpresa => {
+                this.usuarioService.setEmpresa(dataEmpresa.nombre);
+              });
             } else {
               alert('Usuario no encontrado');
             }

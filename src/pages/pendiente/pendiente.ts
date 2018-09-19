@@ -29,6 +29,7 @@ export class PendientePage {
   private filePathEmpresa: string;
   constantes = DataProvider;
   reservas: ReservaOptions[] = [];
+  usuario: UsuarioOptions;
 
   constructor(
     public navCtrl: NavController,
@@ -42,6 +43,7 @@ export class PendientePage {
     this.filePathEmpresa = 'negocios/' + this.usuarioLogueado.idempresa;
     this.usuarioDoc = this.afs.doc<UsuarioOptions>(this.filePathEmpresa + '/usuarios/' + this.usuarioLogueado.id);
     this.disponibilidadCollection = this.usuarioDoc.collection('disponibilidades', ref => ref.where('pendientes', '>=', 1));
+    this.usuario = this.usuarioService.getUsuario();
   }
 
   ionViewDidEnter() {
@@ -148,7 +150,14 @@ export class PendientePage {
                   if (idreserva) {
                     const serviciosDoc = this.afs.doc('servicioscliente/' + idreserva);
 
-                    batch.update(serviciosDoc.ref, { estado: this.constantes.ESTADOS_RESERVA.CANCELADO, fechaActualizacion: new Date(), actualiza: 'usuario' });
+                    batch.update(serviciosDoc.ref,
+                      {
+                        estado: this.constantes.ESTADOS_RESERVA.CANCELADO,
+                        fechaActualizacion: new Date(),
+                        imagenusuario: this.usuario.imagen,
+                        empresa: this.usuarioService.getEmpresa(),
+                        actualiza: 'usuario'
+                      });
 
                     const serviciosClienteDoc = this.afs.doc('clientes/' + reserva.cliente.correoelectronico + '/servicios/' + fecha.getTime().toString());
 
@@ -191,7 +200,14 @@ export class PendientePage {
       if (idreserva) {
         const serviciosDoc = this.afs.doc('servicioscliente/' + idreserva);
 
-        batch.update(serviciosDoc.ref, { estado: this.constantes.ESTADOS_RESERVA.CANCELADO, fechaActualizacion: new Date(), actualiza: 'usuario' });
+        batch.update(serviciosDoc.ref,
+          {
+            estado: this.constantes.ESTADOS_RESERVA.CANCELADO,
+            fechaActualizacion: new Date(),
+            imagenusuario: this.usuario.imagen,
+            empresa: this.usuarioService.getEmpresa(),
+            actualiza: 'usuario'
+          });
 
         const serviciosClienteDoc = this.afs.doc('clientes/' + reserva.cliente.correoelectronico + '/servicios/' + fecha.getTime().toString());
 
