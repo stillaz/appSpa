@@ -55,7 +55,7 @@ export class PendientePage {
     let reservaCollection = this.disponibilidadCollection.doc(disponibilidad.id.toString()).collection<ReservaOptions>('disponibilidades', ref => ref.where('estado', '==', this.constantes.ESTADOS_RESERVA.RESERVADO));
     return new Promise<ReservaOptions[]>(resolve => {
       reservaCollection.valueChanges().subscribe(dataReservas => {
-        let reservasVencidas: ReservaOptions[] = dataReservas.filter(reserva => (reserva.estado === this.constantes.ESTADOS_RESERVA.RESERVADO || reserva.estado === this.constantes.ESTADOS_RESERVA.EJECUTANDO) && moment(reserva.fechaFin.toDate()).isBefore(new Date()));
+        let reservasVencidas: ReservaOptions[] = dataReservas.filter(reserva => moment(reserva.fechaFin.toDate()).isBefore(new Date()));
         resolve(reservasVencidas);
       });
     });

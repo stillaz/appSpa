@@ -32,7 +32,7 @@ export class FmcProvider {
     let token;
 
     if (this.platform.is('android')) {
-      token = await this.firebase.getToken()
+      token = await this.firebase.getToken();
     }
 
     if (this.platform.is('ios')) {

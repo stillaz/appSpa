@@ -194,7 +194,7 @@ export class ReservaPage {
             let pendientesDiario = pendientesDiarioActual ? Number(pendientesDiarioActual) + 1 : 1;
             batch.update(this.disponibilidadDoc.ref, { totalServicios: totalDiario, cantidadServicios: cantidadDiario, pendientes: pendientesDiario, fecha: new Date() });
           } else {
-            batch.update(this.disponibilidadDoc.ref, { totalServicios: totalServiciosReserva, cantidadServicios: 1, pendientes: 1, fecha: new Date() });
+            batch.set(this.disponibilidadDoc.ref, { totalServicios: totalServiciosReserva, cantidadServicios: 1, pendientes: 1, fecha: new Date() });
           }
 
           totalesServiciosDoc.ref.get().then(() => {
