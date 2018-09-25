@@ -1,6 +1,6 @@
 import moment from 'moment';
 import { Component } from '@angular/core';
-import { AlertController, IonicPage, ModalController, NavParams, PopoverController, ViewController, NavController } from 'ionic-angular';
+import { AlertController, IonicPage, ModalController, NavParams, PopoverController, ViewController, NavController, ToastController } from 'ionic-angular';
 import * as DataProvider from '../../providers/constants';
 import { ServicioOptions } from '../../interfaces/servicio-options';
 import { ClienteOptions } from '../../interfaces/cliente-options';
@@ -58,7 +58,8 @@ export class ReservaPage {
     private navParams: NavParams,
     public popoverCtrl: PopoverController,
     public viewCtrl: ViewController,
-    private afs: AngularFirestore
+    private afs: AngularFirestore,
+    public toastCtrl: ToastController
   ) {
     this.disponibilidadSeleccionada = this.navParams.get('disponibilidad');
     this.horario = this.navParams.get('horario');
@@ -212,7 +213,7 @@ export class ReservaPage {
                 let totalServicioUsuario: TotalesServiciosOptions = {
                   idusuario: this.usuario.id,
                   usuario: reservaNueva.nombreusuario,
-                  imagenusuario: '',
+                  imagenusuario: this.usuario.imagen,
                   totalServicios: totalServiciosReserva,
                   cantidadServicios: 1,
                   pendientes: 1,
@@ -222,7 +223,10 @@ export class ReservaPage {
               }
 
               batch.commit().then(() => {
-                this.genericAlert('Reserva registrada', 'Se ha registrado la reserva');
+                this.toastCtrl.create({
+                  message: 'Se ha registrado la reserva',
+                  duration: 3000
+                }).present();
               }).catch(err => this.genericAlert('Error', err));
 
               this.navCtrl.pop();

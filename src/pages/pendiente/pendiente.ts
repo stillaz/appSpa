@@ -30,6 +30,7 @@ export class PendientePage {
   constantes = DataProvider;
   reservas: ReservaOptions[] = [];
   usuario: UsuarioOptions;
+  actual: Date;
 
   constructor(
     public navCtrl: NavController,
@@ -47,16 +48,22 @@ export class PendientePage {
   }
 
   ionViewDidEnter() {
-    //resetear badge
+    this.actual = new Date();
     this.updateReservas();
   }
 
-  loadReservaPendienteDia(disponibilidad) {
-    let reservaCollection = this.disponibilidadCollection.doc(disponibilidad.id.toString()).collection<ReservaOptions>('disponibilidades', ref => ref.where('estado', '==', this.constantes.ESTADOS_RESERVA.RESERVADO));
+  ionViewDidLoad() {
+    Observable.interval(60000).subscribe(() => {
+      this.actual = new Date();
+      this.updateReservas();
+    });
+  }
+
+  loadReservaPendienteDia(iddisponibilidad: string) {
+    let reservaCollection = this.disponibilidadCollection.doc(iddisponibilidad).collection<ReservaOptions>('disponibilidades');
     return new Promise<ReservaOptions[]>(resolve => {
       reservaCollection.valueChanges().subscribe(dataReservas => {
-        let reservasVencidas: ReservaOptions[] = dataReservas.filter(reserva => moment(reserva.fechaFin.toDate()).isBefore(new Date()));
-        resolve(reservasVencidas);
+        resolve(dataReservas);
       });
     });
   }
@@ -65,9 +72,8 @@ export class PendientePage {
     return new Observable<ReservaOptions[]>((observer) => {
       this.disponibilidadCollection.valueChanges().subscribe(dataDisponibilidad => {
         let disponible: ReservaOptions[] = [];
-        let disponibilidadesPendientes = dataDisponibilidad.filter(disponibilidad => Number(disponibilidad.id) <= new Date().getTime());
-        disponibilidadesPendientes.forEach(disponibilidad => {
-          this.loadReservaPendienteDia(disponibilidad)
+        dataDisponibilidad.forEach(disponibilidad => {
+          this.loadReservaPendienteDia(disponibilidad.id.toString())
             .then(data => {
               disponible.push.apply(disponible, data);
             });

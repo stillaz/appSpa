@@ -17,8 +17,10 @@
   <ion-list>
     <ion-item-sliding *ngFor="let disponibilidad of reservas" #slidingItem [attr.track]="disponibilidad.estado | lowercase"
       [id]="disponibilidad.evento">
-
       <ion-item>
+        <ion-avatar item-start *ngIf="disponibilidad.cliente.imagen">
+          <img [src]="disponibilidad.cliente.imagen" />
+        </ion-avatar>
         <h2>{{disponibilidad.fechaInicio.toDate() | date: 'mediumDate'}}, {{disponibilidad.fechaInicio.toDate() |
           date:
           'hh:mm a'}} &mdash; {{disponibilidad.fechaFin.toDate() | date: 'hh:mm a'}}</h2>
@@ -26,7 +28,7 @@
           joins}}</p>
         <ion-note style="font-size: small">{{disponibilidad.estado}}</ion-note>
 
-        <button ion-button color="secondary" clear item-end (tap)="terminar(disponibilidad)">Terminar</button>
+        <button ion-button *ngIf="disponibilidad.fechaInicio.toDate() <= actual" color="secondary" clear item-end (tap)="terminar(disponibilidad)">Terminar</button>
       </ion-item>
 
       <ion-item-options>
