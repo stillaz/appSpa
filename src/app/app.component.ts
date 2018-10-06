@@ -8,7 +8,6 @@ import { AngularFirestore } from 'angularfire2/firestore';
 import { UsuarioProvider } from '../providers/usuario';
 import { UsuarioOptions } from '../interfaces/usuario-options';
 import { FmcProvider } from '../providers/fmc';
-import { tap } from 'rxjs/operators';
 
 @Component({
   templateUrl: 'app.html'
@@ -35,12 +34,12 @@ export class MyApp {
           let usuarioDoc = this.afs.doc<UsuarioOptions>('usuarios/' + user.uid);
           usuarioDoc.valueChanges().subscribe(data => {
             fcm.getToken();
-            if (platform.is('cordova')) {
+            /*if (platform.is('cordova')) {
               fcm.listenToNotifications().pipe(
                 tap(() => {
                   fcm.setNotificaciones(1);
                 })).subscribe();
-            }
+            }*/
             if (data) {
               this.rootPage = TabsPage;
               this.usuarioService.setUsuario(data);
