@@ -89,7 +89,7 @@ export class DetalleNodisponibilidadPage {
         fechaHasta: this.todo.value.fechaDesde,
         horaDesde: null,
         horaHasta: null,
-        indefinido: false,
+        indefinido: this.todo.value.indefinido,
         repetir: this.repetir[0]
       });
     }
