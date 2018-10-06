@@ -8,7 +8,7 @@ import { ServicioOptions } from '../../interfaces/servicio-options';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/interval';
-import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection } from 'angularfire2/firestore';
+import { AngularFirestore, AngularFirestoreDocument } from 'angularfire2/firestore';
 import { PerfilOptions } from '../../interfaces/perfil-options';
 import { TotalesServiciosOptions } from '../../interfaces/totales-servicios-options';
 import { UsuarioProvider } from '../../providers/usuario';
