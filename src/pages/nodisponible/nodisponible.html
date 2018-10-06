@@ -22,7 +22,7 @@
       <p *ngIf="item.repetir.id === -1">Desde {{item.fechaDesde | date}} de {{item.horaDesde}} a {{item.horaHasta}} hasta {{item.fechaHasta | date}}</p>
       <p *ngIf="item.todoDia">Todo el día de {{item.fechaDesde | date}}</p>
 
-      <button ion-button item-end color="danger">
+      <button ion-button item-end color="danger" (click)="eliminar(item)">
         <ion-icon name="trash"></ion-icon>
         Eliminar
       </button>

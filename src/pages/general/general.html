@@ -59,13 +59,6 @@
       </ion-item>
 
       <ion-item>
-        <ion-label>Día(s) no disponible:</ion-label>
-        <ion-select formControlName="diasNoDisponible" multiple="true" [compareWith]="compareFn">
-          <ion-option *ngFor="let dia of dias" [value]="dia">{{dia.dia}}</ion-option>
-        </ion-select>
-      </ion-item>
-
-      <ion-item>
         <p>Horario no disponible</p>
         <button ion-button item-end icon-right color="dark" (click)="agregarNoDisponible()">
           Agregar
