@@ -8,7 +8,7 @@ import { ServicioOptions } from '../../interfaces/servicio-options';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/interval';
-import { AngularFirestore, AngularFirestoreDocument } from 'angularfire2/firestore';
+import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection } from 'angularfire2/firestore';
 import { PerfilOptions } from '../../interfaces/perfil-options';
 import { TotalesServiciosOptions } from '../../interfaces/totales-servicios-options';
 import { UsuarioProvider } from '../../providers/usuario';
@@ -130,7 +130,7 @@ export class AgendaPage {
 
     loadHorarioNoDisponible(fecha: Date): ServicioOptions {
         const encontrado = this.indisponibles.find(item => {
-            if (item.repetir.id === -1 || item.repetir.id === 10 || fecha.getDay() === item.repetir.id) {
+            if (item.repetir.id === -1 || item.repetir.id === 10 || fecha.getDay() + 1 === item.repetir.id) {
                 let fechaDesde: Date = moment(new Date(item.fechaDesde)).startOf('day').toDate();
                 let fechaFin: Date = item.indefinido ? moment(fecha).endOf('day').toDate() : moment(new Date(item.fechaHasta)).endOf('day').toDate();
                 if (moment(fecha).isBetween(fechaDesde, fechaFin)) {
@@ -155,8 +155,8 @@ export class AgendaPage {
     }
 
     updateHorarioNoDisponible() {
-        let indisponibilidadCollection = this.usuarioDoc.collection('indisponibilidades');
-        indisponibilidadCollection.valueChanges().subscribe(indisponibilidades => {
+        const indisponibilidadCollection = this.usuarioDoc.collection('indisponibilidades');
+        indisponibilidadCollection.valueChanges().subscribe(indisponibilidades => {            
             this.indisponibles = indisponibilidades;
             this.updateHorariosInicial();
         });
