@@ -131,9 +131,8 @@ export class AgendaPage {
     loadHorarioNoDisponible(fecha: Date): ServicioOptions {
         let encontrado = this.indisponibles.find(item => {
             let fechaDesde: Date = moment(new Date(item.fechaDesde)).startOf('day').toDate();
-            let fechaFin: Date = item.indefinido ? moment(this.initDate).endOf('day').toDate() : moment(new Date(item.fechaHasta)).endOf('day').toDate();
-
-            if (moment(this.initDate).isBetween(fechaDesde, fechaFin)) {
+            let fechaFin: Date = item.indefinido ? moment(fecha).endOf('day').toDate() : moment(new Date(item.fechaHasta)).endOf('day').toDate();
+            if (moment(fecha).isBetween(fechaDesde, fechaFin)) {
                 let horaInicio = item.todoDia ? this.horaInicio : moment(item.horaDesde, 'HH:mm').toDate().getHours();
                 let horaFin = item.todoDia ? this.horaFin : moment(item.horaHasta, 'HH:mm').toDate().getHours() - 1;
                 let horaReserva = fecha.getHours();

@@ -54,7 +54,7 @@
 
       <ion-item>
         <ion-label>Repetir:</ion-label>
-        <ion-select formControlName="repetir" [compareWith]="compareFn" [disabled]="todo.value.todoDia">
+        <ion-select formControlName="repetir" [compareWith]="compareFn">
           <ion-option *ngFor="let opcion of repetir" [value]="opcion">{{opcion.dia}}</ion-option>
         </ion-select>
       </ion-item>

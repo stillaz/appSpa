@@ -38,8 +38,8 @@ export class DetalleNodisponibilidadPage {
   ) {
     this.usuario = this.navParams.get('usuario');
     this.filePathNoDisponible = 'negocios/' + this.usuario.idempresa + '/usuarios/' + this.usuario.id + '/indisponibilidades/';
-    this.repetir.push({ id: 10, dia: 'Todos los días' });
     this.repetir.push({ id: -1, dia: 'No repetir' });
+    this.repetir.push({ id: 10, dia: 'Todos los días' });
     this.repetir.push.apply(this.repetir, DataProvider.DIAS);
     this.updateData();
     this.form();
