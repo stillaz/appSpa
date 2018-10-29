@@ -87,7 +87,9 @@ export class DetalleServicioPage {
         valor: null,
         grupo: null,
         imagen: null,
-        activo: true
+        activo: true,
+        pago: 'Inmediato',
+        sesiones: 1
       };
     }
 

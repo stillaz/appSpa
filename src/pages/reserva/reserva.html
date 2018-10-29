@@ -6,29 +6,22 @@
 -->
 <ion-header>
   <ion-navbar color="primary">
-    <ion-title>Reservar para {{cliente.nombre}}</ion-title>
-    <ion-row>
-      <ion-col col-8>
-        <br/> {{horaSeleccionada}}
-      </ion-col>
-    </ion-row>
+    <ion-title>Selecciona el servicio para {{cliente.nombre}}</ion-title>
+    <p>{{horaSeleccionada}}</p>
   </ion-navbar>
 </ion-header>
 
 <ion-content padding>
-  <ion-list class="grid-full" *ngFor="let servicio of servicios">
-    <ion-card color="dark">
-      <ion-card-content>
+  <ion-list class="grid-full" *ngIf="idcarrito">
+    <ion-card color="dark" *ngFor="let servicio of servicios">
+      <ion-card-content (tap)="agregar(servicio)">
         <h2>
-          <b>{{servicio.nombre}}</b>
+          <strong>{{servicio.nombre}}</strong>
         </h2>
-        <p>{{servicio.descripcion}}.
-          <br/>Duración: {{servicio.duracion_MIN}} min.</p>
+        <p>{{servicio.descripcion}}.</p>
+        <p *ngIf="servicio.sesiones > 1">{{servicio.sesiones}} sesiones.</p>
         <ion-item color="dark">
-          <p item-start>Valor: {{servicio.valor| currency : USD: symbol: '4.0' }}</p>
-          <button ion-button item-end icon-start (tap)="agregar(servicio)" [disabled]="!idcarrito">
-            Agregar
-          </button>
+          <p item-start>Valor: {{servicio.valor| currency : USD: symbol: '4.0'}}</p>
         </ion-item>
       </ion-card-content>
     </ion-card>

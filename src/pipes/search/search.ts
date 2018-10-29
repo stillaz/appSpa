@@ -14,7 +14,7 @@ export class SearchPipe implements PipeTransform {
     if (!items) return [];
     if (!terms) return items;
     terms = terms.toLowerCase();
-    let itemsList = items.map(i => i.disponibilidad);
+    const itemsList = items.map(i => i.disponibilidad);
 
     const itemsL = itemsList;
     itemsL.forEach((item, index) => {

@@ -32,7 +32,7 @@ export class ClientePage {
     private afs: AngularFirestore,
     private usuarioService: UsuarioProvider
   ) {
-    this.cliente = { identificacion: null, nombre: null, telefono: null, correoelectronico: null };
+    this.cliente = {} as ClienteOptions;
     this.form();
   }
 
@@ -41,19 +41,27 @@ export class ClientePage {
       identificacion: [this.cliente.identificacion],
       nombre: [this.cliente.nombre, Validators.required],
       telefono: [this.cliente.telefono, Validators.required],
-      correoelectronico: [this.cliente.correoelectronico]
+      correoelectronico: [this.cliente.correoelectronico],
+      pendientes: [this.cliente.pendientes]
     });
   }
 
   cargar() {
-    let id = this.todo.value.telefono;
+    const id = this.todo.value.telefono;
     if (id) {
       this.clienteDoc = this.afs.doc<ClienteOptions>('negocios/' + this.usuarioService.getUsuario().idempresa + '/clientes/' + id);
       this.clienteDoc.valueChanges().subscribe(data => {
         if (data) {
           this.cliente = data;
         } else {
-          this.cliente = { identificacion: null, nombre: null, telefono: id, correoelectronico: null };
+          this.cliente = {
+            identificacion: null,
+            nombre: null,
+            telefono: id,
+            correoelectronico: null,
+            id: null,
+            pendientes: null
+          };
         }
         this.form();
       });
@@ -62,6 +70,7 @@ export class ClientePage {
 
   guardar() {
     this.cliente = this.todo.value;
+    this.cliente.id = this.cliente.telefono;
     this.clienteDoc.set(this.cliente);
     let toast = this.toastCtrl.create({
       message: 'Los datos de la persona han sido registrados',

@@ -1,6 +1,6 @@
 import moment from 'moment';
 import { Component } from '@angular/core';
-import { AlertController, IonicPage, ModalController, NavParams, PopoverController, ViewController, NavController, ToastController } from 'ionic-angular';
+import { AlertController, IonicPage, ModalController, NavParams, PopoverController, ViewController, NavController, ToastController, LoadingController } from 'ionic-angular';
 import * as DataProvider from '../../providers/constants';
 import { ServicioOptions } from '../../interfaces/servicio-options';
 import { ClienteOptions } from '../../interfaces/cliente-options';
@@ -10,6 +10,7 @@ import { AngularFirestore, AngularFirestoreDocument } from 'angularfire2/firesto
 import { IndiceOptions } from '../../interfaces/indice-options';
 import { DisponibilidadOptions } from '../../interfaces/disponibilidad-options';
 import { TotalesServiciosOptions } from '../../interfaces/totales-servicios-options';
+import { PaqueteOptions } from '../../interfaces/paquete-options';
 
 /**
  * Generated class for the ReservaPage page.
@@ -43,13 +44,9 @@ export class ReservaPage {
   horaSeleccionada: string;
   tiempoDisponibilidad: number;
   filePathEmpresa: string;
+  carritoPaquete: any[] = [];
 
-  public cliente: ClienteOptions = {
-    identificacion: null,
-    nombre: null,
-    telefono: null,
-    correoelectronico: null
-  };
+  public cliente: ClienteOptions = {} as ClienteOptions;
 
   constructor(
     public alertCtrl: AlertController,
@@ -59,18 +56,19 @@ export class ReservaPage {
     public popoverCtrl: PopoverController,
     public viewCtrl: ViewController,
     private afs: AngularFirestore,
-    public toastCtrl: ToastController
+    public toastCtrl: ToastController,
+    public loadingCtrl: LoadingController
   ) {
     this.disponibilidadSeleccionada = this.navParams.get('disponibilidad');
     this.horario = this.navParams.get('horario');
     this.usuario = this.navParams.get('usuario');
     this.filePathEmpresa = 'negocios/' + this.usuario.idempresa;
-    this.horaSeleccionada = moment(this.disponibilidadSeleccionada.fechaInicio).locale("es").format("dddd, DD [de] MMMM [de] YYYY [a las] h:mm a")
+    this.horaSeleccionada = moment(this.disponibilidadSeleccionada.fechaInicio).locale("es").format("dddd, DD [de] MMMM [de] YYYY [a las] h:mm a");
     this.ultimoHorario = this.disponibilidadSeleccionada.fechaInicio;
-    this.servicios = [];
     this.usuarioDoc = this.afs.doc(this.filePathEmpresa + '/usuarios/' + this.usuario.id);
     let fecha = moment(this.ultimoHorario).startOf('day').toDate();
     this.usuarioDoc.valueChanges().subscribe(data => {
+      this.servicios = [];
       if (data) {
         this.tiempoDisponibilidad = data.configuracion ? data.configuracion.tiempoDisponibilidad : 30;
         data.perfiles.forEach(perfil => {
@@ -102,16 +100,16 @@ export class ReservaPage {
     clienteModal.onDidDismiss(data => {
       if (data) {
         this.cliente = data;
+        this.updateCarrito();
       } else {
         this.viewCtrl.dismiss();
       }
     });
     clienteModal.present();
-    this.updateCarrito();
   }
 
   loadIdCarrito() {
-    let indiceCarritoDoc = this.afs.doc<IndiceOptions>(this.filePathEmpresa + '/indices/idcarrito');
+    const indiceCarritoDoc = this.afs.doc<IndiceOptions>(this.filePathEmpresa + '/indices/idcarrito');
     return new Promise(resolve => {
       indiceCarritoDoc.ref.get().then(data => {
         this.idcarrito = data.exists ? data.get('id') : 1;
@@ -124,18 +122,39 @@ export class ReservaPage {
   updateCarrito() {
     if (!this.idcarrito && (!this.disponibilidadSeleccionada || !this.disponibilidadSeleccionada.idcarrito)) {
       this.loadIdCarrito().then(() => {
-        this.updateServicios();
+        this.updateServiciosCliente();
       });
     } else {
-      this.updateServicios();
+      this.updateServiciosCliente();
     }
   }
 
+  updateServiciosCliente() {
+    const filePathClienteServicio = this.filePathEmpresa + '/clientes/' + this.cliente.id + '/paquetes';
+    const paquetesCollection = this.afs.collection<PaqueteOptions>(filePathClienteServicio, ref => ref.where('estado', '==', this.constantes.ESTADOS_PAQUETE.PENDIENTE));
+    paquetesCollection.valueChanges().subscribe(paquetes => {
+      if (paquetes) {
+        this.carritoPaquete = paquetes.map(paquete => {
+          return {
+            idcarrito: paquete.idcarrito,
+            servicio: paquete.servicio
+          };
+        });
+      }
+      this.updateServicios();
+    });
+  }
+
   updateServicios() {
-    let grupos = [];
+    const grupos = [];
     this.grupoServicios = [];
+    this.carritoPaquete.forEach(paquete => {
+      const servicio = this.servicios.find(servicio => servicio.id === paquete.servicio.id);
+      servicio.grupo = 'Paquetes activos';
+    });
+
     this.servicios.forEach(servicio => {
-      let grupo = servicio.grupo;
+      const grupo = servicio.grupo;
       if (grupos[grupo] === undefined) {
         grupos[grupo] = [];
       }
@@ -174,6 +193,10 @@ export class ReservaPage {
 
   guardar() {
     let batch = this.afs.firestore.batch();
+    this.loadingCtrl.create({
+      content: 'Procesando la reserva',
+      dismissOnPageChange: true,
+    }).present();
     this.validarReservaDisponible().then(() => {
       this.carrito.forEach(reservaNueva => {
         let reservaDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('disponibilidades').doc(reservaNueva.fechaInicio.getTime().toString());
@@ -227,9 +250,11 @@ export class ReservaPage {
                   message: 'Se ha registrado la reserva',
                   duration: 3000
                 }).present();
-              }).catch(err => this.genericAlert('Error', err));
-
-              this.navCtrl.pop();
+                this.navCtrl.pop();
+              }).catch(err => {
+                this.genericAlert('Error', err);
+                this.navCtrl.pop();
+              });
             });
           });
         });
@@ -241,23 +266,14 @@ export class ReservaPage {
   }
 
   agregar(servicio: ServicioOptions) {
-    const servicioVacio: ServicioOptions = {
-      activo: true,
-      descripcion: null,
-      duracion_MIN: this.tiempoDisponibilidad,
-      grupo: null,
-      id: null,
-      imagen: null,
-      nombre: null,
-      valor: 0
-    }
-
-    let servicioSeleccionado = servicio ? servicio : servicioVacio;
     let disponibilidadBloquear: ReservaOptions[] = [];
     let disponibilidadEncontrada: ReservaOptions;
     let disponible: boolean = true;
     let contador = 0;
-    for (let i = 0; i <= Number(Math.ceil(servicioSeleccionado.duracion_MIN / this.tiempoDisponibilidad) - 1); i++) {
+    const paquete = this.carritoPaquete.find(paquete => paquete.servicio.id === servicio.id);
+    const idcarrito = paquete ? paquete.idcarrito : this.idcarrito;
+
+    for (let i = 0; i <= Number(Math.ceil(servicio.duracion_MIN / this.tiempoDisponibilidad) - 1); i++) {
       contador = i;
       let horaInicio = moment(this.ultimoHorario).add(i * this.tiempoDisponibilidad, 'minutes').toDate();
 
@@ -269,7 +285,7 @@ export class ReservaPage {
         disponible = false;
         break;
       } else {
-        disponibilidadEncontrada.servicio = [servicioSeleccionado];
+        disponibilidadEncontrada.servicio = [servicio];
         disponibilidadBloquear.push(disponibilidadEncontrada);
       }
     }
@@ -277,15 +293,14 @@ export class ReservaPage {
     if (disponible || (!disponibilidadEncontrada && contador > 0)) {
       this.disponibilidadBloquear.push.apply(this.disponibilidadBloquear, disponibilidadBloquear);
       this.cantidad++;
-      servicioSeleccionado.activo = false;
       this.carrito.push({
-        servicio: [servicioSeleccionado],
+        servicio: [servicio],
         fechaInicio: disponibilidadBloquear[0].fechaInicio,
         fechaFin: disponibilidadBloquear[disponibilidadBloquear.length - 1].fechaFin,
         cliente: this.cliente,
         estado: this.constantes.ESTADOS_RESERVA.RESERVADO,
         evento: this.constantes.EVENTOS.OTRO,
-        idcarrito: this.idcarrito,
+        idcarrito: idcarrito,
         idusuario: this.usuario.id,
         nombreusuario: this.usuario.nombre,
         fechaActualizacion: null,
@@ -293,7 +308,7 @@ export class ReservaPage {
         leido: null
       });
       this.ultimoHorario = disponibilidadBloquear[disponibilidadBloquear.length - 1].fechaFin;
-      this.totalServicios += Number(servicioSeleccionado.valor);
+      this.totalServicios += Number(servicio.valor);
       this.guardar();
     } else if (contador === 0) {
       this.genericAlert('Error al reservar', 'La cita se cruza con ' + disponibilidadEncontrada.cliente.nombre + ', la reserva ha sido cancelada');
@@ -315,15 +330,14 @@ export class ReservaPage {
             text: 'SI',
             handler: () => {
               this.disponibilidadBloquear.push.apply(this.disponibilidadBloquear, disponibilidadBloquear);
-              servicioSeleccionado.activo = false;
               this.carrito.push({
-                servicio: [servicioSeleccionado],
+                servicio: [servicio],
                 fechaInicio: disponibilidadBloquear[0].fechaInicio,
                 fechaFin: disponibilidadBloquear[disponibilidadBloquear.length - 1].fechaFin,
                 cliente: this.cliente,
                 estado: this.constantes.ESTADOS_RESERVA.RESERVADO,
                 evento: this.constantes.EVENTOS.OTRO,
-                idcarrito: this.idcarrito,
+                idcarrito: idcarrito,
                 idusuario: this.usuario.id,
                 nombreusuario: this.usuario.nombre,
                 fechaActualizacion: null,
@@ -332,7 +346,7 @@ export class ReservaPage {
               });
               this.cantidad++;
               this.ultimoHorario = disponibilidadBloquear[disponibilidadBloquear.length - 1].fechaFin;
-              this.totalServicios += Number(servicioSeleccionado.valor);
+              this.totalServicios += Number(servicio.valor);
             }
           }
         ],

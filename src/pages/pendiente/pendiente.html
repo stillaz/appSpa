@@ -6,17 +6,32 @@
 -->
 <ion-header>
 
-  <ion-navbar>
+  <ion-navbar color="primary">
     <ion-title>Pendientes</ion-title>
+
+    <ion-toolbar>
+      <ion-segment [(ngModel)]="terms" color="light" (ionChange)="updateServiciosPendientes()">
+        <ion-segment-button value="pendiente">
+          Servicios pendientes
+        </ion-segment-button>
+
+        <ion-segment-button value="activo">
+          Paquetes activos
+        </ion-segment-button>
+
+        <ion-segment-button value="sinpago">
+          Paquetes pendiente pago
+        </ion-segment-button>
+      </ion-segment>
+    </ion-toolbar>
   </ion-navbar>
 
 </ion-header>
 
 
-<ion-content padding>
-  <ion-list>
-    <ion-item-sliding *ngFor="let disponibilidad of reservas" #slidingItem [attr.track]="disponibilidad.estado | lowercase"
-      [id]="disponibilidad.evento">
+<ion-content padding [ngSwitch]="terms">
+  <ion-list *ngSwitchCase="'pendiente'">
+    <ion-item-sliding *ngFor="let disponibilidad of reservas" #slidingItem [attr.track]="disponibilidad.estado | lowercase">
       <ion-item>
         <ion-avatar item-start *ngIf="disponibilidad.cliente.imagen">
           <img [src]="disponibilidad.cliente.imagen" />
@@ -36,6 +51,42 @@
           Cancelar cita
         </button>
       </ion-item-options>
+    </ion-item-sliding>
+  </ion-list>
+
+  <ion-list *ngSwitchCase="'activo'">
+    <ion-item-sliding *ngFor="let paquete of paquetes" #slidingItem>
+      <ion-item>
+        <ion-avatar item-start *ngIf="paquete.cliente.imagen">
+          <img [src]="paquete.cliente.imagen" />
+        </ion-avatar>
+        <h2>{{paquete.cliente.nombre}}</h2>
+        <p>{{paquete.servicio.nombre}}</p>
+        <ion-note style="font-size: small">{{paquete.realizados}} de {{paquete.sesiones}}</ion-note>
+        <ion-note style="font-size: small">- Pagado: {{paquete.pagado | currency : USD: symbol: '4.0'}}</ion-note>
+
+        <!--<button ion-button *ngIf="disponibilidad.fechaInicio.toDate() <= actual" color="secondary" clear item-end (tap)="terminar(disponibilidad)">Terminar</button>-->
+      </ion-item>
+
+      <!--<ion-item-options>
+        <button ion-button color="danger" (click)="cancelar(slidingItem, disponibilidad)" *ngIf="disponibilidad.estado === constantes.ESTADOS_RESERVA.RESERVADO || disponibilidad.estado === constantes.ESTADOS_RESERVA.EJECUTANDO">
+          Cancelar cita
+        </button>
+      </ion-item-options>-->
+    </ion-item-sliding>
+  </ion-list>
+
+  <ion-list *ngSwitchCase="'sinpago'">
+    <ion-item-sliding *ngFor="let paquete of paquetes" #slidingItem>
+      <ion-avatar item-start *ngIf="paquete.cliente.imagen">
+        <img [src]="paquete.cliente.imagen" />
+      </ion-avatar>
+      <h2>{{paquete.cliente.nombre}}</h2>
+      <p>{{paquete.servicio.nombre}}</p>
+      <ion-note style="font-size: small">{{paquete.realizados}} de {{paquete.sesiones}}</ion-note>
+      <ion-note style="font-size: small">- Pagado: {{paquete.pagado | currency : USD: symbol: '4.0'}}</ion-note>
+
+      <!--<button ion-button color="secondary" clear item-end (tap)="pagar(paquete)">Terminar</button>-->
     </ion-item-sliding>
   </ion-list>
 </ion-content>

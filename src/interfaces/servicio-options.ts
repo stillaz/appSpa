@@ -8,4 +8,6 @@ export interface ServicioOptions {
     grupo: any,
     imagen: string,
     activo: boolean,
+    sesiones: number,
+    pago: string
 }

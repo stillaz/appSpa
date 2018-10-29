@@ -6,8 +6,7 @@ import { ClienteOptions } from '../../interfaces/cliente-options';
 import { ReservaOptions } from '../../interfaces/reserva-options';
 import { ServicioOptions } from '../../interfaces/servicio-options';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/observable/interval';
+import { interval } from 'rxjs';
 import { AngularFirestore, AngularFirestoreDocument } from 'angularfire2/firestore';
 import { PerfilOptions } from '../../interfaces/perfil-options';
 import { TotalesServiciosOptions } from '../../interfaces/totales-servicios-options';
@@ -75,7 +74,7 @@ export class AgendaPage {
     }
 
     ionViewDidLoad() {
-        Observable.interval(60000).subscribe(() => {
+        interval(60000).subscribe(() => {
             this.actual = new Date();
             this.initDate = new Date();
             this.initDate2 = new Date();
@@ -115,7 +114,7 @@ export class AgendaPage {
         this.usuarioDoc.valueChanges().subscribe(data => {
             if (data) {
                 this.usuario = data;
-                let configuracion = this.usuario.configuracion;
+                const configuracion = this.usuario.configuracion;
                 if (configuracion) {
                     this.horaInicio = configuracion.horaInicio;
                     this.horaFin = configuracion.horaFin;
