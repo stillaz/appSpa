@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget id="com.dis.spa" version="0.0.1" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+<widget id="com.dis.spa" version="1.0.1" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
     <name>DisSpa</name>
     <description>App Spa</description>
     <author email="disemprendimiento@gmail.com" href="http://www.disoft.org/">DIS SOFTWARE</author>
@@ -85,5 +85,5 @@
     <plugin name="cordova-plugin-datepicker" spec="^0.9.3" />
     <plugin name="cordova-plugin-camera" spec="^4.0.3" />
     <plugin name="cordova-plugin-firebase" spec="^1.0.5" />
-    <engine name="android" spec="~7.1.1" />
+    <engine name="android" spec="7.1.1" />
 </widget>
