@@ -183,12 +183,13 @@ export class AgendaPage {
                         evento: this.constantes.EVENTOS.OTRO,
                         idcarrito: null,
                         cliente: {} as ClienteOptions,
-                        servicio: [noDisponible],
+                        servicio: noDisponible,
                         idusuario: this.usuario.id,
                         nombreusuario: this.usuario.nombre,
                         id: null,
                         fechaActualizacion: new Date(),
-                        leido: null
+                        leido: null,
+                        pago: null
                     };
                 } else {
                     let reservaEnc = reservas.find(item => item.fechaInicio.toDate().getTime() === fechaInicioReserva.getTime());
@@ -200,12 +201,13 @@ export class AgendaPage {
                             evento: this.constantes.EVENTOS.OTRO,
                             idcarrito: null,
                             cliente: {} as ClienteOptions,
-                            servicio: [{} as ServicioOptions],
+                            servicio: {} as ServicioOptions,
                             idusuario: this.usuario.id,
                             nombreusuario: this.usuario.nombre,
                             id: null,
                             fechaActualizacion: new Date(),
-                            leido: null
+                            leido: null,
+                            pago: null
                         };
                     } else {
                         reserva = {
@@ -220,7 +222,8 @@ export class AgendaPage {
                             nombreusuario: reservaEnc.nombreusuario,
                             id: reservaEnc.id,
                             fechaActualizacion: new Date(),
-                            leido: null
+                            leido: null,
+                            pago: null
                         };
                     }
                 }
@@ -317,7 +320,7 @@ export class AgendaPage {
 
                         let totalesServiciosDoc = this.afs.doc(this.filePathEmpresa + '/totalesservicios/' + mesServicio);
 
-                        let totalServiciosReserva = reserva.servicio.map(servicioReserva => Number(servicioReserva.valor)).reduce((a, b) => a + b);
+                        let totalServiciosReserva = reserva.servicio.valor;
 
                         this.disponibilidadDoc.ref.get().then(datosDiarios => {
                             let totalDiarioActual = datosDiarios.get('totalServicios');

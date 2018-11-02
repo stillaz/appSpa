@@ -67,15 +67,6 @@ export class ReservaPage {
     this.ultimoHorario = this.disponibilidadSeleccionada.fechaInicio;
     this.usuarioDoc = this.afs.doc(this.filePathEmpresa + '/usuarios/' + this.usuario.id);
     let fecha = moment(this.ultimoHorario).startOf('day').toDate();
-    this.usuarioDoc.valueChanges().subscribe(data => {
-      this.servicios = [];
-      if (data) {
-        this.tiempoDisponibilidad = data.configuracion ? data.configuracion.tiempoDisponibilidad : 30;
-        data.perfiles.forEach(perfil => {
-          this.servicios.push.apply(this.servicios, perfil.servicios);
-        });
-      }
-    });
     this.disponibilidadDoc = this.usuarioDoc.collection('disponibilidades').doc(fecha.getTime().toString());
     let datos: DisponibilidadOptions = {
       dia: fecha.getDate(),
@@ -88,9 +79,22 @@ export class ReservaPage {
       imagenusuario: this.usuario.imagen,
       usuario: this.usuario.nombre
     };
+    this.updateServicios();
     this.disponibilidadDoc.ref.get().then(datosDisp => {
       if (!datosDisp.exists) {
         this.disponibilidadDoc.set(datos);
+      }
+    });
+  }
+
+  updateServicios() {
+    this.usuarioDoc.valueChanges().subscribe(data => {
+      this.servicios = [];
+      if (data) {
+        this.tiempoDisponibilidad = data.configuracion ? data.configuracion.tiempoDisponibilidad : 30;
+        data.perfiles.forEach(perfil => {
+          this.servicios.push.apply(this.servicios, perfil.servicios);
+        });
       }
     });
   }
@@ -141,11 +145,11 @@ export class ReservaPage {
           };
         });
       }
-      this.updateServicios();
+      this.updatePaquetes();
     });
   }
 
-  updateServicios() {
+  updatePaquetes() {
     const grupos = [];
     this.grupoServicios = [];
     this.carritoPaquete.forEach(paquete => {
@@ -192,55 +196,58 @@ export class ReservaPage {
   }
 
   guardar() {
-    let batch = this.afs.firestore.batch();
+    const batch = this.afs.firestore.batch();
     this.loadingCtrl.create({
       content: 'Procesando la reserva',
       dismissOnPageChange: true,
     }).present();
     this.validarReservaDisponible().then(() => {
+      const fecha = new Date();
       this.carrito.forEach(reservaNueva => {
-        let reservaDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('disponibilidades').doc(reservaNueva.fechaInicio.getTime().toString());
+        const reservaDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('disponibilidades').doc(reservaNueva.fechaInicio.getTime().toString());
+        const mesServicio = moment(reservaNueva.fechaInicio).startOf('month');
+        const totalesServiciosDoc = this.afs.doc(this.filePathEmpresa + '/totalesservicios/' + mesServicio);
+
         batch.set(reservaDoc.ref, reservaNueva);
-
-        let mesServicio = moment(reservaNueva.fechaInicio).startOf('month');
-
-        let totalesServiciosDoc = this.afs.doc(this.filePathEmpresa + '/totalesservicios/' + mesServicio);
-
-        let totalServiciosReserva = reservaNueva.servicio.map(servicioReserva => Number(servicioReserva.valor)).reduce((a, b) => a + b);
 
         this.disponibilidadDoc.ref.get().then(datosDiarios => {
           if (datosDiarios.exists) {
-            let totalDiarioActual = datosDiarios.get('totalServicios');
-            let cantidadDiarioActual = datosDiarios.get('cantidadServicios');
-            let pendientesDiarioActual = datosDiarios.get('pendientes');
-            let totalDiario = totalDiarioActual ? Number(totalDiarioActual) + totalServiciosReserva : totalServiciosReserva;
-            let cantidadDiario = cantidadDiarioActual ? Number(cantidadDiarioActual) + 1 : 1;
-            let pendientesDiario = pendientesDiarioActual ? Number(pendientesDiarioActual) + 1 : 1;
-            batch.update(this.disponibilidadDoc.ref, { totalServicios: totalDiario, cantidadServicios: cantidadDiario, pendientes: pendientesDiario, fecha: new Date() });
+            const pendientesDiarioActual = datosDiarios.get('pendientes');
+            const pendientesDiario = Number(pendientesDiarioActual) + 1;
+            batch.update(this.disponibilidadDoc.ref, {
+              fecha: fecha,
+              pendientes: pendientesDiario
+            });
           } else {
-            batch.set(this.disponibilidadDoc.ref, { totalServicios: totalServiciosReserva, cantidadServicios: 1, pendientes: 1, fecha: new Date() });
+            batch.set(this.disponibilidadDoc.ref, {
+              totalServicios: 0,
+              cantidadServicios: 0,
+              pendientes: 1,
+              fecha: fecha
+            });
           }
 
           totalesServiciosDoc.ref.get().then(() => {
-            batch.set(totalesServiciosDoc.ref, { ultimaactualizacion: new Date() });
+            batch.set(totalesServiciosDoc.ref, { ultimaactualizacion: fecha });
 
-            let totalesServiciosUsuarioDoc = totalesServiciosDoc.collection('totalesServiciosUsuarios').doc<TotalesServiciosOptions>(this.usuario.id);
+            const totalesServiciosUsuarioDoc = totalesServiciosDoc.collection('totalesServiciosUsuarios').doc<TotalesServiciosOptions>(this.usuario.id);
 
             totalesServiciosUsuarioDoc.ref.get().then(datos => {
               if (datos.exists) {
-                let totalActual = datos.get('totalServicios');
-                let cantidadActual = datos.get('cantidadServicios');
-                let pendientesActual = datos.get('pendientes');
-                batch.update(totalesServiciosUsuarioDoc.ref, { totalServicios: Number(totalActual) + totalServiciosReserva, cantidadServicios: Number(cantidadActual) + 1, pendientes: Number(pendientesActual) + 1, fecha: new Date() });
+                const pendientesActual = datos.get('pendientes');
+                batch.update(totalesServiciosUsuarioDoc.ref, {
+                  pendientes: Number(pendientesActual) + 1,
+                  fecha: fecha
+                });
               } else {
-                let totalServicioUsuario: TotalesServiciosOptions = {
+                const totalServicioUsuario: TotalesServiciosOptions = {
                   idusuario: this.usuario.id,
                   usuario: reservaNueva.nombreusuario,
                   imagenusuario: this.usuario.imagen,
-                  totalServicios: totalServiciosReserva,
-                  cantidadServicios: 1,
+                  totalServicios: 0,
+                  cantidadServicios: 0,
                   pendientes: 1,
-                  fecha: new Date()
+                  fecha: fecha
                 }
                 batch.set(totalesServiciosUsuarioDoc.ref, totalServicioUsuario);
               }
@@ -285,7 +292,7 @@ export class ReservaPage {
         disponible = false;
         break;
       } else {
-        disponibilidadEncontrada.servicio = [servicio];
+        disponibilidadEncontrada.servicio = servicio;
         disponibilidadBloquear.push(disponibilidadEncontrada);
       }
     }
@@ -294,7 +301,7 @@ export class ReservaPage {
       this.disponibilidadBloquear.push.apply(this.disponibilidadBloquear, disponibilidadBloquear);
       this.cantidad++;
       this.carrito.push({
-        servicio: [servicio],
+        servicio: servicio,
         fechaInicio: disponibilidadBloquear[0].fechaInicio,
         fechaFin: disponibilidadBloquear[disponibilidadBloquear.length - 1].fechaFin,
         cliente: this.cliente,
@@ -305,7 +312,8 @@ export class ReservaPage {
         nombreusuario: this.usuario.nombre,
         fechaActualizacion: null,
         id: null,
-        leido: null
+        leido: null,
+        pago: null
       });
       this.ultimoHorario = disponibilidadBloquear[disponibilidadBloquear.length - 1].fechaFin;
       this.totalServicios += Number(servicio.valor);
@@ -331,7 +339,7 @@ export class ReservaPage {
             handler: () => {
               this.disponibilidadBloquear.push.apply(this.disponibilidadBloquear, disponibilidadBloquear);
               this.carrito.push({
-                servicio: [servicio],
+                servicio: servicio,
                 fechaInicio: disponibilidadBloquear[0].fechaInicio,
                 fechaFin: disponibilidadBloquear[disponibilidadBloquear.length - 1].fechaFin,
                 cliente: this.cliente,
@@ -342,7 +350,8 @@ export class ReservaPage {
                 nombreusuario: this.usuario.nombre,
                 fechaActualizacion: null,
                 id: null,
-                leido: null
+                leido: null,
+                pago: null
               });
               this.cantidad++;
               this.ultimoHorario = disponibilidadBloquear[disponibilidadBloquear.length - 1].fechaFin;

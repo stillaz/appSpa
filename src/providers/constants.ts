@@ -18,3 +18,4 @@ export enum EVENTOS { ACTUAL = 'actual', OTRO = 'otro' };
 export enum ESTADOS_RESERVA { DISPONIBLE = 'Disponible', RESERVADO = 'Reservado', FINALIZADO = 'Finalizado', EJECUTANDO = 'Ejecutando', CANCELADO = 'Cancelado', NO_DISPONIBLE = 'No-disponible' };
 export enum ESTADOS_PAQUETE { PENDIENTE = 'Pendiente', PENDIENTEPAGO = 'Pendiente_pago', FINALIZADO = 'Finalizado' };
 export enum FILTROS_FECHA { DIARIO = 'days', SEMANAL = 'weeks', MENSUAL = 'months', ANUAL = 'years' };
+export enum MODO_PAGO {INMEDIATO = 'Inmediato', PARTES = 'Por partes'};

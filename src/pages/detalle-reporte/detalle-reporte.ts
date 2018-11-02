@@ -86,19 +86,13 @@ export class DetalleReportePage {
   private updateDisponibilidades(disponibilidadesCollection: AngularFirestoreCollection<DisponibilidadOptions>, dia: DisponibilidadOptions) {
     return new Promise(resolve => {
       disponibilidadesCollection.doc(dia.id.toString()).collection<ReservaOptions>(this.modo, ref => ref.orderBy('fechaFin', 'desc')).valueChanges().subscribe(datos => {
-        if (datos && datos.length > 0) {
+        if (datos && datos[0]) {
           let fechaData = moment(new Date(dia.id)).locale('es').format('dddd, DD');
           this.disponibilidades.push({ grupo: fechaData, disponibilidades: datos });
           this.total += datos.map(c => {
-            if (c.servicio && c.servicio.length > 1) {
-              return Number(c.servicio.map(item => Number(item.valor)).reduce((a, b) => a + b));
-            } else if (c.servicio && c.servicio.length === 1) {
-              return Number(c.servicio[0].valor);
-            }
-            return 0;
+            return c.pago ? Number(c.pago) : 0;
           }).reduce((sum, current) => sum + current);
           this.cantidad += datos.length;
-
           resolve('ok');
         }
       });
