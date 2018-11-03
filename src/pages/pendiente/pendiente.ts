@@ -164,11 +164,12 @@ export class PendientePage {
   }
 
   private eliminar(reserva: ReservaOptions) {
-    const fecha: Date = reserva.fechaInicio.toDate();
-    const dia = moment(fecha).startOf('day').toDate().getTime().toString();
+    const fecha = new Date();
+    const fechaServicio: Date = reserva.fechaInicio.toDate();
+    const dia = moment(fechaServicio).startOf('day').toDate().getTime().toString();
     const disponibilidadDoc = this.usuarioDoc.collection('disponibilidades').doc(dia);
-    const fechaInicio = moment(fecha).locale("es").format("dddd, DD [de] MMMM [de] YYYY");
-    const horaInicio = moment(fecha).format("hh:mm a");
+    const fechaInicio = moment(fechaServicio).locale("es").format("dddd, DD [de] MMMM [de] YYYY");
+    const horaInicio = moment(fechaServicio).format("hh:mm a");
     const nombreCliente = reserva.cliente.nombre;
     const cancelarAlert = this.alertCtrl.create({
       title: 'Cancelar cita',
@@ -182,69 +183,43 @@ export class PendientePage {
           text: 'Si',
           handler: () => {
             const batch = this.afs.firestore.batch();
-            const canceladoDoc: AngularFirestoreDocument<ReservaOptions> = disponibilidadDoc.collection('cancelados').doc(new Date().getTime().toString());
+            const canceladoDoc: AngularFirestoreDocument<ReservaOptions> = disponibilidadDoc.collection('cancelados').doc(fecha.getTime().toString());
             reserva.estado = DataProvider.ESTADOS_RESERVA.CANCELADO;
             batch.set(canceladoDoc.ref, reserva);
 
-            const disponibilidadCancelarDoc: AngularFirestoreDocument = disponibilidadDoc.collection('disponibilidades').doc(fecha.getTime().toString());
+            const disponibilidadCancelarDoc: AngularFirestoreDocument = disponibilidadDoc.collection('disponibilidades').doc(fechaServicio.getTime().toString());
 
             batch.delete(disponibilidadCancelarDoc.ref);
 
-            const mesServicio = moment(fecha).startOf('month');
-
-            const totalesServiciosDoc = this.afs.doc(this.filePathEmpresa + '/totalesservicios/' + mesServicio);
-
-            const totalServiciosReserva = reserva.servicio.valor;
-
             disponibilidadDoc.ref.get().then(datosDiarios => {
-              const totalDiarioActual = datosDiarios.get('totalServicios');
-              const cantidadDiarioActual = datosDiarios.get('cantidadServicios');
               const pendientesDiarioActual = datosDiarios.get('pendientes');
-              const totalDiario = Number(totalDiarioActual) - totalServiciosReserva;
-              const cantidadDiario = Number(cantidadDiarioActual) - 1;
               const pendientesDiario = Number(pendientesDiarioActual) - 1;
               batch.update(disponibilidadDoc.ref, {
-                totalServicios: totalDiario,
-                cantidadServicios: cantidadDiario,
                 pendientes: pendientesDiario,
                 fecha: fecha
               });
 
-              totalesServiciosDoc.ref.get().then(() => {
-                batch.set(totalesServiciosDoc.ref, {
-                  ultimaactualizacion: fecha
+              const idreserva = reserva.id;
+              if (idreserva) {
+                const serviciosDoc = this.afs.doc('servicioscliente/' + idreserva);
+
+                batch.update(serviciosDoc.ref, {
+                  estado: this.constantes.ESTADOS_RESERVA.CANCELADO,
+                  fechaActualizacion: fecha,
+                  imagenusuario: this.usuario.imagen,
+                  empresa: this.usuarioService.getEmpresa(),
+                  actualiza: 'usuario'
                 });
 
-                const totalesServiciosUsuarioDoc = totalesServiciosDoc.collection('totalesServiciosUsuarios').doc<TotalesServiciosOptions>(reserva.idusuario);
+                const serviciosClienteDoc = this.afs.doc('clientes/' + reserva.cliente.correoelectronico + '/servicios/' + fechaServicio.getTime().toString());
 
-                totalesServiciosUsuarioDoc.ref.get().then(datos => {
-                  const totalActual = datos.get('totalServicios');
-                  const cantidadActual = datos.get('cantidadServicios');
-                  batch.update(totalesServiciosUsuarioDoc.ref, { totalServicios: Number(totalActual) - totalServiciosReserva, cantidadServicios: Number(cantidadActual) - 1, fecha: new Date() });
+                batch.update(serviciosClienteDoc.ref, { estado: this.constantes.ESTADOS_RESERVA.CANCELADO });
+              }
 
-                  let idreserva = reserva.id;
-                  if (idreserva) {
-                    const serviciosDoc = this.afs.doc('servicioscliente/' + idreserva);
-
-                    batch.update(serviciosDoc.ref, {
-                      estado: this.constantes.ESTADOS_RESERVA.CANCELADO,
-                      fechaActualizacion: new Date(),
-                      imagenusuario: this.usuario.imagen,
-                      empresa: this.usuarioService.getEmpresa(),
-                      actualiza: 'usuario'
-                    });
-
-                    const serviciosClienteDoc = this.afs.doc('clientes/' + reserva.cliente.correoelectronico + '/servicios/' + fecha.getTime().toString());
-
-                    batch.update(serviciosClienteDoc.ref, { estado: this.constantes.ESTADOS_RESERVA.CANCELADO });
-                  }
-
-                  batch.commit().then(() => {
-                    this.mensaje('La cita con ' + nombreCliente + ' ha sido cancelada');
-                    this.updateReservas();
-                  }).catch(err => alert(err));
-                });
-              });
+              batch.commit().then(() => {
+                this.mensaje('La cita con ' + nombreCliente + ' ha sido cancelada');
+                this.updateReservas();
+              }).catch(err => alert(err));
             });
           }
         }],
@@ -313,7 +288,7 @@ export class PendientePage {
                 actualiza: 'usuario'
               });
 
-              const serviciosClienteDoc = this.afs.doc('clientes/' + reserva.cliente.correoelectronico + '/servicios/' + fecha.getTime().toString());
+              const serviciosClienteDoc = this.afs.doc('clientes/' + reserva.cliente.correoelectronico + '/servicios/' + fechaServicio.getTime().toString());
 
               batch.update(serviciosClienteDoc.ref, { estado: this.constantes.ESTADOS_RESERVA.FINALIZADO });
 

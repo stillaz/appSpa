@@ -39,8 +39,7 @@
         <h2>{{disponibilidad.fechaInicio.toDate() | date: 'mediumDate'}}, {{disponibilidad.fechaInicio.toDate() |
           date:
           'hh:mm a'}} &mdash; {{disponibilidad.fechaFin.toDate() | date: 'hh:mm a'}}</h2>
-        <p *ngIf="disponibilidad.cliente.nombre">{{disponibilidad.cliente.nombre}}: {{disponibilidad.servicio |
-          joins}}</p>
+        <p *ngIf="disponibilidad.cliente.nombre">{{disponibilidad.cliente.nombre}}: {{disponibilidad.servicio.nombre}}</p>
         <ion-note style="font-size: small">{{disponibilidad.estado}}</ion-note>
 
         <button ion-button *ngIf="disponibilidad.fechaInicio.toDate() <= actual" color="secondary" clear item-end (tap)="terminar(disponibilidad)">Terminar</button>
@@ -64,15 +63,7 @@
         <p>{{paquete.servicio.nombre}}</p>
         <ion-note style="font-size: small">{{paquete.realizados}} de {{paquete.sesiones}}</ion-note>
         <ion-note style="font-size: small">- Pagado: {{paquete.pagado | currency : USD: symbol: '4.0'}}</ion-note>
-
-        <!--<button ion-button *ngIf="disponibilidad.fechaInicio.toDate() <= actual" color="secondary" clear item-end (tap)="terminar(disponibilidad)">Terminar</button>-->
       </ion-item>
-
-      <!--<ion-item-options>
-        <button ion-button color="danger" (click)="cancelar(slidingItem, disponibilidad)" *ngIf="disponibilidad.estado === constantes.ESTADOS_RESERVA.RESERVADO || disponibilidad.estado === constantes.ESTADOS_RESERVA.EJECUTANDO">
-          Cancelar cita
-        </button>
-      </ion-item-options>-->
     </ion-item-sliding>
   </ion-list>
 
@@ -85,8 +76,6 @@
       <p>{{paquete.servicio.nombre}}</p>
       <ion-note style="font-size: small">{{paquete.realizados}} de {{paquete.sesiones}}</ion-note>
       <ion-note style="font-size: small">- Pagado: {{paquete.pagado | currency : USD: symbol: '4.0'}}</ion-note>
-
-      <!--<button ion-button color="secondary" clear item-end (tap)="pagar(paquete)">Terminar</button>-->
     </ion-item-sliding>
   </ion-list>
 </ion-content>

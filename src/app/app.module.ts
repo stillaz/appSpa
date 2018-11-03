@@ -13,7 +13,6 @@ import { TabsPage } from '../pages/tabs/tabs';
 
 import { StatusBar } from '@ionic-native/status-bar';
 import { SplashScreen } from '@ionic-native/splash-screen';
-import { ReservaProvider } from '../providers/reserva';
 import { firebaseConfig } from './config.firebase';
 import { AgendaPage } from '../pages/agenda/agenda';
 import { ReportesPage } from '../pages/reportes/reportes';
@@ -83,7 +82,6 @@ import { PendientePage } from '../pages/pendiente/pendiente';
     FileChooser,
     FilePath,
     Push,
-    ReservaProvider,
     UsuarioProvider,
     FmcProvider,
     Firebase

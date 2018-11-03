@@ -154,7 +154,7 @@ export class ReservaPage {
     this.grupoServicios = [];
     this.carritoPaquete.forEach(paquete => {
       const servicio = this.servicios.find(servicio => servicio.id === paquete.servicio.id);
-      servicio.grupo = 'Paquetes activos';
+      servicio.grupo[0] = 'Paquetes activos';
     });
 
     this.servicios.forEach(servicio => {
@@ -213,7 +213,7 @@ export class ReservaPage {
         this.disponibilidadDoc.ref.get().then(datosDiarios => {
           if (datosDiarios.exists) {
             const pendientesDiarioActual = datosDiarios.get('pendientes');
-            const pendientesDiario = Number(pendientesDiarioActual) + 1;
+            const pendientesDiario = pendientesDiarioActual === undefined ? 1 : Number(pendientesDiarioActual) + 1;
             batch.update(this.disponibilidadDoc.ref, {
               fecha: fecha,
               pendientes: pendientesDiario
