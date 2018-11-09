@@ -108,7 +108,7 @@ export class PendientePage {
     });
   }
 
-  updatePaquetes() {
+  /*updatePaquetes() {
     const estado = this.terms === 'activo' ? this.constantes.ESTADOS_PAQUETE.PENDIENTE : this.constantes.ESTADOS_PAQUETE.PENDIENTEPAGO;
     this.updatePaquetesPendientes(estado).subscribe(data => {
       this.paquetes = data.sort((a, b) => {
@@ -123,7 +123,7 @@ export class PendientePage {
         }
       });
     });
-  }
+  }*/
 
   updatePaquetesPendientes(estado: string) {
     return new Observable<PaqueteOptions[]>((observer) => {
@@ -149,7 +149,7 @@ export class PendientePage {
     return new Promise<PaqueteOptions[]>(resolve => {
       paqueteCollection.valueChanges().subscribe(dataPaquetes => {
         const paquetes = dataPaquetes.filter(paquete => {
-          return this.servicios.some(servicio => servicio.id === paquete.servicio.id);
+          //return this.servicios.some(servicio => servicio.id === paquete.servicio.id);
         });
         resolve(paquetes);
       });
@@ -308,7 +308,7 @@ export class PendientePage {
     return new Promise<number>(resolve => {
       paqueteClienteDoc.valueChanges().subscribe(data => {
         if (data) {
-          resolve(Number(data.pagado));
+          //resolve(Number(data.pagado));
         } else {
           resolve(0);
         }
@@ -319,7 +319,7 @@ export class PendientePage {
   private procesarPaquete(reserva: ReservaOptions, fecha: Date, batch: firebase.firestore.WriteBatch) {
     const idcarrito = reserva.idcarrito;
     const servicio = reserva.servicio;
-    const sesiones = servicio.sesiones;
+    //const sesiones = servicio.sesiones;
 
     const valorPaquete = servicio.valor;
     return new Promise<number>(resolve => {
@@ -358,7 +358,8 @@ export class PendientePage {
                 const paqueteNegocioClienteDoc: AngularFirestoreDocument<PaqueteOptions> = this.afs.doc<PaqueteOptions>(filePathClienteNegocioPaquete);
                 const idempresa = this.usuarioService.getUsuario().idempresa;
                 paqueteNegocioClienteDoc.get().subscribe(paqueteClienteNegocio => {
-                  let paqueteNuevo: PaqueteOptions = {
+                  let paqueteNuevo;
+                  /*let paqueteNuevo: PaqueteOptions = {
                     actualizacion: fecha,
                     estado: this.constantes.ESTADOS_PAQUETE.PENDIENTE,
                     idcarrito: idcarrito,
@@ -370,21 +371,21 @@ export class PendientePage {
                     valorPaquete: valorPaquete,
                     registro: new Date(),
                     cliente: reserva.cliente
-                  };
+                  };*/
 
                   if (paqueteClienteNegocio.exists) {
                     const realizadosClienteNegocioActual = paqueteClienteNegocio.data().realizados;
-                    const estado = this.loadEstado(servicio.sesiones, realizadosClienteNegocioActual, resta, data.pago);
+                    //const estado = this.loadEstado(servicio.sesiones, realizadosClienteNegocioActual, resta, data.pago);
                     const realizadosClienteNegocio = realizadosClienteNegocioActual + 1;
 
                     paqueteNuevo.realizados = realizadosClienteNegocio;
                     paqueteNuevo.pagado = pagado;
-                    paqueteNuevo.estado = estado;
-                    if (estado === this.constantes.ESTADOS_PAQUETE.FINALIZADO) {
+                    //paqueteNuevo.estado = estado;
+                    /*if (estado === this.constantes.ESTADOS_PAQUETE.FINALIZADO) {
                       const pendientesActualClienteNegocio = Number(clienteNegocio.data().pendientes);
                       const pendientesClienteNegocio = pendientesActualClienteNegocio - 1;
                       batch.update(clienteNegocioDoc.ref, { pendientes: pendientesClienteNegocio });
-                    }
+                    }*/
                   } else {
                     batch.update(clienteNegocioDoc.ref, { pendientes: 1 });
                   }
@@ -443,11 +444,11 @@ export class PendientePage {
   }
 
   terminar(reserva: ReservaOptions) {
-    const modoPagoServicio = reserva.servicio.pago;
+    //const modoPagoServicio = reserva.servicio.pago;
     const batch = this.afs.firestore.batch();
     const fecha = new Date();
 
-    if (modoPagoServicio === this.constantes.MODO_PAGO.PARTES) {
+    /*if (modoPagoServicio === this.constantes.MODO_PAGO.PARTES) {
       this.procesarPaquete(reserva, fecha, batch).then(pago => {
         this.procesarServicio(reserva, pago, fecha, batch).then(() => {
           batch.commit().then(() => {
@@ -473,11 +474,11 @@ export class PendientePage {
           alert(err);
         });
       });
-    }
+    }*/
   }
 
   updateServiciosPendientes() {
-    switch (this.terms) {
+    /*switch (this.terms) {
       case 'pendiente':
         this.updateReservas();
         break;
@@ -489,7 +490,7 @@ export class PendientePage {
       case 'sinpago':
         this.updatePaquetes();
         break;
-    }
+    }*/
   }
 
   updateServicios() {

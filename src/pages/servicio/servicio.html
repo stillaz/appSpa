@@ -26,8 +26,8 @@
       <ion-grid>
         <ion-row>
           <ion-col #item *ngFor="let servicio of item.servicios" class="cell-1" (click)="ver(servicio)">
-            <img *ngIf="servicio.imagen" [src]="servicio.imagen">
-            <ion-card color="dark">
+            <img *ngIf="servicio.imagen" [src]="servicio.imagen" width="100%">
+            <ion-card color="dark" style="margin: 0; width: 100%">
               <ion-card-header>
                 {{servicio.nombre}}
               </ion-card-header>

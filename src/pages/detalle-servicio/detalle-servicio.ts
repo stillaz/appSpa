@@ -1,15 +1,15 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { IonicPage, NavController, NavParams, AlertController, ViewController, ModalController, Platform } from 'ionic-angular';
+import { IonicPage, NavController, NavParams, AlertController, ViewController, ModalController, Platform, LoadingController, Loading } from 'ionic-angular';
 import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection } from 'angularfire2/firestore';
 import { AngularFireStorage } from 'angularfire2/storage';
 import { ServicioOptions } from '../../interfaces/servicio-options';
 import { finalize } from 'rxjs/operators';
 import { Camera, CameraOptions } from '@ionic-native/camera';
 import { PerfilOptions } from '../../interfaces/perfil-options';
-import { UsuarioOptions } from '../../interfaces/usuario-options';
 import firebase from 'firebase';
 import { UsuarioProvider } from '../../providers/usuario';
+import * as DataConstant from '../../providers/constants';
 
 /**
  * Generated class for the DetalleServicioPage page.
@@ -24,17 +24,16 @@ import { UsuarioProvider } from '../../providers/usuario';
   templateUrl: 'detalle-servicio.html',
 })
 export class DetalleServicioPage {
-
   todo: FormGroup;
   nuevo: boolean = true;
   mobile: boolean;
   filePathData: string;
   public servicio: ServicioOptions;
   grupos: string[];
+  loading: Loading;
 
   private servicioDoc: AngularFirestoreDocument<ServicioOptions>;
   private filePathEmpresa: string;
-  private filePathUsuario: string;
 
   constructor(
     public navCtrl: NavController,
@@ -47,17 +46,25 @@ export class DetalleServicioPage {
     public plt: Platform,
     private storage: AngularFireStorage,
     private camera: Camera,
-    private usuarioServicio: UsuarioProvider
+    private usuarioServicio: UsuarioProvider,
+    public loadingCtrl: LoadingController
   ) {
     this.servicio = this.navParams.get('servicio');
     this.filePathEmpresa = this.usuarioServicio.getFilePathEmpresa();
-    this.filePathUsuario = this.usuarioServicio.getFilePathUsuario();
     this.mobile = plt.is('android');
     this.updateGrupos();
     this.updateServicio();
+    this.loading = this.loadingCtrl.create({
+      content: 'Procesando...',
+      dismissOnPageChange: true
+    });
   }
 
-  updateGrupos() {
+  cerrar() {
+    this.viewCtrl.dismiss();
+  }
+
+  private updateGrupos() {
     this.afs.doc<any>('clases/Grupos').valueChanges().subscribe(data => {
       if (data) {
         this.grupos = data.data;
@@ -65,7 +72,7 @@ export class DetalleServicioPage {
     });
   }
 
-  form() {
+  private form() {
     this.todo = this.formBuilder.group({
       id: [this.servicio.id, Validators.required],
       nombre: [this.servicio.nombre, Validators.required],
@@ -77,7 +84,7 @@ export class DetalleServicioPage {
     });
   }
 
-  updateServicio() {
+  private updateServicio() {
     if (!this.servicio) {
       this.servicio = {
         id: this.afs.createId(),
@@ -87,9 +94,7 @@ export class DetalleServicioPage {
         valor: null,
         grupo: null,
         imagen: null,
-        activo: true,
-        pago: 'Inmediato',
-        sesiones: 1
+        activo: true
       };
     }
 
@@ -163,7 +168,7 @@ export class DetalleServicioPage {
     }).catch(err => alert('Upload Failed' + err));
   }
 
-  genericAlert(title: string, message: string) {
+  private genericAlert(title: string, message: string) {
     let alert = this.alertCtrl.create({
       title: title,
       message: message,
@@ -177,188 +182,97 @@ export class DetalleServicioPage {
     alert.present();
   }
 
-  private loadUsuarioPerfil(idperfil: string) {
-    let usuariosCollection: AngularFirestoreCollection<UsuarioOptions> = this.afs.collection<UsuarioOptions>(this.filePathEmpresa + '/usuarios');
-    return new Promise<UsuarioOptions[]>(resolve => {
-      usuariosCollection.valueChanges().subscribe(data => {
-        if (data[0]) {
-          let usuarios = data.filter(usuario => usuario.perfiles.some(perfil => perfil.id === idperfil));
-          resolve(usuarios);
-        } else {
-          resolve(data);
-        }
-      });
-    });
-  }
-
-  private loadPerfilesGrupo(grupo: string[]) {
-    let perfiles = [];
-    let perfilesCollection: AngularFirestoreCollection<PerfilOptions> = this.afs.collection<PerfilOptions>(this.filePathEmpresa + '/perfiles');
+  private loadPerfilesGrupo(grupo: string) {
+    const perfilesCollection: AngularFirestoreCollection<PerfilOptions> = this.afs.collection<PerfilOptions>(this.filePathEmpresa + '/perfiles');
     return new Promise<PerfilOptions[]>(resolve => {
-      perfilesCollection.valueChanges().subscribe(data => {
-        if (data[0]) {
-          grupo.forEach(grupoServicio => {
-            let perfilesGrupo = data.filter(perfil => perfil.grupo.some(grupoPerfil => grupoPerfil === grupoServicio));
-            perfiles.push.apply(perfiles, perfilesGrupo);
-          });
+      perfilesCollection.valueChanges().subscribe(perfilesEmpresa => {
+        if (perfilesEmpresa[0]) {
+          const perfiles = perfilesEmpresa.filter(perfil => perfil.grupo === grupo);
           resolve(perfiles);
         } else {
-          resolve(data);
+          resolve([]);
         }
       });
     });
-  }
-
-  private registrarPerfilUsuario(batch, modo: string) {
-    return new Promise(() => {
-      let perfilDoc: AngularFirestoreDocument<PerfilOptions>;
-      let usuarioDoc: AngularFirestoreDocument<UsuarioOptions>;
-      this.loadPerfilesGrupo(this.servicio.grupo).then(perfiles => {
-        perfiles.forEach(perfil => {
-          let servicios: ServicioOptions[] = perfil.servicios;
-          if (perfil.servicios) {
-            let servicioEncontrado: ServicioOptions = servicios.find(servicio => servicio.id === this.servicio.id);
-            if (servicioEncontrado) {
-              let item = servicios.indexOf(servicioEncontrado);
-              servicios.splice(item, 1, this.servicio);
-            } else {
-              servicios.push(this.servicio);
-            }
-
-            perfilDoc = this.afs.doc(this.filePathEmpresa + '/perfiles/' + perfil.id);
-
-            batch.update(perfilDoc.ref, { servicios: servicios });
-
-            this.loadUsuarioPerfil(perfil.id).then(usuarios => {
-              usuarios.forEach(usuario => {
-                let perfilesusuario = usuario.perfiles;
-                let perfilusuario: PerfilOptions = perfilesusuario.find(perfilUsuario => perfilUsuario.id === perfil.id);
-                if (perfilusuario) {
-                  let itemperfil = usuario.perfiles.indexOf(perfilusuario);
-                  let serviciosperfilusuario = perfilusuario.servicios ? perfilusuario.servicios : [];
-                  let servicioUsuarioEncontrado: ServicioOptions = serviciosperfilusuario.find(servicio => servicio.id === this.servicio.id);
-
-                  if (servicioUsuarioEncontrado) {
-                    let itemservicio = serviciosperfilusuario.indexOf(servicioUsuarioEncontrado);
-                    serviciosperfilusuario.splice(itemservicio, 1, this.servicio);
-                  } else {
-                    serviciosperfilusuario.push(this.servicio);
-                  }
-
-                  perfilusuario.servicios = serviciosperfilusuario;
-
-                  perfilesusuario.splice(itemperfil, 1, perfilusuario);
-
-                  usuarioDoc = this.afs.doc(this.filePathUsuario + usuario.id);
-
-                  batch.update(usuarioDoc.ref, { perfiles: perfilesusuario });
-                }
-              });
-
-              batch.commit().then(() => {
-                let alert = this.alertCtrl.create({
-                  title: 'Servicio ' + modo,
-                  message: 'El servicio ha sido ' + modo + ' exitosamente',
-                  buttons: ['OK']
-                });
-                alert.present();
-                this.viewCtrl.dismiss();
-              });
-            });
-          }
-        });
-      });
-    }).catch(err => alert(err));
   }
 
   guardar() {
-    let modo = this.nuevo ? 'registrado' : 'actualizado';
     this.servicio = this.todo.value;
-    let batch = this.afs.firestore.batch();
+    const modo = this.nuevo ? 'registrado' : 'actualizado';
+    const batch = this.afs.firestore.batch();
+    this.loading.present();
     batch.set(this.servicioDoc.ref, this.servicio);
-    this.registrarPerfilUsuario(batch, modo);
-  }
-
-  cerrar() {
-    this.viewCtrl.dismiss();
-  }
-
-  private eliminarPerfilUsuario(batch) {
-    return new Promise(() => {
-      let perfilDoc: AngularFirestoreDocument<PerfilOptions>;
-      let usuarioDoc: AngularFirestoreDocument<UsuarioOptions>;
-      this.loadPerfilesGrupo(this.servicio.grupo).then(perfiles => {
-        perfiles.forEach(perfil => {
-          let servicios: ServicioOptions[] = perfil.servicios;
-          if (servicios) {
-            let servicioEncontrado: ServicioOptions = servicios.find(servicio => {
-              return servicio.id === this.servicio.id;
-            });
-            if (servicioEncontrado) {
-              let item = servicios.indexOf(servicioEncontrado);
-              servicios.splice(item, 1);
-            }
-
-            perfilDoc = this.afs.doc(this.filePathEmpresa + '/perfiles/' + perfil.id);
-
-            batch.update(perfilDoc.ref, { servicios: servicios });
-
-            this.loadUsuarioPerfil(perfil.id).then(usuarios => {
-              usuarios.forEach(usuario => {
-                let perfilesusuario = usuario.perfiles;
-                let perfilusuario: PerfilOptions = perfilesusuario.find(perfilUsuario => perfilUsuario.id === perfil.id);
-                if (perfilusuario) {
-                  let itemperfil = usuario.perfiles.indexOf(perfilusuario);
-                  let serviciosperfilusuario = perfilusuario.servicios ? perfilusuario.servicios : [];
-                  let servicioUsuarioEncontrado: ServicioOptions = serviciosperfilusuario.find(servicio => servicio.id === this.servicio.id);
-
-                  if (servicioUsuarioEncontrado) {
-                    let itemservicio = serviciosperfilusuario.indexOf(servicioUsuarioEncontrado);
-                    serviciosperfilusuario.splice(itemservicio, 1);
-                  }
-
-                  perfilusuario.servicios = serviciosperfilusuario;
-
-                  perfilesusuario.splice(itemperfil, 1, perfilusuario);
-
-                  usuarioDoc = this.afs.doc(this.filePathUsuario + usuario.id);
-
-                  batch.update(usuarioDoc.ref, { perfiles: perfilesusuario });
-                }
-              });
-
-              batch.commit().then(() => {
-                this.genericAlert('Eliminar servicio', 'El servicio ha sido eliminado');
-                this.viewCtrl.dismiss();
-              });
-            });
-          }
+    this.procesarServicioPerfil(batch, DataConstant.PROCESO_MAESTROS.GUARDAR).then(() => {
+      batch.commit().then(() => {
+        const alert = this.alertCtrl.create({
+          title: 'Servicio ' + modo,
+          message: 'El servicio ha sido ' + modo + ' exitosamente',
+          buttons: ['OK']
         });
-      });
-    }).catch(err => alert(err));
+        alert.present();
+        this.viewCtrl.dismiss();
+      }).catch(err => err);
+    }).catch(err => {
+      this.loading.dismiss();
+      this.genericAlert('Ha ocurrido un error', 'Se presentó un error al guardar el servicio. Error: ' + err);
+    });
+  }
+
+  private procesarServicioPerfil(batch: firebase.firestore.WriteBatch, proceso: string) {
+    return new Promise((resolve, reject) => {
+      this.loadPerfilesGrupo(this.servicio.grupo).then(perfilesGrupo => {
+        if (perfilesGrupo[0]) {
+          perfilesGrupo.forEach(perfil => {
+            const filePathServicioPerfilEmpresa = this.filePathEmpresa + '/perfiles/' + perfil.id + '/servicios/' + this.servicio.id;
+            const servicioPerfilEmpresaDoc: AngularFirestoreDocument = this.afs.doc(filePathServicioPerfilEmpresa);
+            switch (proceso) {
+              case DataConstant.PROCESO_MAESTROS.GUARDAR:
+                batch.set(servicioPerfilEmpresaDoc.ref, this.servicio);
+                break;
+
+              case DataConstant.PROCESO_MAESTROS.ELIMINAR:
+                batch.delete(servicioPerfilEmpresaDoc.ref);
+                break;
+            }
+            resolve('ok');
+          });
+        } else {
+          resolve('ok');
+        }
+      }).catch(err => reject(err));
+    });
   }
 
   eliminar() {
-    let servicio: ServicioOptions = this.todo.value;
-    let alert = this.alertCtrl.create({
+    this.alertCtrl.create({
       title: 'Eliminar servicio',
-      message: '¿Desea eliminar el servicio ' + servicio.nombre,
-      buttons: [
-        {
-          text: 'No',
-          role: 'cancel'
-        },
-        {
-          text: 'Si',
-          handler: () => {
-            let batch = this.afs.firestore.batch();
-            batch.delete(this.servicioDoc.ref);
-            this.eliminarPerfilUsuario(batch);
-          }
+      message: '¿Desea eliminar el servicio ' + this.servicio.nombre,
+      buttons: [{
+        text: 'No',
+        role: 'cancel'
+      }, {
+        text: 'Si',
+        handler: () => {
+          const batch = this.afs.firestore.batch();
+          batch.delete(this.servicioDoc.ref);
+          this.loading.present();
+          this.procesarServicioPerfil(batch, DataConstant.PROCESO_MAESTROS.ELIMINAR).then(() => {
+            batch.commit().then(() => {
+              const alert = this.alertCtrl.create({
+                title: 'Servicio eliminado',
+                message: 'El servicio ha sido eliminado exitosamente',
+                buttons: ['OK']
+              });
+              alert.present();
+              this.viewCtrl.dismiss();
+            }).catch(err => err);
+          }).catch(err => {
+            this.loading.dismiss();
+            this.genericAlert('Ha ocurrido un error', 'Se presentó un error al guardar el servicio. Error: ' + err);
+          });
         }
-      ]
-    });
-    alert.present();
+      }]
+    }).present();
   }
 
 }

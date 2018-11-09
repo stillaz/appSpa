@@ -5,9 +5,7 @@ export interface ServicioOptions {
     descripcion: string,
     duracion_MIN: number,
     valor: number,
-    grupo: any,
+    grupo: string,
     imagen: string,
-    activo: boolean,
-    sesiones: number,
-    pago: string
+    activo: boolean
 }

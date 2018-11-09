@@ -60,7 +60,7 @@
 
         <ion-item>
           <ion-label floating>Grupo:</ion-label>
-          <ion-select formControlName="grupo" multiple="true">
+          <ion-select formControlName="grupo">
             <ion-option *ngFor="let item of grupos" [value]="item">{{item}}</ion-option>
           </ion-select>
         </ion-item>
