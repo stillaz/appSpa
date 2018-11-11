@@ -6,10 +6,9 @@ import { AngularFireStorage } from 'angularfire2/storage';
 import { ServicioOptions } from '../../interfaces/servicio-options';
 import { finalize } from 'rxjs/operators';
 import { Camera, CameraOptions } from '@ionic-native/camera';
-import { PerfilOptions } from '../../interfaces/perfil-options';
 import firebase from 'firebase';
 import { UsuarioProvider } from '../../providers/usuario';
-import * as DataConstant from '../../providers/constants';
+import { GrupoOptions } from '../../interfaces/grupo-options';
 
 /**
  * Generated class for the DetalleServicioPage page.
@@ -29,8 +28,9 @@ export class DetalleServicioPage {
   mobile: boolean;
   filePathData: string;
   public servicio: ServicioOptions;
-  grupos: string[];
+  grupos: GrupoOptions[];
   loading: Loading;
+  filePathGrupo: string;
 
   private servicioDoc: AngularFirestoreDocument<ServicioOptions>;
   private filePathEmpresa: string;
@@ -51,6 +51,7 @@ export class DetalleServicioPage {
   ) {
     this.servicio = this.navParams.get('servicio');
     this.filePathEmpresa = this.usuarioServicio.getFilePathEmpresa();
+    this.filePathGrupo = this.usuarioServicio.getFilePathGruposEmpresa();
     this.mobile = plt.is('android');
     this.updateGrupos();
     this.updateServicio();
@@ -65,10 +66,8 @@ export class DetalleServicioPage {
   }
 
   private updateGrupos() {
-    this.afs.doc<any>('clases/Grupos').valueChanges().subscribe(data => {
-      if (data) {
-        this.grupos = data.data;
-      }
+    this.afs.collection<GrupoOptions>(this.filePathGrupo).valueChanges().subscribe(data => {
+      this.grupos = data;
     });
   }
 
@@ -182,64 +181,20 @@ export class DetalleServicioPage {
     alert.present();
   }
 
-  private loadPerfilesGrupo(grupo: string) {
-    const perfilesCollection: AngularFirestoreCollection<PerfilOptions> = this.afs.collection<PerfilOptions>(this.filePathEmpresa + '/perfiles');
-    return new Promise<PerfilOptions[]>(resolve => {
-      perfilesCollection.valueChanges().subscribe(perfilesEmpresa => {
-        if (perfilesEmpresa[0]) {
-          const perfiles = perfilesEmpresa.filter(perfil => perfil.grupo === grupo);
-          resolve(perfiles);
-        } else {
-          resolve([]);
-        }
-      });
-    });
-  }
-
   guardar() {
     this.servicio = this.todo.value;
     const modo = this.nuevo ? 'registrado' : 'actualizado';
-    const batch = this.afs.firestore.batch();
     this.loading.present();
-    batch.set(this.servicioDoc.ref, this.servicio);
-    this.procesarServicioPerfil(batch, DataConstant.PROCESO_MAESTROS.GUARDAR).then(() => {
-      batch.commit().then(() => {
-        const alert = this.alertCtrl.create({
-          title: 'Servicio ' + modo,
-          message: 'El servicio ha sido ' + modo + ' exitosamente',
-          buttons: ['OK']
-        });
-        alert.present();
-        this.viewCtrl.dismiss();
-      }).catch(err => err);
+    this.servicioDoc.set(this.servicio).then(() => {
+      this.alertCtrl.create({
+        title: 'Servicio ' + modo,
+        message: 'El servicio ha sido ' + modo + ' exitosamente',
+        buttons: ['OK']
+      }).present();
+      this.viewCtrl.dismiss();
     }).catch(err => {
       this.loading.dismiss();
       this.genericAlert('Ha ocurrido un error', 'Se presentó un error al guardar el servicio. Error: ' + err);
-    });
-  }
-
-  private procesarServicioPerfil(batch: firebase.firestore.WriteBatch, proceso: string) {
-    return new Promise((resolve, reject) => {
-      this.loadPerfilesGrupo(this.servicio.grupo).then(perfilesGrupo => {
-        if (perfilesGrupo[0]) {
-          perfilesGrupo.forEach(perfil => {
-            const filePathServicioPerfilEmpresa = this.filePathEmpresa + '/perfiles/' + perfil.id + '/servicios/' + this.servicio.id;
-            const servicioPerfilEmpresaDoc: AngularFirestoreDocument = this.afs.doc(filePathServicioPerfilEmpresa);
-            switch (proceso) {
-              case DataConstant.PROCESO_MAESTROS.GUARDAR:
-                batch.set(servicioPerfilEmpresaDoc.ref, this.servicio);
-                break;
-
-              case DataConstant.PROCESO_MAESTROS.ELIMINAR:
-                batch.delete(servicioPerfilEmpresaDoc.ref);
-                break;
-            }
-            resolve('ok');
-          });
-        } else {
-          resolve('ok');
-        }
-      }).catch(err => reject(err));
     });
   }
 
@@ -253,19 +208,15 @@ export class DetalleServicioPage {
       }, {
         text: 'Si',
         handler: () => {
-          const batch = this.afs.firestore.batch();
-          batch.delete(this.servicioDoc.ref);
           this.loading.present();
-          this.procesarServicioPerfil(batch, DataConstant.PROCESO_MAESTROS.ELIMINAR).then(() => {
-            batch.commit().then(() => {
-              const alert = this.alertCtrl.create({
-                title: 'Servicio eliminado',
-                message: 'El servicio ha sido eliminado exitosamente',
-                buttons: ['OK']
-              });
-              alert.present();
-              this.viewCtrl.dismiss();
-            }).catch(err => err);
+          this.servicioDoc.delete().then(() => {
+            const alert = this.alertCtrl.create({
+              title: 'Servicio eliminado',
+              message: 'El servicio ha sido eliminado exitosamente',
+              buttons: ['OK']
+            });
+            alert.present();
+            this.viewCtrl.dismiss();
           }).catch(err => {
             this.loading.dismiss();
             this.genericAlert('Ha ocurrido un error', 'Se presentó un error al guardar el servicio. Error: ' + err);

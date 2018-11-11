@@ -1,3 +1,4 @@
+import { GrupoOptions } from "./grupo-options";
 
 export interface ServicioOptions {
     id: string,
@@ -5,7 +6,7 @@ export interface ServicioOptions {
     descripcion: string,
     duracion_MIN: number,
     valor: number,
-    grupo: string,
+    grupo: GrupoOptions,
     imagen: string,
     activo: boolean
 }

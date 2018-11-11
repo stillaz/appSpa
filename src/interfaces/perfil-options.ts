@@ -1,4 +1,5 @@
 import { ServicioOptions } from "./servicio-options";
+import { GrupoOptions } from "./grupo-options";
 
 export interface PerfilOptions{
     id: string,
@@ -6,5 +7,5 @@ export interface PerfilOptions{
     imagen: string,
     servicios: ServicioOptions[],
     activo: boolean,
-    grupo: string
+    grupo: GrupoOptions[]
 }

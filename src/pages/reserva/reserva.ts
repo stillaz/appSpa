@@ -140,8 +140,8 @@ export class ReservaPage {
       if (paquetes) {
         this.carritoPaquete = paquetes.map(paquete => {
           return {
-            idcarrito: paquete.idcarrito,
-            servicio: paquete.servicio
+            //idcarrito: paquete.idcarrito,
+            //servicio: paquete.servicio
           };
         });
       }
@@ -154,7 +154,7 @@ export class ReservaPage {
     this.grupoServicios = [];
     this.carritoPaquete.forEach(paquete => {
       const servicio = this.servicios.find(servicio => servicio.id === paquete.servicio.id);
-      servicio.grupo[0] = 'Paquetes activos';
+      //servicio.grupo[0] = 'Paquetes activos';
     });
 
     this.servicios.forEach(servicio => {

@@ -47,4 +47,8 @@ export class UsuarioProvider {
     return this.empresa;
   }
 
+  getFilePathGruposEmpresa(){
+    return this.getFilePathEmpresa() + '/grupos/';
+  }
+
 }

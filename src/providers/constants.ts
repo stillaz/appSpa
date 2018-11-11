@@ -19,4 +19,3 @@ export enum ESTADOS_RESERVA { DISPONIBLE = 'Disponible', RESERVADO = 'Reservado'
 export enum ESTADOS_PAQUETE { PENDIENTE = 'Pendiente', PENDIENTEPAGO = 'Pendiente_pago', FINALIZADO = 'Finalizado' };
 export enum FILTROS_FECHA { DIARIO = 'days', SEMANAL = 'weeks', MENSUAL = 'months', ANUAL = 'years' };
 export enum MODO_PAGO { INMEDIATO = 'Inmediato', PARTES = 'Por partes' };
-export enum PROCESO_MAESTROS { GUARDAR = 'Guardar', ELIMINAR = 'Eliminar' };
