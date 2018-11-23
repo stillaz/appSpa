@@ -1,0 +1,22 @@
+page-paquete {
+    .grid-full ion-row {
+        height: 100%;
+        padding: 0;
+        flex-wrap: wrap;
+    }
+      
+    .grid-full ion-col {
+        flex: 0 0 50%;
+        max-width: 50%;
+        padding: 0px 0px;
+    }
+     
+    .cell-1 {
+        background-color: rgb(255, 255, 255);
+        border: thin solid rgb(182, 182, 182);
+    }
+
+    .action-Sheet1{
+        height: 100px
+    }
+}

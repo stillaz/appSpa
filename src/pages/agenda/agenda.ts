@@ -7,9 +7,10 @@ import { ReservaOptions } from '../../interfaces/reserva-options';
 import { ServicioOptions } from '../../interfaces/servicio-options';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
 import { interval } from 'rxjs';
-import { AngularFirestore, AngularFirestoreDocument } from 'angularfire2/firestore';
+import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection } from 'angularfire2/firestore';
 import { PerfilOptions } from '../../interfaces/perfil-options';
 import { UsuarioProvider } from '../../providers/usuario';
+import { GrupoOptions } from '../../interfaces/grupo-options';
 
 /**
  * Generated class for the AgendaPage page.
@@ -27,30 +28,30 @@ export class AgendaPage {
 
     @ViewChild(Content) content: Content;
 
-    horaInicio = 0;
-    horaFin = 24;
-    tiempoServicio = 30;
-    initDate: Date = new Date();
-    initDate2: Date = new Date();
-    disabledDates: Date[] = [];
-    maxDate: Date = moment(new Date()).add(30, 'days').toDate();
-    min: Date = new Date();
-    constantes = DataProvider;
-    usuario = {} as UsuarioOptions;
-    usuarioLogueado: UsuarioOptions;
-    horario: ReservaOptions[];
-    horarios: any[];
+    public horaInicio = 0;
+    public horaFin = 24;
+    public tiempoServicio = 30;
+    public initDate: Date = new Date();
+    public initDate2: Date = new Date();
+    public disabledDates: Date[] = [];
+    public maxDate: Date = moment(new Date()).add(30, 'days').toDate();
+    public min: Date = new Date();
+    public constantes = DataProvider;
+    public usuario = {} as UsuarioOptions;
+    public usuarioLogueado: UsuarioOptions;
+    public horario: ReservaOptions[];
+    public horarios: any[];
     private usuarioDoc: AngularFirestoreDocument<UsuarioOptions>;
-    perfiles: PerfilOptions[];
-    usuarios: UsuarioOptions[];
+    public perfiles: PerfilOptions[];
+    public usuarios: UsuarioOptions[];
     private disponibilidadDoc: AngularFirestoreDocument;
-    terms: string = '';
+    public terms: string = '';
     private indisponibles;
     private filePathEmpresa: string;
-    administrador: boolean;
-    actual: Date = new Date();
+    public administrador: boolean;
+    public actual: Date = new Date();
 
-    opciones: any[] = [{
+    public opciones: any[] = [{
         title: 'Configuración',
         component: 'ConfiguracionAgendaPage',
         icon: 'stats'
@@ -267,6 +268,17 @@ export class AgendaPage {
         }
     }
 
+    hayServicios() {
+        const gruposPerfil: GrupoOptions[] = this.usuario.perfiles.map(perfil => perfil.grupo.reduce(grupos => grupos));
+        const filePathServicios = this.filePathEmpresa + '/servicios/';
+        const serviciosCollection: AngularFirestoreCollection<ServicioOptions> = this.afs.collection<ServicioOptions>(filePathServicios);
+        return new Promise<boolean>(resolve => {
+            serviciosCollection.valueChanges().subscribe(servicios => {
+                resolve(servicios.some(servicio => gruposPerfil.some(grupoPerfil => grupoPerfil.id === servicio.grupo.id)));
+            });
+        });
+    }
+
     reservar(reserva: ReservaOptions) {
         const usuario = this.usuario;
         if (!usuario) {
@@ -276,17 +288,17 @@ export class AgendaPage {
             if (!perfiles || perfiles.length === 0) {
                 this.genericAlert('Error de perfil de usuario', 'El usuario no tiene ningún perfil asignado');
             } else {
-                let cantservicios: number = perfiles.map(perfil => perfil.servicios ? perfil.servicios.length : 0).reduce((a, b) => a + b);
-
-                if (!cantservicios || cantservicios === 0) {
-                    this.genericAlert('Error de servicios de usuario', 'El usuario no tiene ningún servicio asignado');
-                } else {
-                    this.navCtrl.push('ReservaPage', {
-                        disponibilidad: reserva,
-                        horario: this.horario,
-                        usuario: this.usuario
-                    });
-                }
+                this.hayServicios().then(data => {
+                    if (data) {
+                        this.navCtrl.push('ReservaPage', {
+                            disponibilidad: reserva,
+                            horario: this.horario,
+                            usuario: this.usuario
+                        });
+                    } else {
+                        this.genericAlert('Error de servicios de usuario', 'El usuario no tiene ningún servicio asignado');
+                    }
+                });
             }
         }
     }
@@ -383,7 +395,12 @@ export class AgendaPage {
 
     filtroPerfiles() {
         let filtros: any = [];
-        let todosPerfiles: PerfilOptions = { id: '', nombre: 'Todos los perfiles', imagen: null, servicios: null, activo: null, grupo: null }
+        let todosPerfiles: PerfilOptions = {
+            id: '',
+            nombre: 'Todos los perfiles',
+            imagen: null,
+            grupo: null
+        }
         filtros.push({
             text: todosPerfiles.nombre, handler: () => {
                 this.filtroUsuarios(this.usuarios);

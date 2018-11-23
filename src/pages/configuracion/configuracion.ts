@@ -26,6 +26,7 @@ export class ConfiguracionPage {
       this.pages = [
         { title: 'Horario', component: 'GeneralPage', icon: 'timer', color: 'secondary' },
         { title: 'Perfil', component: 'PerfilPage', icon: 'person', color: 'primary' },
+        { title: 'Paquetes', component: 'PaquetePage', icon: 'albums', color: 'danger' },
         { title: 'Servicios', component: 'ServicioPage', icon: 'share', color: 'dark' }
       ];
     } else {

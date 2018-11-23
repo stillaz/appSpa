@@ -1,5 +1,5 @@
 <!--
-  Generated template for the DetalleProductoPage page.
+  Generated template for the DetallePaquetePage page.
 
   See http://ionicframework.com/docs/components/#navigation for more info on
   Ionic pages and navigation.
@@ -7,7 +7,7 @@
 <ion-header>
 
   <ion-navbar>
-    <ion-title>Datos del servicio</ion-title>
+    <ion-title>Datos del paquete</ion-title>
     <ion-buttons start>
       <button ion-button (click)="cerrar()">
         <ion-icon name="md-close"></ion-icon>
@@ -23,12 +23,12 @@
     <ion-card-content>
       <form [formGroup]="todo">
         <ion-item>
-          <ion-label floating>Servicio:</ion-label>
+          <ion-label floating>Paquete:</ion-label>
           <ion-input type="text" formControlName="nombre" maxlength="30"></ion-input>
         </ion-item>
 
         <ion-item color="danger" *ngIf="todo.controls.nombre.errors && todo.controls.nombre.touched">
-          <p>El nombre del servicio no es válido</p>
+          <p>El nombre del paquete no es válido</p>
         </ion-item>
 
         <ion-item>
@@ -38,15 +38,6 @@
 
         <ion-item color="danger" *ngIf="todo.controls.descripcion.errors && todo.controls.descripcion.touched">
           <p>La descripción del servicio no es válido</p>
-        </ion-item>
-
-        <ion-item>
-          <ion-label floating>Duración (minutos):</ion-label>
-          <ion-input type="number" formControlName="duracion_MIN" maxlength="3"></ion-input>
-        </ion-item>
-
-        <ion-item color="danger" *ngIf="todo.controls.duracion_MIN.errors && todo.controls.duracion_MIN.touched">
-          <p>El valor de duración no es válido</p>
         </ion-item>
 
         <ion-item>
@@ -61,7 +52,7 @@
         <ion-item>
           <ion-label floating>Grupo:</ion-label>
           <ion-select formControlName="grupo" interface="action-sheet" [compareWith]="compareFn">
-            <ion-option *ngFor="let item of grupos" [value]="item" >{{item.nombre}}</ion-option>
+            <ion-option *ngFor="let item of grupos" [value]="item">{{item.nombre}}</ion-option>
           </ion-select>
         </ion-item>
 
@@ -93,6 +84,18 @@
               </button>
             </ion-fab-list>
           </ion-fab>
+        </ion-item>
+
+        <ion-item>
+          <ion-buttons>
+            <button ion-button (click)="servicios()">
+              Servicios
+            </button>
+
+            <button ion-button (click)="sesiones()">
+              Sesiones
+            </button>
+          </ion-buttons>
         </ion-item>
 
         <button ion-button type="submit" icon-right block color="secondary" [disabled]="todo.invalid" (click)="guardar()">Guardar

@@ -1,17 +1,17 @@
 import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { IonicPage, NavController, NavParams, AlertController, ViewController, ModalController, Platform, LoadingController, Loading } from 'ionic-angular';
-import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection } from 'angularfire2/firestore';
-import { AngularFireStorage } from 'angularfire2/storage';
-import { ServicioOptions } from '../../interfaces/servicio-options';
-import { finalize } from 'rxjs/operators';
-import { Camera, CameraOptions } from '@ionic-native/camera';
-import firebase from 'firebase';
-import { UsuarioProvider } from '../../providers/usuario';
+import { IonicPage, NavController, NavParams, Loading, AlertController, ViewController, ModalController, Platform, LoadingController } from 'ionic-angular';
+import { FormGroup, FormBuilder, Validators } from '@angular/forms';
+import { PaqueteOptions } from '../../interfaces/paquete-options';
 import { GrupoOptions } from '../../interfaces/grupo-options';
+import { AngularFirestoreDocument, AngularFirestore, AngularFirestoreCollection } from 'angularfire2/firestore';
+import { AngularFireStorage } from 'angularfire2/storage';
+import { Camera, CameraOptions } from '@ionic-native/camera';
+import { UsuarioProvider } from '../../providers/usuario';
+import { finalize } from 'rxjs/operators';
+import firebase from 'firebase';
 
 /**
- * Generated class for the DetalleServicioPage page.
+ * Generated class for the DetallePaquetePage page.
  *
  * See https://ionicframework.com/docs/components/#navigation for more info on
  * Ionic pages and navigation.
@@ -19,22 +19,22 @@ import { GrupoOptions } from '../../interfaces/grupo-options';
 
 @IonicPage()
 @Component({
-  selector: 'page-detalle-servicio',
-  templateUrl: 'detalle-servicio.html',
+  selector: 'page-detalle-paquete',
+  templateUrl: 'detalle-paquete.html',
 })
-export class DetalleServicioPage {
-  todo: FormGroup;
-  nuevo: boolean = true;
-  mobile: boolean;
+export class DetallePaquetePage {
+
+  public todo: FormGroup;
+  public nuevo: boolean = true;
+  public mobile: boolean;
   private filePathData: string;
-  public servicio: ServicioOptions;
-  grupos: GrupoOptions[];
-  loading: Loading;
+  public paquete: PaqueteOptions;
+  public grupos: GrupoOptions[];
+  public loading: Loading;
   private filePathGrupo: string;
   private grupoCollection: AngularFirestoreCollection<GrupoOptions>;
 
-
-  private servicioDoc: AngularFirestoreDocument<ServicioOptions>;
+  private paqueteDoc: AngularFirestoreDocument<PaqueteOptions>;
   private filePathEmpresa: string;
 
   constructor(
@@ -51,12 +51,12 @@ export class DetalleServicioPage {
     private usuarioServicio: UsuarioProvider,
     public loadingCtrl: LoadingController
   ) {
-    this.servicio = this.navParams.get('servicio');
+    this.paquete = this.navParams.get('paquete');
     this.filePathEmpresa = this.usuarioServicio.getFilePathEmpresa();
     this.filePathGrupo = this.usuarioServicio.getFilePathGruposEmpresa();
     this.mobile = plt.is('android');
     this.updateGrupos();
-    this.updateServicio();
+    this.updatePaquete();
     this.loading = this.loadingCtrl.create({
       content: 'Procesando...',
       dismissOnPageChange: true
@@ -76,36 +76,38 @@ export class DetalleServicioPage {
 
   private form() {
     this.todo = this.formBuilder.group({
-      id: [this.servicio.id, Validators.required],
-      nombre: [this.servicio.nombre, Validators.required],
-      descripcion: [this.servicio.descripcion, Validators.required],
-      duracion_MIN: [this.servicio.duracion_MIN, Validators.required],
-      valor: [this.servicio.valor, Validators.required],
-      grupo: [this.servicio.grupo, Validators.required],
-      imagen: [this.servicio.imagen]
+      id: [this.paquete.id, Validators.required],
+      nombre: [this.paquete.nombre, Validators.required],
+      descripcion: [this.paquete.descripcion, Validators.required],
+      valor: [this.paquete.valor, Validators.required],
+      grupo: [this.paquete.grupo, Validators.required],
+      //servicios: [this.paquete.servicios, Validators.required],
+      //sesiones: [this.paquete.sesiones, Validators.required],
+      imagen: [this.paquete.imagen]
     });
   }
 
-  private updateServicio() {
-    if (!this.servicio) {
-      this.servicio = {
+  private updatePaquete() {
+    if (!this.paquete) {
+      this.paquete = {
         id: this.afs.createId(),
         nombre: null,
         descripcion: null,
-        duracion_MIN: null,
         valor: null,
         grupo: null,
         imagen: null,
-        activo: true
+        activo: true,
+        servicios: null,
+        sesiones: null
       };
     }
 
-    this.filePathData = this.filePathEmpresa + '/servicios/' + this.servicio.id;
+    this.filePathData = this.filePathEmpresa + '/paquetes/' + this.paquete.id;
 
-    this.servicioDoc = this.afs.doc<ServicioOptions>(this.filePathData);
-    this.servicioDoc.valueChanges().subscribe(data => {
+    this.paqueteDoc = this.afs.doc<PaqueteOptions>(this.filePathData);
+    this.paqueteDoc.valueChanges().subscribe(data => {
       if (data) {
-        this.servicio = data;
+        this.paquete = data;
 
         this.nuevo = false;
       }
@@ -171,7 +173,7 @@ export class DetalleServicioPage {
   }
 
   private genericAlert(title: string, message: string) {
-    let alert = this.alertCtrl.create({
+    this.alertCtrl.create({
       title: title,
       message: message,
       buttons: [{
@@ -180,31 +182,30 @@ export class DetalleServicioPage {
           this.viewCtrl.dismiss();
         }
       }]
-    });
-    alert.present();
+    }).present();
   }
 
   guardar() {
-    this.servicio = this.todo.value;
+    this.paquete = this.todo.value;
     const modo = this.nuevo ? 'registrado' : 'actualizado';
     this.loading.present();
-    this.servicioDoc.set(this.servicio).then(() => {
+    this.paqueteDoc.set(this.paquete).then(() => {
       this.alertCtrl.create({
-        title: 'Servicio ' + modo,
-        message: 'El servicio ha sido ' + modo + ' exitosamente',
+        title: 'Paquete ' + modo,
+        message: 'El paquete ha sido ' + modo + ' exitosamente',
         buttons: ['OK']
       }).present();
       this.viewCtrl.dismiss();
     }).catch(err => {
       this.loading.dismiss();
-      this.genericAlert('Ha ocurrido un error', 'Se presentó un error al guardar el servicio. Error: ' + err);
+      this.genericAlert('Ha ocurrido un error', 'Se presentó un error al guardar el paquete. Error: ' + err);
     });
   }
 
   eliminar() {
     this.alertCtrl.create({
-      title: 'Eliminar servicio',
-      message: '¿Desea eliminar el servicio ' + this.servicio.nombre,
+      title: 'Eliminar paquete',
+      message: '¿Desea eliminar el paquete ' + this.paquete.nombre,
       buttons: [{
         text: 'No',
         role: 'cancel'
@@ -212,17 +213,17 @@ export class DetalleServicioPage {
         text: 'Si',
         handler: () => {
           this.loading.present();
-          this.servicioDoc.delete().then(() => {
+          this.paqueteDoc.delete().then(() => {
             const alert = this.alertCtrl.create({
-              title: 'Servicio eliminado',
-              message: 'El servicio ha sido eliminado exitosamente',
+              title: 'Paquete eliminado',
+              message: 'El paquete ha sido eliminado exitosamente',
               buttons: ['OK']
             });
             alert.present();
             this.viewCtrl.dismiss();
           }).catch(err => {
             this.loading.dismiss();
-            this.genericAlert('Ha ocurrido un error', 'Se presentó un error al eliminar el servicio. Error: ' + err);
+            this.genericAlert('Ha ocurrido un error', 'Se presentó un error al eliminar el paquete. Error: ' + err);
           });
         }
       }]
@@ -231,6 +232,18 @@ export class DetalleServicioPage {
 
   compareFn(e1: GrupoOptions, e2: GrupoOptions): boolean {
     return e1 && e2 ? e1.id === e2.id : e1 === e2;
+  }
+
+  servicios() {
+    this.navCtrl.push('DetalleServicioPaquetePage', {
+      idpaquete: this.paquete.id
+    });
+  }
+
+  sesiones() {
+    this.navCtrl.push('DetalleSesionesPaquetePage', {
+      idpaquete: this.paquete.id
+    });
   }
 
 }

@@ -498,7 +498,7 @@ export class PendientePage {
       this.servicios = [];
       if (data) {
         data.perfiles.forEach(perfil => {
-          this.servicios.push.apply(this.servicios, perfil.servicios);
+          //this.servicios.push.apply(this.servicios, perfil.servicios);
         });
       }
     });

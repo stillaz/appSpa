@@ -65,13 +65,13 @@ export class ServicioPage {
     this.grupoServicios = [];
     servicios.forEach(servicio => {
       let grupo = servicio.grupo;
-      if (grupos[grupo] === undefined) {
-        grupos[grupo] = [];
+      if (grupos[grupo.id] === undefined) {
+        grupos[grupo.id] = [];
         if (!this.grupos.some(x => x === grupo)) {
           this.grupos.push(grupo);
         }
       }
-      grupos[grupo].push(servicio);
+      grupos[grupo.id].push(servicio);
     });
 
     for (let grupo in grupos) {

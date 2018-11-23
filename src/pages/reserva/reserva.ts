@@ -93,7 +93,7 @@ export class ReservaPage {
       if (data) {
         this.tiempoDisponibilidad = data.configuracion ? data.configuracion.tiempoDisponibilidad : 30;
         data.perfiles.forEach(perfil => {
-          this.servicios.push.apply(this.servicios, perfil.servicios);
+          //this.servicios.push.apply(this.servicios, perfil.servicios);
         });
       }
     });
@@ -159,10 +159,10 @@ export class ReservaPage {
 
     this.servicios.forEach(servicio => {
       const grupo = servicio.grupo;
-      if (grupos[grupo] === undefined) {
-        grupos[grupo] = [];
+      if (grupos[grupo.id] === undefined) {
+        grupos[grupo.id] = [];
       }
-      grupos[grupo].push(servicio);
+      grupos[grupo.id].push(servicio);
     });
 
     for (let grupo in grupos) {
