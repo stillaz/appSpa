@@ -6,14 +6,21 @@
 -->
 <ion-header>
   <ion-navbar>
-    <ion-title>Selecciona el servicio para {{cliente.nombre}}</ion-title>
-    <p>{{horaSeleccionada}}</p>
+    <ion-segment [(ngModel)]="terms" color="light">
+      <ion-segment-button value="paquetes">
+        Paquetes
+      </ion-segment-button>
+
+      <ion-segment-button value="servicios">
+        Servicios
+      </ion-segment-button>
+    </ion-segment>
   </ion-navbar>
 </ion-header>
 
 <ion-content padding>
   <ion-list class="grid-full" *ngIf="idcarrito">
-    <ion-card color="dark" *ngFor="let servicio of servicios">
+    <ion-card color="dark" *ngFor="let servicio of paquetes">
       <ion-card-content (tap)="agregar(servicio)">
         <h2>
           <strong>{{servicio.nombre}}</strong>

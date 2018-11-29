@@ -6,11 +6,12 @@ import { ServicioOptions } from '../../interfaces/servicio-options';
 import { ClienteOptions } from '../../interfaces/cliente-options';
 import { ReservaOptions } from '../../interfaces/reserva-options';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
-import { AngularFirestore, AngularFirestoreDocument } from 'angularfire2/firestore';
+import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection } from 'angularfire2/firestore';
 import { IndiceOptions } from '../../interfaces/indice-options';
 import { DisponibilidadOptions } from '../../interfaces/disponibilidad-options';
 import { TotalesServiciosOptions } from '../../interfaces/totales-servicios-options';
 import { PaqueteOptions } from '../../interfaces/paquete-options';
+import { GrupoOptions } from '../../interfaces/grupo-options';
 
 /**
  * Generated class for the ReservaPage page.
@@ -43,8 +44,14 @@ export class ReservaPage {
   disponibilidadDoc: AngularFirestoreDocument;
   horaSeleccionada: string;
   tiempoDisponibilidad: number;
-  filePathEmpresa: string;
+  private filePathEmpresa: string;
   carritoPaquete: any[] = [];
+  public terms = 'paquetes';
+  public paquetes: PaqueteOptions[];
+  private filePathPaquete: string;
+  private paqueteCollection: AngularFirestoreCollection<PaqueteOptions>;
+  private filePathServicio: string;
+  private servicioCollection: AngularFirestoreCollection<ServicioOptions>;
 
   public cliente: ClienteOptions = {} as ClienteOptions;
 
@@ -79,7 +86,12 @@ export class ReservaPage {
       imagenusuario: this.usuario.imagen,
       usuario: this.usuario.nombre
     };
-    this.updateServicios();
+    this.filePathServicio = this.filePathEmpresa + '/servicios/';
+    this.servicioCollection = this.afs.collection(this.filePathServicio);
+
+    this.filePathPaquete = this.filePathEmpresa + '/paquetes/';
+    this.paqueteCollection = this.afs.collection(this.filePathPaquete);
+    this.updateUsuario();
     this.disponibilidadDoc.ref.get().then(datosDisp => {
       if (!datosDisp.exists) {
         this.disponibilidadDoc.set(datos);
@@ -87,15 +99,23 @@ export class ReservaPage {
     });
   }
 
-  updateServicios() {
-    this.usuarioDoc.valueChanges().subscribe(data => {
-      this.servicios = [];
-      if (data) {
-        this.tiempoDisponibilidad = data.configuracion ? data.configuracion.tiempoDisponibilidad : 30;
-        data.perfiles.forEach(perfil => {
-          //this.servicios.push.apply(this.servicios, perfil.servicios);
-        });
-      }
+  updateUsuario() {
+    this.usuarioDoc.valueChanges().subscribe(usuario => {
+      const gruposPerfil: GrupoOptions[] = usuario.perfiles.filter(perfil => perfil.grupo).map(perfil => perfil.grupo.reduce(grupos => grupos));
+      this.updateServicios(gruposPerfil);
+      this.updatePaquetes(gruposPerfil);
+    });
+  }
+
+  updateServicios(gruposPerfil: GrupoOptions[]) {
+    this.servicioCollection.valueChanges().subscribe(servicios => {
+      this.servicios = servicios.filter(servicio => gruposPerfil.some(grupoPerfil => grupoPerfil.id === servicio.grupo.id));
+    });
+  }
+
+  updatePaquetes(gruposPerfil: GrupoOptions[]) {
+    this.paqueteCollection.valueChanges().subscribe(paquetes => {
+      this.paquetes = paquetes.filter(paquete => gruposPerfil.some(grupoPerfil => grupoPerfil.id === paquete.grupo.id));
     });
   }
 
@@ -145,11 +165,11 @@ export class ReservaPage {
           };
         });
       }
-      this.updatePaquetes();
+      //this.updatePaquetes();
     });
   }
 
-  updatePaquetes() {
+  /*updatePaquetes() {
     const grupos = [];
     this.grupoServicios = [];
     this.carritoPaquete.forEach(paquete => {
@@ -168,7 +188,7 @@ export class ReservaPage {
     for (let grupo in grupos) {
       this.grupoServicios.push({ grupo: grupo, servicios: grupos[grupo] });
     }
-  }
+  }*/
 
   genericAlert(titulo: string, mensaje: string) {
     let mensajeAlert = this.alertCtrl.create({
