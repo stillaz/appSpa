@@ -18,19 +18,34 @@
   </ion-navbar>
 </ion-header>
 
-<ion-content padding>
-  <ion-list class="grid-full" *ngIf="idcarrito">
-    <ion-card color="dark" *ngFor="let servicio of paquetes">
-      <ion-card-content (tap)="agregar(servicio)">
-        <h2>
-          <strong>{{servicio.nombre}}</strong>
-        </h2>
-        <p>{{servicio.descripcion}}.</p>
-        <p *ngIf="servicio.sesiones > 1">{{servicio.sesiones}} sesiones.</p>
-        <ion-item color="dark">
-          <p item-start>Valor: {{servicio.valor| currency : USD: symbol: '4.0'}}</p>
-        </ion-item>
-      </ion-card-content>
-    </ion-card>
+<ion-content padding [ngSwitch]="terms" *ngIf="idcarrito">
+  <ion-list *ngSwitchCase="'paquetes'">
+    <ion-item-group *ngFor="let grupo of grupoPaquetes">
+      <ion-item-divider sticky color="light">{{grupo.grupo}}</ion-item-divider>
+      <ion-row>
+        <ion-col #item *ngFor="let paquete of grupo.servicios" class="cell-1" (tap)="agregarServiciosPaquete(paquete)">
+          <img *ngIf="paquete.imagen" [src]="paquete.imagen" width="100%">
+          <br />
+          <h2 style="margin-top: 0px; margin-bottom: 5px"><strong>{{paquete.nombre}}</strong></h2>
+          <p style="margin: 0px">{{paquete.descripcion}}.</p>
+          <p style="margin: 0px">Valor: {{paquete.valor| currency : USD: symbol: '4.0' }}</p>
+        </ion-col>
+      </ion-row>
+    </ion-item-group>
+  </ion-list>
+
+  <ion-list *ngSwitchCase="'servicios'">
+    <ion-item-group *ngFor="let grupo of grupoServicios">
+      <ion-item-divider sticky color="light">{{grupo.grupo}}</ion-item-divider>
+      <ion-row>
+        <ion-col #item *ngFor="let servicio of grupo.servicios" class="cell-1" (tap)="agregarServicio(servicio)">
+          <img *ngIf="servicio.imagen" [src]="servicio.imagen" width="100%">
+          <br />
+          <h2 style="margin-top: 0px; margin-bottom: 5px"><strong>{{servicio.nombre}}</strong></h2>
+          <p style="margin: 0px">{{servicio.descripcion}}.</p>
+          <p style="margin: 0px">Valor: {{servicio.valor| currency : USD: symbol: '4.0' }}</p>
+        </ion-col>
+      </ion-row>
+    </ion-item-group>
   </ion-list>
 </ion-content>

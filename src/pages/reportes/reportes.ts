@@ -243,10 +243,10 @@ export class ReportesPage {
       let totalesServiciosUsuariosCollection: AngularFirestoreCollection<TotalesServiciosOptions> = this.administrador ? this.totalesDoc.collection('totalesServiciosUsuarios') : this.totalesDoc.collection('totalesServiciosUsuarios', ref => ref.where('idusuario', '==', this.usuario.id));
       this.read = totalesServiciosUsuariosCollection.valueChanges().subscribe(data => {
         data.forEach(totalData => {
-          if (this.totalesUsuarios.length === 0 || !this.totalesUsuarios.some(usuarioT => usuarioT.idusuario === totalData.idusuario)) {
+          if (this.totalesUsuarios.length === 0 || !this.totalesUsuarios.some(usuarioT => usuarioT.idusuario === totalData.usuario.id)) {
             this.totalesUsuarios.push(totalData);
           } else {
-            let totalUsuarioEncontrado = this.totalesUsuarios.find(usuarioT => usuarioT.idusuario === totalData.idusuario);
+            let totalUsuarioEncontrado = this.totalesUsuarios.find(usuarioT => usuarioT.idusuario === totalData.usuario.id);
             totalUsuarioEncontrado.totalServicios += totalUsuarioEncontrado.totalServicios ? Number(totalUsuarioEncontrado.totalServicios) : 0;
             totalUsuarioEncontrado.cantidadServicios += totalUsuarioEncontrado.cantidadServicios ? Number(totalUsuarioEncontrado.cantidadServicios) : 0;
           }

@@ -185,13 +185,13 @@ export class AgendaPage {
                         evento: this.constantes.EVENTOS.OTRO,
                         idcarrito: null,
                         cliente: {} as ClienteOptions,
-                        servicio: noDisponible,
-                        idusuario: this.usuario.id,
-                        nombreusuario: this.usuario.nombre,
+                        servicio: [noDisponible],
+                        usuario: this.usuario,
                         id: null,
                         fechaActualizacion: new Date(),
                         leido: null,
-                        pago: null
+                        pago: null,
+                        paquete: null
                     };
                 } else {
                     let reservaEnc = reservas.find(item => item.fechaInicio.toDate().getTime() === fechaInicioReserva.getTime());
@@ -203,13 +203,13 @@ export class AgendaPage {
                             evento: this.constantes.EVENTOS.OTRO,
                             idcarrito: null,
                             cliente: {} as ClienteOptions,
-                            servicio: {} as ServicioOptions,
-                            idusuario: this.usuario.id,
-                            nombreusuario: this.usuario.nombre,
+                            servicio: [],
+                            usuario: this.usuario,
                             id: null,
                             fechaActualizacion: new Date(),
                             leido: null,
-                            pago: null
+                            pago: null,
+                            paquete: null
                         };
                     } else {
                         reserva = {
@@ -220,12 +220,12 @@ export class AgendaPage {
                             idcarrito: reservaEnc.idcarrito,
                             cliente: reservaEnc.cliente,
                             servicio: reservaEnc.servicio,
-                            idusuario: reservaEnc.idusuario,
-                            nombreusuario: reservaEnc.nombreusuario,
+                            usuario: reservaEnc.usuario,
                             id: reservaEnc.id,
                             fechaActualizacion: new Date(),
                             leido: null,
-                            pago: null
+                            pago: null,
+                            paquete: null
                         };
                     }
                 }

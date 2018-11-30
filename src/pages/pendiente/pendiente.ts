@@ -321,18 +321,18 @@ export class PendientePage {
     const servicio = reserva.servicio;
     //const sesiones = servicio.sesiones;
 
-    const valorPaquete = servicio.valor;
+    //const valorPaquete = servicio.valor;
     return new Promise<number>(resolve => {
       this.loadResta(reserva).then(pagadoActual => {
-        const resta = valorPaquete - pagadoActual;
+        //const resta = valorPaquete - pagadoActual;
         this.alertCtrl.create({
           title: 'Servicio finalizado',
           subTitle: 'Pago del paquete de servicios',
-          message: 'Resta: ' + resta,
+          //message: 'Resta: ' + resta,
           inputs: [{
             type: 'number',
             min: 0,
-            max: resta,
+            //max: resta,
             placeholder: '0',
             name: 'pago'
           }],

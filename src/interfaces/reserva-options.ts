@@ -1,5 +1,7 @@
 import { ClienteOptions } from "./cliente-options";
 import { ServicioOptions } from "./servicio-options";
+import { PaqueteOptions } from "./paquete-options";
+import { UsuarioOptions } from "./usuario-options";
 
 export interface ReservaOptions {
   fechaInicio: any,
@@ -7,12 +9,15 @@ export interface ReservaOptions {
   estado: string,
   evento: string,
   idcarrito: number,
-  servicio: ServicioOptions,
+  servicio: ServicioOptions[],
   cliente: ClienteOptions,
-  idusuario: string,
-  nombreusuario: string,
+  usuario: UsuarioOptions,
   id: string,
   fechaActualizacion: any,
   leido: boolean,
-  pago: number
+  pago: number,
+  paquete: {
+    paquete: PaqueteOptions,
+    sesion: number
+  }
 }

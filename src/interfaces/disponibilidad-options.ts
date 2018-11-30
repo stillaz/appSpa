@@ -1,3 +1,4 @@
+import { UsuarioOptions } from "./usuario-options";
 
 export interface DisponibilidadOptions{
     id: number,
@@ -6,7 +7,5 @@ export interface DisponibilidadOptions{
     año: number,
     cantidadServicios: number,
     totalServicios: number,
-    idusuario: string,
-    usuario: string,
-    imagenusuario: string
+    usuario: UsuarioOptions
 }
