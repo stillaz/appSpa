@@ -1,4 +1,3 @@
-import { ServicioOptions } from "./servicio-options";
 import { GrupoOptions } from "./grupo-options";
 
 export interface PaqueteOptions{
@@ -8,13 +7,5 @@ export interface PaqueteOptions{
     valor: number,
     grupo: GrupoOptions,
     imagen: string,
-    servicios: [{
-        servicio: ServicioOptions,
-        sesiones: number
-    }],
-    sesiones: [{
-        sesion: number,
-        servicios: ServicioOptions[]
-    }],
     activo: boolean
 }

@@ -14,24 +14,25 @@
 
 
 <ion-content padding>
-  <ion-list reorder="true" (ionItemReorder)="reorderItems($event)">
+  <ion-list reorder="editar" (ionItemReorder)="reorderItems($event)">
     <ion-item *ngFor="let sesion of sesionesPaquete">
+      <ion-icon *ngIf="sesion.activo" color="secondary" item-start name="arrow-dropright"></ion-icon>
       <h2>Sesión #{{sesion.id}}</h2>
       <p>{{sesion.servicios | joins}}</p>
 
-      <button ion-button item-end large color="danger" clear (click)="eliminar(sesion)">
+      <button *ngIf="editar" ion-button item-end large color="danger" clear (click)="eliminar(sesion)">
         <ion-icon name="trash"></ion-icon>
       </button>
     </ion-item>
   </ion-list>
 
-  <ion-fab right bottom>
+  <ion-fab *ngIf="editar" right bottom>
     <button ion-fab [disabled]="!advertencia" (tap)="agregar()">
       <ion-icon name="add"></ion-icon>
     </button>
   </ion-fab>
 
-  <ion-fab *ngIf="advertencia" left bottom>
+  <ion-fab *ngIf="advertencia && editar" left bottom>
     <button ion-fab mini style="background: #FFD700" ion-fab (tap)="showAdvertencia()">
       <ion-icon name="alert"></ion-icon>
     </button>
@@ -39,11 +40,17 @@
 </ion-content>
 
 <ion-footer>
-  <button ion-button type="submit" icon-right block color="secondary" [disabled]="!continuar" (click)="guardar()">Guardar
+  <button *ngIf="editar" ion-button type="submit" icon-right block color="secondary" [disabled]="!continuar" (click)="guardar()">
+    Guardar
     <ion-icon name="checkmark"></ion-icon>
   </button>
 
-  <button *ngIf="!nuevo" ion-button icon-right block color="danger" (click)="cancelar()">Cancelar
+  <button *ngIf="editar" ion-button icon-right block color="danger" (click)="cancelar()">
+    Cancelar
     <ion-icon name="close"></ion-icon>
+  </button>
+
+  <button *ngIf="!editar" ion-button icon-right block color="primary" (click)="cerrar()">
+    Continuar
   </button>
 </ion-footer>

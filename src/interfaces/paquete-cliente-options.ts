@@ -1,6 +1,6 @@
 import { ClienteOptions } from "./cliente-options";
 import { PaqueteOptions } from "./paquete-options";
-import { ServicioOptions } from "./servicio-options";
+import { ServicioPaqueteOptions } from "./servicio-paquete-options";
 import { SesionPaqueteOptions } from "./sesion-paquete-options";
 
 
@@ -15,7 +15,7 @@ export interface PaqueteClienteOptions {
     pago: number,
     valor: number,
     registro: any,
-    servicios: ServicioOptions[],
+    servicios: ServicioPaqueteOptions[],
     sesiones: SesionPaqueteOptions[],
-    serviciosActual: ServicioOptions[]
+    serviciosActual: SesionPaqueteOptions
 }

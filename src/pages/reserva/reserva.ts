@@ -7,13 +7,14 @@ import { ClienteOptions } from '../../interfaces/cliente-options';
 import { ReservaOptions } from '../../interfaces/reserva-options';
 import { UsuarioOptions } from '../../interfaces/usuario-options';
 import { AngularFirestore, AngularFirestoreDocument, AngularFirestoreCollection } from 'angularfire2/firestore';
-import { IndiceOptions } from '../../interfaces/indice-options';
 import { DisponibilidadOptions } from '../../interfaces/disponibilidad-options';
 import { TotalesServiciosOptions } from '../../interfaces/totales-servicios-options';
 import { PaqueteOptions } from '../../interfaces/paquete-options';
 import { GrupoOptions } from '../../interfaces/grupo-options';
 import { PaqueteClienteOptions } from '../../interfaces/paquete-cliente-options';
 import { SesionPaqueteOptions } from '../../interfaces/sesion-paquete-options';
+import { ServicioPaqueteOptions } from '../../interfaces/servicio-paquete-options';
+import { SesionPaqueteClienteOptions } from '../../interfaces/sesion-paquete-cliente-options';
 
 /**
  * Generated class for the ReservaPage page.
@@ -35,23 +36,29 @@ export class ReservaPage {
   private horario: ReservaOptions[];
   private servicios: ServicioOptions[];
   private usuario: UsuarioOptions;
-  private constantes = DataProvider;
   public grupoServicios: any[];
   public idcarrito: number;
   private usuarioDoc: AngularFirestoreDocument<UsuarioOptions>;
   private disponibilidadDoc: AngularFirestoreDocument;
   private tiempoDisponibilidad: number;
-  private filePathEmpresa: string;
-  private carritoPaquete: any[] = [];
+  private carritoPaquete: PaqueteClienteOptions[] = [];
   public terms = 'paquetes';
   public paquetes: PaqueteOptions[];
-  private filePathPaquete: string;
   private paqueteCollection: AngularFirestoreCollection<PaqueteOptions>;
-  private filePathServicio: string;
   private servicioCollection: AngularFirestoreCollection<ServicioOptions>;
   public grupoPaquetes: any[];
   public cliente: ClienteOptions = {} as ClienteOptions;
   private empresaDoc: AngularFirestoreDocument;
+  private grupos: GrupoOptions[];
+  private gruposCollection: AngularFirestoreCollection<GrupoOptions>;
+  private carritoDoc: AngularFirestoreDocument<any>;
+  private clienteDoc: AngularFirestoreDocument;
+  private clienteCollection: AngularFirestoreCollection;
+  private totalesServicioCollection: AngularFirestoreCollection;
+  private grupoActivo = {
+    id: '0',
+    nombre: 'Paquetes activos',
+  } as GrupoOptions;
 
   constructor(
     public alertCtrl: AlertController,
@@ -67,13 +74,13 @@ export class ReservaPage {
     this.disponibilidadSeleccionada = this.navParams.get('disponibilidad');
     this.horario = this.navParams.get('horario');
     this.usuario = this.navParams.get('usuario');
-    this.filePathEmpresa = 'negocios/' + this.usuario.idempresa;
-    this.empresaDoc = this.afs.doc(this.filePathEmpresa);
+    const filePathEmpresa = 'negocios/' + this.usuario.idempresa;
+    this.empresaDoc = this.afs.doc(filePathEmpresa);
     this.ultimoHorario = this.disponibilidadSeleccionada.fechaInicio;
     this.usuarioDoc = this.empresaDoc.collection('usuarios').doc(this.usuario.id);
     let fecha = moment(this.ultimoHorario).startOf('day').toDate();
     this.disponibilidadDoc = this.usuarioDoc.collection('disponibilidades').doc(fecha.getTime().toString());
-    let datos: DisponibilidadOptions = {
+    const datos: DisponibilidadOptions = {
       dia: fecha.getDate(),
       mes: fecha.getMonth() + 1,
       año: fecha.getFullYear(),
@@ -82,16 +89,27 @@ export class ReservaPage {
       totalServicios: 0,
       usuario: this.usuario
     };
-    this.filePathServicio = this.filePathEmpresa + '/servicios/';
-    this.servicioCollection = this.afs.collection(this.filePathServicio);
 
-    this.filePathPaquete = this.filePathEmpresa + '/paquetes/';
-    this.paqueteCollection = this.afs.collection(this.filePathPaquete);
+    const empresaDoc = this.afs.doc(filePathEmpresa);
+    this.carritoDoc = empresaDoc.collection('indices').doc('idcarrito');
+    this.clienteCollection = empresaDoc.collection('clientes');
+    this.gruposCollection = empresaDoc.collection('grupos');
+    this.servicioCollection = empresaDoc.collection('servicios');
+    this.paqueteCollection = empresaDoc.collection('paquetes');
+    this.totalesServicioCollection = empresaDoc.collection('totalesservicios');
+
+    this.updateGrupos();
     this.updateUsuario();
     this.disponibilidadDoc.ref.get().then(datosDisp => {
       if (!datosDisp.exists) {
         this.disponibilidadDoc.set(datos);
       }
+    });
+  }
+
+  updateGrupos() {
+    this.gruposCollection.valueChanges().subscribe(grupos => {
+      this.grupos = grupos;
     });
   }
 
@@ -136,16 +154,65 @@ export class ReservaPage {
   updateGrupoPaquetes() {
     const grupos = [];
     this.grupoPaquetes = [];
-    this.carritoPaquete.forEach(paquete => {
-      const servicio = this.servicios.find(servicio => servicio.id === paquete.servicio.id);
-      servicio.grupo = {
-        id: '0',
-        imagen: null,
-        nombre: 'Paquetes activos'
+    const paquetesCliente: any[] = [];
+    this.paquetes.forEach(paquete => {
+      let paqueteCliente: any;
+      const paqueteEncontrado = this.carritoPaquete.find(paqueteCarrito => paqueteCarrito.paquete.id === paquete.id);
+      if (!paqueteEncontrado) {
+        paqueteCliente = {
+          actualizacion: null,
+          cliente: this.cliente,
+          estado: null,
+          id: null,
+          idcarrito: this.idcarrito,
+          pago: null,
+          paquete: paquete,
+          registro: null,
+          servicios: null,
+          serviciosActual: null,
+          sesion: 1,
+          sesiones: null,
+          valor: paquete.valor,
+          grupo: paquete.grupo,
+          nuevo: true
+        }
+
+        const paqueteDoc = this.paqueteCollection.doc(paquete.id);
+
+        this.loadServiciosPaquete(paqueteDoc).then(servicios => {
+          paqueteCliente.servicios = servicios;
+          this.loadSesionesPaquete(paqueteDoc).then(sesiones => {
+            paqueteCliente.sesiones = sesiones;
+            const sesionActual = sesiones.find(sesion => sesion.id === paqueteCliente.sesion.toString());
+            paqueteCliente.serviciosActual = sesionActual;
+          }).catch(err => {
+            this.alertCtrl.create({
+              title: 'Ha ocurrido un error',
+              subTitle: 'Se presentó un error al obtener la información de las sesiones del paquete',
+              message: 'Error: ' + err
+            });
+          });
+        }).catch(err => {
+          this.alertCtrl.create({
+            title: 'Ha ocurrido un error',
+            subTitle: 'Se presentó un error al obtener la información de las servicios del paquete',
+            message: 'Error: ' + err
+          });
+        });
+      } else {
+        paqueteCliente = paqueteEncontrado;
+        paqueteCliente.sesion++;
+        const idsesion = paqueteCliente.sesion.toString();
+        const sesion = paqueteCliente.sesiones.find(sesionPaqueteCliente => sesionPaqueteCliente.id == idsesion);
+        paqueteCliente.serviciosActual = sesion;
+        paqueteCliente.grupo = this.grupoActivo;
+        paqueteCliente.nuevo = false;
       }
+
+      paquetesCliente.push(paqueteCliente);
     });
 
-    this.paquetes.forEach(paquete => {
+    paquetesCliente.forEach(paquete => {
       const grupo = paquete.grupo;
       if (grupos[grupo.id] === undefined) {
         grupos[grupo.id] = [];
@@ -154,15 +221,20 @@ export class ReservaPage {
     });
 
     for (let grupo in grupos) {
-      this.grupoPaquetes.push({ grupo: grupo, servicios: grupos[grupo] });
+      let grupoEncontrado = this.grupos.find(grupoGeneral => grupoGeneral.id === grupo);
+      if (!grupoEncontrado) {
+        grupoEncontrado = this.grupoActivo;
+      }
+      this.grupoPaquetes.push({ grupo: grupoEncontrado, paquetes: grupos[grupo] });
     }
   }
 
   ionViewDidLoad() {
-    let clienteModal = this.modalCtrl.create('ClientePage');
+    const clienteModal = this.modalCtrl.create('ClientePage');
     clienteModal.onDidDismiss(data => {
       if (data) {
         this.cliente = data;
+        this.clienteDoc = this.clienteCollection.doc(this.cliente.id);
         this.updateCarrito();
       } else {
         this.viewCtrl.dismiss();
@@ -172,11 +244,10 @@ export class ReservaPage {
   }
 
   loadIdCarrito() {
-    const indiceCarritoDoc = this.afs.doc<IndiceOptions>(this.filePathEmpresa + '/indices/idcarrito');
     return new Promise(resolve => {
-      indiceCarritoDoc.ref.get().then(data => {
+      this.carritoDoc.ref.get().then(data => {
         this.idcarrito = data.exists ? data.get('id') : 1;
-        indiceCarritoDoc.set({ id: this.idcarrito + 1 });
+        this.carritoDoc.set({ id: this.idcarrito + 1 });
         resolve('ok');
       });
     })
@@ -193,18 +264,10 @@ export class ReservaPage {
   }
 
   updateServiciosCliente() {
-    const filePathClienteServicio = this.filePathEmpresa + '/clientes/' + this.cliente.id + '/paquetes';
-    const paquetesCollection = this.afs.collection<PaqueteOptions>(filePathClienteServicio, ref => ref.where('estado', '==', this.constantes.ESTADOS_PAQUETE.PENDIENTE));
+    const paquetesCollection: AngularFirestoreCollection<PaqueteClienteOptions> = this.clienteDoc.collection('paquetes', ref => ref.where('estado', '==', DataProvider.ESTADOS_PAQUETE.PENDIENTE));
     paquetesCollection.valueChanges().subscribe(paquetes => {
-      if (paquetes) {
-        this.carritoPaquete = paquetes.map(paquete => {
-          return {
-            //idcarrito: paquete.idcarrito,
-            //servicio: paquete.servicio
-          };
-        });
-      }
-      //this.updatePaquetes();
+      this.carritoPaquete = paquetes;
+      this.updateGrupoPaquetes();
     });
   }
 
@@ -242,8 +305,8 @@ export class ReservaPage {
       const fecha = new Date();
       this.carrito.forEach(reservaNueva => {
         const reservaDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('disponibilidades').doc(reservaNueva.fechaInicio.getTime().toString());
-        const mesServicio = moment(reservaNueva.fechaInicio).startOf('month');
-        const totalesServiciosDoc = this.afs.doc(this.filePathEmpresa + '/totalesservicios/' + mesServicio);
+        const mesServicio = moment(reservaNueva.fechaInicio).startOf('month').toDate().getTime().toString();
+        const totalesServiciosDoc = this.totalesServicioCollection.doc(mesServicio);
 
         batch.set(reservaDoc.ref, reservaNueva);
 
@@ -313,7 +376,7 @@ export class ReservaPage {
       disponibilidad.fechaInicio.getTime() === horaInicio.getTime()
     );
 
-    if (!disponibilidadEncontrada || disponibilidadEncontrada.estado !== this.constantes.ESTADOS_RESERVA.DISPONIBLE) {
+    if (!disponibilidadEncontrada || disponibilidadEncontrada.estado !== DataProvider.ESTADOS_RESERVA.DISPONIBLE) {
       this.genericAlert('Error al reservar', 'La hora de reserva no se encuentra disponible');
     } else {
       this.carrito.push({
@@ -321,8 +384,8 @@ export class ReservaPage {
         fechaInicio: disponibilidadEncontrada.fechaInicio,
         fechaFin: disponibilidadEncontrada.fechaFin,
         cliente: this.cliente,
-        estado: this.constantes.ESTADOS_RESERVA.RESERVADO,
-        evento: this.constantes.EVENTOS.OTRO,
+        estado: DataProvider.ESTADOS_RESERVA.RESERVADO,
+        evento: DataProvider.EVENTOS.OTRO,
         idcarrito: this.idcarrito,
         usuario: this.usuario,
         fechaActualizacion: null,
@@ -337,8 +400,8 @@ export class ReservaPage {
   }
 
   loadServiciosPaquete(paqueteDoc: AngularFirestoreDocument) {
-    const servicioCollection = paqueteDoc.collection<ServicioOptions>('servicios');
-    return new Promise<ServicioOptions[]>((resolve, reject) => {
+    const servicioCollection = paqueteDoc.collection<ServicioPaqueteOptions>('servicios');
+    return new Promise<ServicioPaqueteOptions[]>((resolve, reject) => {
       servicioCollection.valueChanges().subscribe(servicios => {
         if (servicios[0]) {
           resolve(servicios);
@@ -362,62 +425,61 @@ export class ReservaPage {
     });
   }
 
-  loadPaqueteCliente(paquete: PaqueteOptions, batch: firebase.firestore.WriteBatch) {
-    const idsesion = 1;
+  loadPaqueteCliente(paquete: any, batch: firebase.firestore.WriteBatch) {
     const paqueteCliente: PaqueteClienteOptions = {
       actualizacion: new Date(),
       cliente: this.cliente,
-      estado: this.constantes.ESTADOS_PAQUETE.PENDIENTE,
-      id: this.idcarrito.toString(),
-      idcarrito: this.idcarrito,
-      pago: 0,
-      paquete: paquete,
-      registro: new Date(),
-      servicios: null,
-      sesion: idsesion,
-      sesiones: null,
+      estado: DataProvider.ESTADOS_PAQUETE.PENDIENTE,
+      id: paquete.nuevo ? this.idcarrito.toString() : paquete.id,
+      idcarrito: paquete.nuevo ? this.idcarrito : paquete.idcarrito,
+      pago: paquete.nuevo ? 0 : paquete.pago,
+      paquete: paquete.paquete,
+      registro: paquete.nuevo ? new Date() : paquete.registro,
+      servicios: paquete.servicios,
+      sesion: paquete.sesion,
+      sesiones: paquete.sesiones,
       valor: paquete.valor,
-      serviciosActual: null
+      serviciosActual: paquete.serviciosActual
     }
-    const paqueteDoc = this.paqueteCollection.doc(paquete.id);
-    return new Promise<PaqueteClienteOptions>((resolve, reject) => {
-      this.loadServiciosPaquete(paqueteDoc).then(servicios => {
-        paqueteCliente.servicios = servicios;
-        this.loadSesionesPaquete(paqueteDoc).then(sesiones => {
-          paqueteCliente.sesiones = sesiones;
-          const sesionActual = sesiones.find(sesion => sesion.id === idsesion.toString());
-          paqueteCliente.serviciosActual = sesionActual.servicios;
-          this.guardarPaqueteCliente(paqueteCliente, batch);
-          resolve(paqueteCliente);
-        }).catch(err => reject(err));
-      }).catch(err => reject(err));
+
+    return new Promise<PaqueteClienteOptions>(resolve => {
+      this.guardarPaqueteCliente(paqueteCliente, batch);
+      resolve(paqueteCliente);
     });
   }
 
   guardarPaqueteCliente(paqueteCliente: PaqueteClienteOptions, batch: firebase.firestore.WriteBatch) {
+    const idsesion = paqueteCliente.sesion;
+    const sesionPaqueteCliente: SesionPaqueteClienteOptions = {
+      actualizacion: new Date(),
+      estado: DataProvider.ESTADOS_SESION.PENDIENTE,
+      id: idsesion,
+      pago: null,
+      registro: new Date(),
+      reserva: null
+    }
     const clienteDoc = this.empresaDoc.collection('clientes').doc(this.cliente.id);
     const paqueteClienteDoc = clienteDoc.collection('paquetes').doc(paqueteCliente.id);
+    const sesionPaqueteClienteDoc = paqueteClienteDoc.collection('sesiones').doc<SesionPaqueteClienteOptions>(idsesion.toString());
+
     batch.set(paqueteClienteDoc.ref, paqueteCliente);
+    batch.set(sesionPaqueteClienteDoc.ref, sesionPaqueteCliente);
   }
 
   agregarServiciosPaquete(paquete: any) {
     const batch = this.afs.firestore.batch();
-    if (!paquete.sesion) {
-      this.loadPaqueteCliente(paquete, batch).then(paqueteCliente => {
-        this.llenarCarrito(paqueteCliente, batch);
-      }).catch(err => {
-        this.alertCtrl.create({
-          buttons: [{
-            text: 'Ok'
-          }],
-          message: 'Error: ' + err,
-          subTitle: 'Se presentó error al procesar el paquete',
-          title: 'Ha ocurrido un error'
-        }).present();
-      });
-    } else {
-      this.llenarCarrito(paquete, batch);
-    }
+    this.loadPaqueteCliente(paquete, batch).then(paqueteCliente => {
+      this.llenarCarrito(paqueteCliente, batch);
+    }).catch(err => {
+      this.alertCtrl.create({
+        buttons: [{
+          text: 'Ok'
+        }],
+        message: 'Error: ' + err,
+        subTitle: 'Se presentó error al procesar el paquete',
+        title: 'Ha ocurrido un error'
+      }).present();
+    });
   }
 
   private llenarCarrito(paqueteCliente: PaqueteClienteOptions, batch: firebase.firestore.WriteBatch) {
@@ -425,16 +487,16 @@ export class ReservaPage {
     const disponibilidadEncontrada = this.horario.find(disponibilidad =>
       disponibilidad.fechaInicio.getTime() === horaInicio.getTime()
     );
-    if (!disponibilidadEncontrada || disponibilidadEncontrada.estado !== this.constantes.ESTADOS_RESERVA.DISPONIBLE) {
+    if (!disponibilidadEncontrada || disponibilidadEncontrada.estado !== DataProvider.ESTADOS_RESERVA.DISPONIBLE) {
       this.genericAlert('Error al reservar', 'La hora de reserva no se encuentra disponible');
     } else {
       this.carrito.push({
-        servicio: paqueteCliente.serviciosActual,
+        servicio: paqueteCliente.serviciosActual.servicios,
         fechaInicio: disponibilidadEncontrada.fechaInicio,
         fechaFin: disponibilidadEncontrada.fechaFin,
         cliente: this.cliente,
-        estado: this.constantes.ESTADOS_RESERVA.RESERVADO,
-        evento: this.constantes.EVENTOS.OTRO,
+        estado: DataProvider.ESTADOS_RESERVA.RESERVADO,
+        evento: DataProvider.EVENTOS.OTRO,
         idcarrito: this.idcarrito,
         usuario: this.usuario,
         fechaActualizacion: null,
@@ -448,6 +510,13 @@ export class ReservaPage {
       });
       this.guardar(batch);
     }
+  }
+
+  sesiones(paquete: PaqueteClienteOptions) {
+    this.modalCtrl.create('DetalleSesionesPaquetePage', {
+      idsesion: paquete.sesion.toString(),
+      sesiones: paquete.sesiones
+    }).present();
   }
 
 }

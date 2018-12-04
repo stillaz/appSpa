@@ -26,9 +26,10 @@ export class DetalleSesionesPaquetePage {
   private serviciosPaqueteCollection: AngularFirestoreCollection<ServicioPaqueteOptions>;
   private serviciosPaquete: ServicioPaqueteOptions[];
   private sesionesPaqueteCollection: AngularFirestoreCollection<SesionPaqueteOptions>;
-  public sesionesPaquete: SesionPaqueteOptions[];
+  public sesionesPaquete: any[];
   public advertencia: boolean;
   public continuar: boolean;
+  public editar: boolean;
 
   constructor(
     public navCtrl: NavController,
@@ -39,10 +40,31 @@ export class DetalleSesionesPaquetePage {
     public loadingCtrl: LoadingController,
     public modalCtrl: ModalController,
     public toastCtrl: ToastController) {
-    const idpaquete = navParams.get('idpaquete');
-    const filePathEmpresa = this.usuarioServicio.getFilePathEmpresa();
-    this.filePathPaquete = filePathEmpresa + '/paquetes/' + idpaquete;
-    this.updatePaquete();
+    const idsesion = navParams.get('idsesion');
+    const sesiones = navParams.get('sesiones');
+    this.editar = !sesiones;
+
+    if (!sesiones) {
+      const idpaquete = navParams.get('idpaquete');
+      const filePathEmpresa = this.usuarioServicio.getFilePathEmpresa();
+      this.filePathPaquete = filePathEmpresa + '/paquetes/' + idpaquete;
+      this.updatePaquete();
+    } else {
+      this.sesionesPaquete = sesiones.sort((a, b) => {
+        if (Number(a.id) > Number(b.id)) {
+          return 1;
+        } else if (Number(a.id) < Number(b.id)) {
+          return -1;
+        } else {
+          return 0;
+        }
+      });
+
+      if (!this.editar) {
+        const sesionactivo = this.sesionesPaquete.find(sesion => sesion.id === idsesion);
+        sesionactivo.activo = true;
+      }
+    }
   }
 
   private updatePaquete() {
@@ -88,6 +110,7 @@ export class DetalleSesionesPaquetePage {
           return 0;
         }
       });
+
       this.updateAdvertencia();
       this.updateContinuar();
     });
@@ -213,6 +236,10 @@ export class DetalleSesionesPaquetePage {
 
   public cancelar() {
     this.navCtrl.popTo('PaquetePage');
+  }
+
+  public cerrar() {
+    this.navCtrl.pop();
   }
 
 }

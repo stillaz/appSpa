@@ -21,14 +21,30 @@
 <ion-content padding [ngSwitch]="terms" *ngIf="idcarrito">
   <ion-list *ngSwitchCase="'paquetes'">
     <ion-item-group *ngFor="let grupo of grupoPaquetes">
-      <ion-item-divider sticky color="light">{{grupo.grupo}}</ion-item-divider>
+      <ion-item-divider sticky color="light">
+        <ion-avatar item-start *ngIf="grupo.grupo.imagen">
+          <img [src]="grupo.grupo.imagen" />
+        </ion-avatar>
+        <strong>{{grupo.grupo.nombre}}</strong>
+      </ion-item-divider>
       <ion-row>
-        <ion-col #item *ngFor="let paquete of grupo.servicios" class="cell-1" (tap)="agregarServiciosPaquete(paquete)">
-          <img *ngIf="paquete.imagen" [src]="paquete.imagen" width="100%">
-          <br />
-          <h2 style="margin-top: 0px; margin-bottom: 5px"><strong>{{paquete.nombre}}</strong></h2>
-          <p style="margin: 0px">{{paquete.descripcion}}.</p>
-          <p style="margin: 0px">Valor: {{paquete.valor| currency : USD: symbol: '4.0' }}</p>
+        <ion-col #item *ngFor="let paquete of grupo.paquetes" class="cell-1">
+          <ion-card>
+            <img *ngIf="paquete.imagen" [src]="paquete.imagen" width="100%" (tap)="agregarServiciosPaquete(paquete)">
+            <ion-card-content (tap)="agregarServiciosPaquete(paquete)">
+              <h2 style="margin-top: 0px; margin-bottom: 5px"><strong>{{paquete.paquete.nombre}}</strong></h2>
+              <p style="margin: 0px">{{paquete.paquete.descripcion}}.</p>
+              <p style="margin: 0px">Valor: {{paquete.paquete.valor| currency : USD: symbol: '4.0' }}</p>
+            </ion-card-content>
+
+            <ion-row>
+              <ion-col>
+                <ion-buttons end>
+                  <button ion-button outline small (click)="sesiones(paquete)">Sesiones</button>
+                </ion-buttons>
+              </ion-col>
+            </ion-row>
+          </ion-card>
         </ion-col>
       </ion-row>
     </ion-item-group>

@@ -39,7 +39,7 @@
         <h2>{{disponibilidad.fechaInicio.toDate() | date: 'mediumDate'}}, {{disponibilidad.fechaInicio.toDate() |
           date:
           'hh:mm a'}} &mdash; {{disponibilidad.fechaFin.toDate() | date: 'hh:mm a'}}</h2>
-        <p *ngIf="disponibilidad.cliente.nombre">{{disponibilidad.cliente.nombre}}: {{disponibilidad.servicio.nombre}}</p>
+        <p *ngIf="disponibilidad.cliente.nombre">{{disponibilidad.cliente.nombre}}: {{disponibilidad.servicio | joins}}</p>
         <ion-note style="font-size: small">{{disponibilidad.estado}}</ion-note>
 
         <button ion-button *ngIf="disponibilidad.fechaInicio.toDate() <= actual" color="secondary" clear item-end (tap)="terminar(disponibilidad)">Terminar</button>

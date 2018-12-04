@@ -1,12 +1,10 @@
-import { ServicioOptions } from "./servicio-options";
-import { UsuarioOptions } from "./usuario-options";
+import { ReservaOptions } from "./reserva-options";
 
 export interface SesionPaqueteClienteOptions {
     id: number,
-    sesion: number,
-    servicios: ServicioOptions[],
-    usuario: UsuarioOptions,
+    reserva: ReservaOptions,
     pago: number,
-    fecha: Date,
-    estado: string
+    registro: Date,
+    estado: string,
+    actualizacion: Date
 }

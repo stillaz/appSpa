@@ -96,9 +96,7 @@ export class DetallePaquetePage {
         valor: null,
         grupo: null,
         imagen: null,
-        activo: true,
-        servicios: null,
-        sesiones: null
+        activo: true
       };
     }
 
