@@ -11,6 +11,7 @@ import { TotalesServiciosOptions } from '../../interfaces/totales-servicios-opti
 import { ClienteOptions } from '../../interfaces/cliente-options';
 import { PaqueteOptions } from '../../interfaces/paquete-options';
 import { PaqueteClienteOptions } from '../../interfaces/paquete-cliente-options';
+import { SesionPaqueteClienteOptions } from '../../interfaces/sesion-paquete-cliente-options';
 
 /**
  * Generated class for the PendientePage page.
@@ -306,8 +307,8 @@ export class PendientePage {
   }
 
   private procesarPaquete(reserva: ReservaOptions, fecha: Date, batch: firebase.firestore.WriteBatch) {
-    const clienteNegocioDoc = this.clienteNegocioCollection.doc(reserva.cliente.id);
-    const paqueteClienteDoc: AngularFirestoreDocument<PaqueteClienteOptions> = clienteNegocioDoc.collection('paquetes').doc(reserva.idcarrito.toString());
+    const clienteNegocioDoc: AngularFirestoreDocument<ClienteOptions> = this.clienteNegocioCollection.doc(reserva.cliente.id);
+    const paqueteClienteDoc: AngularFirestoreDocument<PaqueteClienteOptions> = clienteNegocioDoc.collection('paquetes').doc(reserva.paquete.paquete.id);
     return new Promise<any>(resolve => {
       this.loadPaqueteReserva(paqueteClienteDoc).then(paquete => {
         const valorPaquete = paquete.valor;
@@ -330,85 +331,84 @@ export class PendientePage {
           }, {
             text: 'OK',
             handler: data => {
-              const pago: number = data.pago ? Number(data.pago) : 0;
-              const filePathPaquete = '/paquetes/' + idcarrito;
-              const pagado = pagadoActual + pago;
-              const cliente = reserva.cliente;
-              const clienteNegocioDoc = this.clienteNegocioCollection.doc(cliente.id);
+              const pago = Number(data.pago);
               this.loading.present();
-              clienteNegocioDoc.get().subscribe(clienteNegocio => {
-                if (!clienteNegocio.exists) {
-                  batch.set(clienteNegocioDoc.ref, cliente);
+              const sesionPaqueteClienteDoc = paqueteClienteDoc.collection('sesiones').doc<SesionPaqueteClienteOptions>(paquete.sesion.toString());
+              this.actualizarSesionPaqueteCliente(batch, sesionPaqueteClienteDoc, pago, reserva).then(() => {
+                if (paquete.estado === this.constantes.ESTADOS_PAQUETE.FINALIZADO) {
+                  this.actualizarPendientesCliente(batch, clienteNegocioDoc).then(() => {
+                    this.actualizarPaqueteCliente(batch, paquete, paqueteClienteDoc, pago, resta);
+                  });
+                } else {
+                  this.actualizarPaqueteCliente(batch, paquete, paqueteClienteDoc, pago, resta);
                 }
-
-                const paqueteNegocioClienteDoc: AngularFirestoreDocument<PaqueteClienteOptions> = clienteNegocioDoc.collection('paquetes').doc(idcarrito.toString());
-                const idempresa = this.usuarioService.getUsuario().idempresa;
-                paqueteNegocioClienteDoc.get().subscribe(paqueteClienteNegocio => {
-                  let paqueteNuevo: PaqueteOptions = {
-                    actualizacion: fecha,
-                    estado: this.constantes.ESTADOS_PAQUETE.PENDIENTE,
-                    idcarrito: idcarrito,
-                    idempresa: idempresa,
-                    pagado: pagado,
-                    realizados: 1,
-                    servicio: servicio,
-                    sesiones: sesiones,
-                    valorPaquete: valorPaquete,
-                    registro: new Date(),
-                    cliente: reserva.cliente
-                  };
-
-                  if (paqueteClienteNegocio.exists) {
-                    const realizadosClienteNegocioActual = paqueteClienteNegocio.data().realizados;
-                    const estado = this.loadEstado(servicio.sesiones, realizadosClienteNegocioActual, resta, data.pago);
-                    const realizadosClienteNegocio = realizadosClienteNegocioActual + 1;
-
-                    paqueteNuevo.realizados = realizadosClienteNegocio;
-                    paqueteNuevo.pagado = pagado;
-                    paqueteNuevo.estado = estado;
-                    if (estado === this.constantes.ESTADOS_PAQUETE.FINALIZADO) {
-                      const pendientesActualClienteNegocio = Number(clienteNegocio.data().pendientes);
-                      const pendientesClienteNegocio = pendientesActualClienteNegocio - 1;
-                      batch.update(clienteNegocioDoc.ref, { pendientes: pendientesClienteNegocio });
-                    }
-                  } else {
-                    batch.update(clienteNegocioDoc.ref, { pendientes: 1 });
-                  }
-                  batch.set(paqueteNegocioClienteDoc.ref, paqueteNuevo);
-
-                  if (pago > 0) {
-                    const idhistorico = fecha.getTime().toString();
-                    const historicoDoc = clienteNegocioDoc.collection('historicos').doc(idhistorico);
-
-                    batch.set(historicoDoc.ref, {
-                      id: idhistorico,
-                      paga: pago,
-                      fecha: fecha,
-                      idempresa: idempresa,
-                      usuario: this.usuarioService.getUsuario().id,
-                      servicio: servicio
-                    });
-                  }
-
-                  if (cliente.correoelectronico) {
-                    const filePathCliente = 'clientes/' + cliente.correoelectronico;
-                    const clienteDoc: AngularFirestoreDocument<ClienteOptions> = this.afs.doc<ClienteOptions>(filePathCliente);
-                    clienteDoc.get().subscribe(cliente => {
-                      if (cliente.exists) {
-                        const filePathClientePaquete = filePathCliente + '/negocios/' + this.usuario.idempresa + filePathPaquete;
-                        const paqueteClienteDoc: AngularFirestoreDocument<PaqueteOptions> = this.afs.doc<PaqueteOptions>(filePathClientePaquete);
-                        batch.set(paqueteClienteDoc.ref, paqueteNuevo);
-                      }
-                      resolve(pago);
-                    });
-                  } else {
-                    resolve(pago);
-                  }
-                });
               });
+              batch.set(paqueteNegocioClienteDoc.ref, paqueteNuevo);
+
+              if (pago > 0) {
+                const idhistorico = fecha.getTime().toString();
+                const historicoDoc = clienteNegocioDoc.collection('historicos').doc(idhistorico);
+
+                batch.set(historicoDoc.ref, {
+                  id: idhistorico,
+                  paga: pago,
+                  fecha: fecha,
+                  idempresa: idempresa,
+                  usuario: this.usuarioService.getUsuario().id,
+                  servicio: servicio
+                });
+              }
+
+              if (cliente.correoelectronico) {
+                const filePathCliente = 'clientes/' + cliente.correoelectronico;
+                const clienteDoc: AngularFirestoreDocument<ClienteOptions> = this.afs.doc<ClienteOptions>(filePathCliente);
+                clienteDoc.get().subscribe(cliente => {
+                  if (cliente.exists) {
+                    const filePathClientePaquete = filePathCliente + '/negocios/' + this.usuario.idempresa + filePathPaquete;
+                    const paqueteClienteDoc: AngularFirestoreDocument<PaqueteOptions> = this.afs.doc<PaqueteOptions>(filePathClientePaquete);
+                    batch.set(paqueteClienteDoc.ref, paqueteNuevo);
+                  }
+                  resolve(pago);
+                });
+              } else {
+                resolve(pago);
+              }
             }
           }]
         }).present();
+      });
+    });
+  }
+
+  private actualizarPaqueteCliente(batch: firebase.firestore.WriteBatch, paquete: PaqueteClienteOptions, paqueteClienteDoc: AngularFirestoreDocument, pago: number, resta: number) {
+    const pagado = paquete.pago + pago;
+    const cantidadSesiones = paquete.sesiones.length;
+    paquete.estado = this.loadEstado(cantidadSesiones, paquete.sesion, resta, pagado);
+    paquete.actualizacion = new Date();
+    paquete.pago = pagado;
+    batch.update(paqueteClienteDoc.ref, paquete);
+  }
+
+  private actualizarSesionPaqueteCliente(batch: firebase.firestore.WriteBatch, sesionPaqueteClienteDoc: AngularFirestoreDocument<SesionPaqueteClienteOptions>, pago: number, reserva: ReservaOptions) {
+    return new Promise(resolve => {
+      sesionPaqueteClienteDoc.valueChanges().subscribe(sesion => {
+        sesion.pago = pago;
+        sesion.actualizacion = new Date();
+        sesion.reserva = reserva;
+        sesion.estado = DataProvider.ESTADOS_SESION.FINALIZADO;
+
+        batch.update(sesionPaqueteClienteDoc.ref, sesion);
+        resolve('ok');
+      });
+    });
+  }
+
+  private actualizarPendientesCliente(batch: firebase.firestore.WriteBatch, clienteDoc: AngularFirestoreDocument<ClienteOptions>) {
+    return new Promise(resolve => {
+      clienteDoc.valueChanges().subscribe(cliente => {
+        cliente.pendientes--;
+        batch.update(clienteDoc.ref, cliente);
+        resolve('ok');
       });
     });
   }
