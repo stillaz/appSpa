@@ -33,7 +33,7 @@ export class PendientePage {
   private constantes = DataProvider;
   public reservas: ReservaOptions[] = [];
   private usuario: UsuarioOptions;
-  private actual: Date;
+  public actual: Date;
   public terms: string = 'pendiente';
   private loading: Loading;
   public paquetes: PaqueteOptions[];
@@ -306,7 +306,9 @@ export class PendientePage {
     });
   }
 
-  private procesarPaquete(reserva: ReservaOptions, fecha: Date, batch: firebase.firestore.WriteBatch) {
+  private procesarPaquete(reserva: ReservaOptions, batch: firebase.firestore.WriteBatch) {
+
+    console.log(reserva);
     const clienteNegocioDoc: AngularFirestoreDocument<ClienteOptions> = this.clienteNegocioCollection.doc(reserva.cliente.id);
     const paqueteClienteDoc: AngularFirestoreDocument<PaqueteClienteOptions> = clienteNegocioDoc.collection('paquetes').doc(reserva.paquete.paquete.id);
     return new Promise<any>(resolve => {
@@ -334,48 +336,53 @@ export class PendientePage {
               const pago = Number(data.pago);
               this.loading.present();
               const sesionPaqueteClienteDoc = paqueteClienteDoc.collection('sesiones').doc<SesionPaqueteClienteOptions>(paquete.sesion.toString());
-              this.actualizarSesionPaqueteCliente(batch, sesionPaqueteClienteDoc, pago, reserva).then(() => {
+              this.actualizarSesionPaqueteCliente(batch, sesionPaqueteClienteDoc, pago, reserva).then(sesion => {
+                const correoCliente = paquete.cliente.correoelectronico;
                 if (paquete.estado === this.constantes.ESTADOS_PAQUETE.FINALIZADO) {
                   this.actualizarPendientesCliente(batch, clienteNegocioDoc).then(() => {
                     this.actualizarPaqueteCliente(batch, paquete, paqueteClienteDoc, pago, resta);
+                    if (correoCliente) {
+                      this.actualizarPaqueteClienteExpress(batch, correoCliente, paquete, sesion).then(() => {
+                        resolve('ok');
+                      });
+                    } else {
+                      resolve('ok');
+                    }
                   });
                 } else {
                   this.actualizarPaqueteCliente(batch, paquete, paqueteClienteDoc, pago, resta);
+                  if (correoCliente) {
+                    this.actualizarPaqueteClienteExpress(batch, correoCliente, paquete, sesion).then(() => {
+                      resolve('ok');
+                    });
+                  } else {
+                    resolve('ok');
+                  }
                 }
               });
-              batch.set(paqueteNegocioClienteDoc.ref, paqueteNuevo);
-
-              if (pago > 0) {
-                const idhistorico = fecha.getTime().toString();
-                const historicoDoc = clienteNegocioDoc.collection('historicos').doc(idhistorico);
-
-                batch.set(historicoDoc.ref, {
-                  id: idhistorico,
-                  paga: pago,
-                  fecha: fecha,
-                  idempresa: idempresa,
-                  usuario: this.usuarioService.getUsuario().id,
-                  servicio: servicio
-                });
-              }
-
-              if (cliente.correoelectronico) {
-                const filePathCliente = 'clientes/' + cliente.correoelectronico;
-                const clienteDoc: AngularFirestoreDocument<ClienteOptions> = this.afs.doc<ClienteOptions>(filePathCliente);
-                clienteDoc.get().subscribe(cliente => {
-                  if (cliente.exists) {
-                    const filePathClientePaquete = filePathCliente + '/negocios/' + this.usuario.idempresa + filePathPaquete;
-                    const paqueteClienteDoc: AngularFirestoreDocument<PaqueteOptions> = this.afs.doc<PaqueteOptions>(filePathClientePaquete);
-                    batch.set(paqueteClienteDoc.ref, paqueteNuevo);
-                  }
-                  resolve(pago);
-                });
-              } else {
-                resolve(pago);
-              }
             }
           }]
         }).present();
+      });
+    });
+  }
+
+  private actualizarPaqueteClienteExpress(batch: firebase.firestore.WriteBatch, correoCliente: string, paquete: PaqueteClienteOptions, sesion: SesionPaqueteClienteOptions) {
+    const filePathCliente = 'clientes/' + correoCliente;
+    const clienteDoc: AngularFirestoreDocument<ClienteOptions> = this.afs.doc<ClienteOptions>(filePathCliente);
+    return new Promise(resolve => {
+      clienteDoc.get().subscribe(cliente => {
+        if (cliente.exists) {
+          const filePathClientePaquete = filePathCliente + '/negocios/' + this.usuario.idempresa + '/paquetes/' + paquete.id;
+          const paqueteClienteDoc: AngularFirestoreDocument = this.afs.doc(filePathClientePaquete);
+          batch.set(paqueteClienteDoc.ref, paquete);
+
+          const sesionPaqueteClienteDoc = paqueteClienteDoc.collection('sesiones').doc(sesion.id.toString());
+
+          batch.set(sesionPaqueteClienteDoc.ref, sesion);
+
+          resolve('ok');
+        }
       });
     });
   }
@@ -390,7 +397,7 @@ export class PendientePage {
   }
 
   private actualizarSesionPaqueteCliente(batch: firebase.firestore.WriteBatch, sesionPaqueteClienteDoc: AngularFirestoreDocument<SesionPaqueteClienteOptions>, pago: number, reserva: ReservaOptions) {
-    return new Promise(resolve => {
+    return new Promise<SesionPaqueteClienteOptions>(resolve => {
       sesionPaqueteClienteDoc.valueChanges().subscribe(sesion => {
         sesion.pago = pago;
         sesion.actualizacion = new Date();
@@ -398,7 +405,7 @@ export class PendientePage {
         sesion.estado = DataProvider.ESTADOS_SESION.FINALIZADO;
 
         batch.update(sesionPaqueteClienteDoc.ref, sesion);
-        resolve('ok');
+        resolve(sesion);
       });
     });
   }
@@ -431,7 +438,7 @@ export class PendientePage {
     const batch = this.afs.firestore.batch();
     const fecha = new Date();
 
-    this.procesarPaquete(reserva, fecha, batch).then(pago => {
+    this.procesarPaquete(reserva, batch).then(pago => {
       this.procesarServicio(reserva, pago, fecha, batch).then(() => {
         batch.commit().then(() => {
           this.loading.dismiss();
