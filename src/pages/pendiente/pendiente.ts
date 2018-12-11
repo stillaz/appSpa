@@ -27,10 +27,10 @@ import { SesionPaqueteClienteOptions } from '../../interfaces/sesion-paquete-cli
 })
 export class PendientePage {
 
+  public constantes = DataProvider;
   private disponibilidadCollection: AngularFirestoreCollection;
   private usuarioDoc: AngularFirestoreDocument<UsuarioOptions>;
   public usuarioLogueado: UsuarioOptions;
-  private constantes = DataProvider;
   public reservas: ReservaOptions[] = [];
   private usuario: UsuarioOptions;
   public actual: Date;
@@ -79,7 +79,7 @@ export class PendientePage {
   }
 
   loadReservaPendienteDia(iddisponibilidad: string) {
-    let reservaCollection = this.disponibilidadCollection.doc(iddisponibilidad).collection<ReservaOptions>('disponibilidades', ref => ref.where('estado', '==', this.constantes.ESTADOS_RESERVA.RESERVADO));
+    let reservaCollection = this.disponibilidadCollection.doc(iddisponibilidad).collection<ReservaOptions>('disponibilidades', ref => ref.where('estado', '==', DataProvider.ESTADOS_RESERVA.RESERVADO));
     return new Promise<ReservaOptions[]>(resolve => {
       reservaCollection.valueChanges().subscribe(dataReservas => {
         resolve(dataReservas);
@@ -208,7 +208,7 @@ export class PendientePage {
                 const serviciosDoc = this.afs.doc('servicioscliente/' + idreserva);
 
                 batch.update(serviciosDoc.ref, {
-                  estado: this.constantes.ESTADOS_RESERVA.CANCELADO,
+                  estado: DataProvider.ESTADOS_RESERVA.CANCELADO,
                   fechaActualizacion: fecha,
                   imagenusuario: this.usuario.imagen,
                   empresa: this.usuarioService.getEmpresa(),
@@ -217,7 +217,7 @@ export class PendientePage {
 
                 const serviciosClienteDoc = this.afs.doc('clientes/' + reserva.cliente.correoelectronico + '/servicios/' + fechaServicio.getTime().toString());
 
-                batch.update(serviciosClienteDoc.ref, { estado: this.constantes.ESTADOS_RESERVA.CANCELADO });
+                batch.update(serviciosClienteDoc.ref, { estado: DataProvider.ESTADOS_RESERVA.CANCELADO });
               }
 
               batch.commit().then(() => {
@@ -236,19 +236,20 @@ export class PendientePage {
     slidingItem.close();
   }
 
-  procesarServicio(reserva: ReservaOptions, pago: number, fecha: Date, batch: firebase.firestore.WriteBatch) {
+  private procesarServicio(reserva: ReservaOptions, fecha: Date, batch: firebase.firestore.WriteBatch) {
+    const pago = reserva.pago;
     const fechaServicio: Date = reserva.fechaInicio.toDate();
     const dia = moment(fechaServicio).startOf('day').toDate().getTime().toString();
     const disponibilidadDoc = this.usuarioDoc.collection('disponibilidades').doc(dia);
     const disponibilidadFinalizarDoc: AngularFirestoreDocument = disponibilidadDoc.collection('disponibilidades').doc(fechaServicio.getTime().toString());
-    batch.update(disponibilidadFinalizarDoc.ref, { estado: this.constantes.ESTADOS_RESERVA.FINALIZADO, pago: pago });
+    batch.update(disponibilidadFinalizarDoc.ref, reserva);
 
     return new Promise(resolve => {
       disponibilidadDoc.ref.get().then(datosDiarios => {
-        const totalDiarioActual = datosDiarios.get('totalServicios');
-        const cantidadDiarioActual = datosDiarios.get('cantidadServicios');
-        const pendientesDiarioActual = datosDiarios.get('pendientes');
-        const totalDiario = Number(totalDiarioActual) + pago;
+        const totalDiarioActual = datosDiarios.get('totalServicios') || 0;
+        const cantidadDiarioActual = datosDiarios.get('cantidadServicios') || 0;
+        const pendientesDiarioActual = datosDiarios.get('pendientes') || 0;
+        const totalDiario = Number(totalDiarioActual) + Number(pago);
         const cantidadDiario = Number(cantidadDiarioActual) + 1;
         const pendientesDiario = Number(pendientesDiarioActual) - 1;
         batch.update(disponibilidadDoc.ref, {
@@ -267,12 +268,12 @@ export class PendientePage {
           const totalesServiciosUsuarioDoc = totalesServiciosDoc.collection('totalesServiciosUsuarios').doc<TotalesServiciosOptions>(this.usuario.id);
 
           totalesServiciosUsuarioDoc.ref.get().then(datos => {
-            const totalActual = Number(datos.get('totalServicios'));
-            const cantidadActual = Number(datos.get('cantidadServicios'));
-            const pendientesActual = Number(datos.get('pendientes'));
-            const total = totalActual + pago;
-            const cantidad = cantidadActual + 1;
-            const pendientes = pendientesActual - 1;
+            const totalActual = datos.get('totalServicios') || 0;
+            const cantidadActual = datos.get('cantidadServicios') || 0;
+            const pendientesActual = datos.get('pendientes') || 0;
+            const total = Number(totalActual) + Number(pago);
+            const cantidad = Number(cantidadActual) + 1;
+            const pendientes = Number(pendientesActual) - 1;
             batch.update(totalesServiciosUsuarioDoc.ref, {
               totalServicios: total,
               cantidadServicios: cantidad,
@@ -285,7 +286,7 @@ export class PendientePage {
               const serviciosDoc = this.afs.doc('servicioscliente/' + idreserva);
 
               batch.update(serviciosDoc.ref, {
-                estado: this.constantes.ESTADOS_RESERVA.FINALIZADO,
+                estado: DataProvider.ESTADOS_RESERVA.FINALIZADO,
                 fechaActualizacion: new Date(),
                 imagenusuario: this.usuario.imagen,
                 empresa: this.usuarioService.getEmpresa(),
@@ -294,7 +295,7 @@ export class PendientePage {
 
               const serviciosClienteDoc = this.afs.doc('clientes/' + reserva.cliente.correoelectronico + '/servicios/' + fechaServicio.getTime().toString());
 
-              batch.update(serviciosClienteDoc.ref, { estado: this.constantes.ESTADOS_RESERVA.FINALIZADO });
+              batch.update(serviciosClienteDoc.ref, { estado: DataProvider.ESTADOS_RESERVA.FINALIZADO });
 
               resolve('ok');
             }
@@ -307,11 +308,9 @@ export class PendientePage {
   }
 
   private procesarPaquete(reserva: ReservaOptions, batch: firebase.firestore.WriteBatch) {
-
-    console.log(reserva);
     const clienteNegocioDoc: AngularFirestoreDocument<ClienteOptions> = this.clienteNegocioCollection.doc(reserva.cliente.id);
-    const paqueteClienteDoc: AngularFirestoreDocument<PaqueteClienteOptions> = clienteNegocioDoc.collection('paquetes').doc(reserva.paquete.paquete.id);
-    return new Promise<any>(resolve => {
+    const paqueteClienteDoc: AngularFirestoreDocument<PaqueteClienteOptions> = clienteNegocioDoc.collection('paquetes').doc(reserva.idcarrito.toString());
+    return new Promise<number>(resolve => {
       this.loadPaqueteReserva(paqueteClienteDoc).then(paquete => {
         const valorPaquete = paquete.valor;
         const pagadoActual = paquete.pago;
@@ -334,29 +333,30 @@ export class PendientePage {
             text: 'OK',
             handler: data => {
               const pago = Number(data.pago);
+              reserva.pago = pago;
               this.loading.present();
               const sesionPaqueteClienteDoc = paqueteClienteDoc.collection('sesiones').doc<SesionPaqueteClienteOptions>(paquete.sesion.toString());
               this.actualizarSesionPaqueteCliente(batch, sesionPaqueteClienteDoc, pago, reserva).then(sesion => {
                 const correoCliente = paquete.cliente.correoelectronico;
-                if (paquete.estado === this.constantes.ESTADOS_PAQUETE.FINALIZADO) {
+                if (paquete.estado === DataProvider.ESTADOS_PAQUETE.FINALIZADO) {
                   this.actualizarPendientesCliente(batch, clienteNegocioDoc).then(() => {
                     this.actualizarPaqueteCliente(batch, paquete, paqueteClienteDoc, pago, resta);
                     if (correoCliente) {
                       this.actualizarPaqueteClienteExpress(batch, correoCliente, paquete, sesion).then(() => {
-                        resolve('ok');
+                        resolve(pago);
                       });
                     } else {
-                      resolve('ok');
+                      resolve(pago);
                     }
                   });
                 } else {
                   this.actualizarPaqueteCliente(batch, paquete, paqueteClienteDoc, pago, resta);
                   if (correoCliente) {
                     this.actualizarPaqueteClienteExpress(batch, correoCliente, paquete, sesion).then(() => {
-                      resolve('ok');
+                      resolve(pago);
                     });
                   } else {
-                    resolve('ok');
+                    resolve(pago);
                   }
                 }
               });
@@ -390,7 +390,7 @@ export class PendientePage {
   private actualizarPaqueteCliente(batch: firebase.firestore.WriteBatch, paquete: PaqueteClienteOptions, paqueteClienteDoc: AngularFirestoreDocument, pago: number, resta: number) {
     const pagado = paquete.pago + pago;
     const cantidadSesiones = paquete.sesiones.length;
-    paquete.estado = this.loadEstado(cantidadSesiones, paquete.sesion, resta, pagado);
+    paquete.estado = this.loadEstado(cantidadSesiones, paquete.sesion, resta);
     paquete.actualizacion = new Date();
     paquete.pago = pagado;
     batch.update(paqueteClienteDoc.ref, paquete);
@@ -398,13 +398,21 @@ export class PendientePage {
 
   private actualizarSesionPaqueteCliente(batch: firebase.firestore.WriteBatch, sesionPaqueteClienteDoc: AngularFirestoreDocument<SesionPaqueteClienteOptions>, pago: number, reserva: ReservaOptions) {
     return new Promise<SesionPaqueteClienteOptions>(resolve => {
-      sesionPaqueteClienteDoc.valueChanges().subscribe(sesion => {
+      this.loadSesionPaqueteCliente(sesionPaqueteClienteDoc).then(sesion => {
         sesion.pago = pago;
         sesion.actualizacion = new Date();
         sesion.reserva = reserva;
         sesion.estado = DataProvider.ESTADOS_SESION.FINALIZADO;
 
         batch.update(sesionPaqueteClienteDoc.ref, sesion);
+        resolve(sesion);
+      });
+    });
+  }
+
+  private loadSesionPaqueteCliente(sesionPaqueteClienteDoc: AngularFirestoreDocument<SesionPaqueteClienteOptions>) {
+    return new Promise<SesionPaqueteClienteOptions>(resolve => {
+      sesionPaqueteClienteDoc.valueChanges().subscribe(sesion => {
         resolve(sesion);
       });
     });
@@ -420,16 +428,15 @@ export class PendientePage {
     });
   }
 
-  private loadEstado(sesiones: number, realizados: number, resta: number, paga: number): string {
+  private loadEstado(sesiones: number, realizados: number, resta: number): string {
     let estado: string;
-    const terminado: boolean = Number(sesiones) === realizados + 1;
-    const pagado: boolean = resta - paga === 0;
-    if (terminado && pagado) {
-      estado = this.constantes.ESTADOS_PAQUETE.FINALIZADO;
+    const terminado = sesiones === realizados;
+    if (terminado && resta === 0) {
+      estado = DataProvider.ESTADOS_PAQUETE.FINALIZADO;
     } else if (terminado) {
-      estado = this.constantes.ESTADOS_PAQUETE.PENDIENTEPAGO;
+      estado = DataProvider.ESTADOS_PAQUETE.PENDIENTEPAGO;
     } else {
-      estado = this.constantes.ESTADOS_PAQUETE.PENDIENTE;
+      estado = DataProvider.ESTADOS_PAQUETE.PENDIENTE;
     }
     return estado;
   }
@@ -437,33 +444,32 @@ export class PendientePage {
   terminar(reserva: ReservaOptions) {
     const batch = this.afs.firestore.batch();
     const fecha = new Date();
+    reserva.fechaActualizacion = new Date();
+    reserva.estado = DataProvider.ESTADOS_RESERVA.FINALIZADO;
 
-    this.procesarPaquete(reserva, batch).then(pago => {
-      this.procesarServicio(reserva, pago, fecha, batch).then(() => {
+    if (reserva.paquete) {
+      this.procesarPaquete(reserva, batch).then(() => {
+        this.procesarServicio(reserva, fecha, batch).then(() => {
+          batch.commit().then(() => {
+            this.loading.dismiss();
+            this.mensaje('Se ha procesado el servicio');
+            this.updateReservas();
+          });
+        });
+      }).catch(err => {
+        this.loading.dismiss();
+        alert(err);
+      });
+    } else {
+      reserva.pago = reserva.servicio[0].valor;
+      this.procesarServicio(reserva, fecha, batch).then(() => {
         batch.commit().then(() => {
           this.loading.dismiss();
           this.mensaje('Se ha procesado el servicio');
           this.updateReservas();
         });
       });
-    }).catch(err => {
-      this.loading.dismiss();
-      alert(err);
-    });
-    /*else {
-      this.loading.present();
-      const totalServiciosReserva = reserva.servicio.valor;
-      this.procesarServicio(reserva, totalServiciosReserva, fecha, batch).then(() => {
-        batch.commit().then(() => {
-          this.loading.dismiss();
-          this.mensaje('Se ha procesado el servicio');
-          this.updateReservas();
-        }).catch(err => {
-          this.loading.dismiss();
-          alert(err);
-        });
-      });
-    }*/
+    }
   }
 
   loadPaqueteReserva(paqueteClienteDoc: AngularFirestoreDocument<PaqueteClienteOptions>) {

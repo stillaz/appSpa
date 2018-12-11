@@ -497,7 +497,7 @@ export class ReservaPage {
         cliente: this.cliente,
         estado: DataProvider.ESTADOS_RESERVA.RESERVADO,
         evento: DataProvider.EVENTOS.OTRO,
-        idcarrito: this.idcarrito,
+        idcarrito: paqueteCliente.idcarrito,
         usuario: this.usuario,
         fechaActualizacion: null,
         id: null,
