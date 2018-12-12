@@ -443,8 +443,9 @@ export class ReservaPage {
     }
 
     return new Promise<PaqueteClienteOptions>(resolve => {
-      this.guardarPaqueteCliente(paqueteCliente, batch);
-      resolve(paqueteCliente);
+      this.guardarPaqueteCliente(paqueteCliente, batch).then(() => {
+        resolve(paqueteCliente);
+      });
     });
   }
 
@@ -460,10 +461,37 @@ export class ReservaPage {
     }
     const clienteDoc = this.empresaDoc.collection('clientes').doc(this.cliente.id);
     const paqueteClienteDoc = clienteDoc.collection('paquetes').doc(paqueteCliente.id);
-    const sesionPaqueteClienteDoc = paqueteClienteDoc.collection('sesiones').doc<SesionPaqueteClienteOptions>(idsesion.toString());
+    const sesionesPaqueteClienteCollection: AngularFirestoreCollection<SesionPaqueteClienteOptions> = paqueteClienteDoc.collection('sesiones', ref => ref.where('estado', '==', DataProvider.ESTADOS_SESION.PENDIENTE));
+    return new Promise(resolve => {
+      this.loadSesionesPaqueteCliente(sesionesPaqueteClienteCollection).then(sesiones => {
+        if (sesiones[0]) {
+          this.alertCtrl.create({
+            buttons: [{
+              handler: () => {
+                this.navCtrl.pop();
+              },
+              text: 'Ok'
+            }],
+            message: 'Por favor canelar o finalizar la reserva pendiente.',
+            subTitle: 'El cliente tiene una sesión pendiente.',
+            title: 'No fue posible asignar la reserva'
+          }).present();
+        } else {
+          const sesionPaqueteClienteDoc = sesionesPaqueteClienteCollection.doc<SesionPaqueteClienteOptions>(idsesion.toString());
+          batch.set(paqueteClienteDoc.ref, paqueteCliente);
+          batch.set(sesionPaqueteClienteDoc.ref, sesionPaqueteCliente);
+          resolve('ok');
+        }
+      });
+    });
+  }
 
-    batch.set(paqueteClienteDoc.ref, paqueteCliente);
-    batch.set(sesionPaqueteClienteDoc.ref, sesionPaqueteCliente);
+  loadSesionesPaqueteCliente(sesionesPaqueteClienteCollection: AngularFirestoreCollection<SesionPaqueteClienteOptions>) {
+    return new Promise<SesionPaqueteClienteOptions[]>(resolve => {
+      sesionesPaqueteClienteCollection.valueChanges().subscribe(sesiones => {
+        resolve(sesiones);
+      });
+    });
   }
 
   agregarServiciosPaquete(paquete: any) {

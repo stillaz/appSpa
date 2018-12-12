@@ -78,7 +78,7 @@ export class PendientePage {
     });
   }
 
-  loadReservaPendienteDia(iddisponibilidad: string) {
+  public loadReservaPendienteDia(iddisponibilidad: string) {
     let reservaCollection = this.disponibilidadCollection.doc(iddisponibilidad).collection<ReservaOptions>('disponibilidades', ref => ref.where('estado', '==', DataProvider.ESTADOS_RESERVA.RESERVADO));
     return new Promise<ReservaOptions[]>(resolve => {
       reservaCollection.valueChanges().subscribe(dataReservas => {
@@ -87,7 +87,7 @@ export class PendientePage {
     });
   }
 
-  updateReservasPendientes() {
+  public updateReservasPendientes() {
     return new Observable<ReservaOptions[]>((observer) => {
       this.disponibilidadCollection.valueChanges().subscribe(dataDisponibilidad => {
         let disponible: ReservaOptions[] = [];
@@ -106,7 +106,7 @@ export class PendientePage {
     });
   }
 
-  updateReservas() {
+  public updateReservas() {
     this.updateReservasPendientes().subscribe(data => {
       this.reservas = data;
     });
@@ -129,7 +129,7 @@ export class PendientePage {
     });
   }*/
 
-  updatePaquetesPendientes(estado: string) {
+  public updatePaquetesPendientes(estado: string) {
     return new Observable<PaqueteOptions[]>((observer) => {
       this.clientesPendientesCollection.valueChanges().subscribe(dataClientes => {
         const paquetes: PaqueteOptions[] = [];
@@ -160,22 +160,19 @@ export class PendientePage {
     });
   }
 
-  mensaje(mensaje: string) {
+  private mensaje(mensaje: string) {
     this.toastCtrl.create({
       message: mensaje,
       duration: 3000
     }).present();
   }
 
-  private eliminar(reserva: ReservaOptions) {
-    const fecha = new Date();
-    const fechaServicio: Date = reserva.fechaInicio.toDate();
-    const dia = moment(fechaServicio).startOf('day').toDate().getTime().toString();
-    const disponibilidadDoc = this.usuarioDoc.collection('disponibilidades').doc(dia);
+  public cancelar(slidingItem: ItemSliding, reserva: ReservaOptions) {
+    const fechaServicio = reserva.fechaInicio.toDate();
     const fechaInicio = moment(fechaServicio).locale("es").format("dddd, DD [de] MMMM [de] YYYY");
     const horaInicio = moment(fechaServicio).format("hh:mm a");
-    const nombreCliente = reserva.cliente.nombre;
-    const cancelarAlert = this.alertCtrl.create({
+    const batch = this.afs.firestore.batch();
+    this.alertCtrl.create({
       title: 'Cancelar cita',
       message: 'Desea cancelar la cita de ' + fechaInicio + ' a las ' + horaInicio,
       buttons: [
@@ -186,54 +183,109 @@ export class PendientePage {
         {
           text: 'Si',
           handler: () => {
-            const batch = this.afs.firestore.batch();
-            const canceladoDoc: AngularFirestoreDocument<ReservaOptions> = disponibilidadDoc.collection('cancelados').doc(fecha.getTime().toString());
-            reserva.estado = DataProvider.ESTADOS_RESERVA.CANCELADO;
-            batch.set(canceladoDoc.ref, reserva);
-
-            const disponibilidadCancelarDoc: AngularFirestoreDocument = disponibilidadDoc.collection('disponibilidades').doc(fechaServicio.getTime().toString());
-
-            batch.delete(disponibilidadCancelarDoc.ref);
-
-            disponibilidadDoc.ref.get().then(datosDiarios => {
-              const pendientesDiarioActual = datosDiarios.get('pendientes');
-              const pendientesDiario = Number(pendientesDiarioActual) - 1;
-              batch.update(disponibilidadDoc.ref, {
-                pendientes: pendientesDiario,
-                fecha: fecha
-              });
-
-              const idreserva = reserva.id;
-              if (idreserva) {
-                const serviciosDoc = this.afs.doc('servicioscliente/' + idreserva);
-
-                batch.update(serviciosDoc.ref, {
-                  estado: DataProvider.ESTADOS_RESERVA.CANCELADO,
-                  fechaActualizacion: fecha,
-                  imagenusuario: this.usuario.imagen,
-                  empresa: this.usuarioService.getEmpresa(),
-                  actualiza: 'usuario'
-                });
-
-                const serviciosClienteDoc = this.afs.doc('clientes/' + reserva.cliente.correoelectronico + '/servicios/' + fechaServicio.getTime().toString());
-
-                batch.update(serviciosClienteDoc.ref, { estado: DataProvider.ESTADOS_RESERVA.CANCELADO });
-              }
-
-              batch.commit().then(() => {
-                this.mensaje('La cita con ' + nombreCliente + ' ha sido cancelada');
-                this.updateReservas();
-              }).catch(err => alert(err));
-            });
+            if (reserva.paquete) {
+              this.eliminarSesionPaquete(batch, reserva, fechaServicio);
+            } else {
+              this.eliminar(batch, reserva, fechaServicio);
+            }
           }
         }],
     });
-    cancelarAlert.present();
+    slidingItem.close();
   }
 
-  cancelar(slidingItem: ItemSliding, reserva: ReservaOptions) {
-    this.eliminar(reserva);
-    slidingItem.close();
+  private eliminarSesionPaquete(batch: firebase.firestore.WriteBatch, reserva: ReservaOptions, fechaServicio: Date) {
+    const idpaquete = reserva.idcarrito.toString();
+    const idsesion = reserva.paquete.sesion;
+    const clienteDoc = this.empresaDoc.collection('clientes').doc(reserva.cliente.id);
+    const paqueteClienteDoc = clienteDoc.collection('paquetes').doc(idpaquete);
+    const sesionPaqueteClienteDoc = paqueteClienteDoc.collection('sesiones').doc(idsesion.toString());
+
+    batch.delete(sesionPaqueteClienteDoc.ref);
+
+    if(idsesion === 1){
+      batch.delete(paqueteClienteDoc.ref);
+    } else {
+      batch.update(paqueteClienteDoc.ref, { sesion: idsesion - 1 });
+    }
+
+    this.eliminar(batch, reserva, fechaServicio);
+  }
+
+  private eliminar(batch: firebase.firestore.WriteBatch, reserva: ReservaOptions, fechaServicio: Date) {
+    const fecha = new Date();
+    const dia = moment(fechaServicio).startOf('day').toDate().getTime().toString();
+    const disponibilidadDoc = this.usuarioDoc.collection('disponibilidades').doc(dia);
+    const nombreCliente = reserva.cliente.nombre;
+    const canceladoDoc: AngularFirestoreDocument<ReservaOptions> = disponibilidadDoc.collection('cancelados').doc(fecha.getTime().toString());
+    reserva.estado = DataProvider.ESTADOS_RESERVA.CANCELADO;
+    batch.set(canceladoDoc.ref, reserva);
+
+    const disponibilidadCancelarDoc: AngularFirestoreDocument = disponibilidadDoc.collection('disponibilidades').doc(fechaServicio.getTime().toString());
+
+    batch.delete(disponibilidadCancelarDoc.ref);
+
+    disponibilidadDoc.ref.get().then(datosDiarios => {
+      const pendientesDiarioActual = datosDiarios.get('pendientes');
+      const pendientesDiario = Number(pendientesDiarioActual) - 1;
+      batch.update(disponibilidadDoc.ref, {
+        pendientes: pendientesDiario,
+        fecha: fecha
+      });
+
+      const idreserva = reserva.id;
+      if (idreserva) {
+        const serviciosDoc = this.afs.doc('servicioscliente/' + idreserva);
+
+        batch.update(serviciosDoc.ref, {
+          estado: DataProvider.ESTADOS_RESERVA.CANCELADO,
+          fechaActualizacion: fecha,
+          imagenusuario: this.usuario.imagen,
+          empresa: this.usuarioService.getEmpresa(),
+          actualiza: 'usuario'
+        });
+
+        const serviciosClienteDoc = this.afs.doc('clientes/' + reserva.cliente.correoelectronico + '/servicios/' + fechaServicio.getTime().toString());
+
+        batch.update(serviciosClienteDoc.ref, { estado: DataProvider.ESTADOS_RESERVA.CANCELADO });
+      }
+
+      batch.commit().then(() => {
+        this.mensaje('La cita con ' + nombreCliente + ' ha sido cancelada');
+        this.updateReservas();
+      }).catch(err => alert(err));
+    });
+  }
+
+  public terminar(reserva: ReservaOptions) {
+    const batch = this.afs.firestore.batch();
+    const fecha = new Date();
+    reserva.fechaActualizacion = new Date();
+    reserva.estado = DataProvider.ESTADOS_RESERVA.FINALIZADO;
+
+    if (reserva.paquete) {
+      this.procesarPaquete(reserva, batch).then(() => {
+        this.procesarServicio(reserva, fecha, batch).then(() => {
+          batch.commit().then(() => {
+            this.loading.dismiss();
+            this.mensaje('Se ha procesado el servicio');
+            this.updateReservas();
+          });
+        });
+      }).catch(err => {
+        this.loading.dismiss();
+        alert(err);
+      });
+    } else {
+      reserva.pago = reserva.servicio[0].valor;
+      this.procesarServicio(reserva, fecha, batch).then(() => {
+        batch.commit().then(() => {
+          this.loading.dismiss();
+          this.mensaje('Se ha procesado el servicio');
+          this.updateReservas();
+        });
+      });
+    }
   }
 
   private procesarServicio(reserva: ReservaOptions, fecha: Date, batch: firebase.firestore.WriteBatch) {
@@ -396,6 +448,19 @@ export class PendientePage {
     batch.update(paqueteClienteDoc.ref, paquete);
   }
 
+  private loadEstado(sesiones: number, realizados: number, resta: number): string {
+    let estado: string;
+    const terminado = sesiones === realizados;
+    if (terminado && resta === 0) {
+      estado = DataProvider.ESTADOS_PAQUETE.FINALIZADO;
+    } else if (terminado) {
+      estado = DataProvider.ESTADOS_PAQUETE.PENDIENTEPAGO;
+    } else {
+      estado = DataProvider.ESTADOS_PAQUETE.PENDIENTE;
+    }
+    return estado;
+  }
+
   private actualizarSesionPaqueteCliente(batch: firebase.firestore.WriteBatch, sesionPaqueteClienteDoc: AngularFirestoreDocument<SesionPaqueteClienteOptions>, pago: number, reserva: ReservaOptions) {
     return new Promise<SesionPaqueteClienteOptions>(resolve => {
       this.loadSesionPaqueteCliente(sesionPaqueteClienteDoc).then(sesion => {
@@ -426,50 +491,6 @@ export class PendientePage {
         resolve('ok');
       });
     });
-  }
-
-  private loadEstado(sesiones: number, realizados: number, resta: number): string {
-    let estado: string;
-    const terminado = sesiones === realizados;
-    if (terminado && resta === 0) {
-      estado = DataProvider.ESTADOS_PAQUETE.FINALIZADO;
-    } else if (terminado) {
-      estado = DataProvider.ESTADOS_PAQUETE.PENDIENTEPAGO;
-    } else {
-      estado = DataProvider.ESTADOS_PAQUETE.PENDIENTE;
-    }
-    return estado;
-  }
-
-  terminar(reserva: ReservaOptions) {
-    const batch = this.afs.firestore.batch();
-    const fecha = new Date();
-    reserva.fechaActualizacion = new Date();
-    reserva.estado = DataProvider.ESTADOS_RESERVA.FINALIZADO;
-
-    if (reserva.paquete) {
-      this.procesarPaquete(reserva, batch).then(() => {
-        this.procesarServicio(reserva, fecha, batch).then(() => {
-          batch.commit().then(() => {
-            this.loading.dismiss();
-            this.mensaje('Se ha procesado el servicio');
-            this.updateReservas();
-          });
-        });
-      }).catch(err => {
-        this.loading.dismiss();
-        alert(err);
-      });
-    } else {
-      reserva.pago = reserva.servicio[0].valor;
-      this.procesarServicio(reserva, fecha, batch).then(() => {
-        batch.commit().then(() => {
-          this.loading.dismiss();
-          this.mensaje('Se ha procesado el servicio');
-          this.updateReservas();
-        });
-      });
-    }
   }
 
   loadPaqueteReserva(paqueteClienteDoc: AngularFirestoreDocument<PaqueteClienteOptions>) {
