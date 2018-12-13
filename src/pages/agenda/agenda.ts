@@ -1,6 +1,6 @@
 import moment from 'moment';
 import { Component, ViewChild } from '@angular/core';
-import { AlertController, Content, IonicPage, ItemSliding, NavController, ActionSheetController, PopoverController, ToastController } from 'ionic-angular';
+import { AlertController, Content, IonicPage, ItemSliding, NavController, ActionSheetController, PopoverController, ToastController, Loading, LoadingController } from 'ionic-angular';
 import * as DataProvider from '../../providers/constants';
 import { ClienteOptions } from '../../interfaces/cliente-options';
 import { ReservaOptions } from '../../interfaces/reserva-options';
@@ -46,10 +46,12 @@ export class AgendaPage {
     public usuarios: UsuarioOptions[];
     private disponibilidadDoc: AngularFirestoreDocument;
     public terms: string = '';
-    private indisponibles;
+    private indisponibles: any;
     private filePathEmpresa: string;
     public administrador: boolean;
     public actual: Date = new Date();
+    private loading: Loading;
+    private empresaDoc: AngularFirestoreDocument;
 
     public opciones: any[] = [{
         title: 'Configuración',
@@ -64,10 +66,15 @@ export class AgendaPage {
         private afs: AngularFirestore,
         public popoverCtrl: PopoverController,
         private usuarioService: UsuarioProvider,
-        public toastCtrl: ToastController
+        public toastCtrl: ToastController,
+        public loadingCtrl: LoadingController
     ) {
+        this.loading = loadingCtrl.create({
+            content: 'Procesando'
+        });
         this.usuarioLogueado = this.usuarioService.getUsuario();
         this.filePathEmpresa = 'negocios/' + this.usuarioLogueado.idempresa;
+        this.empresaDoc = this.afs.doc(this.filePathEmpresa);
         this.administrador = this.usuarioService.isAdministrador();
         if (this.administrador) {
             this.updateUsuarios();
@@ -303,69 +310,107 @@ export class AgendaPage {
         }
     }
 
-    private eliminar(reserva: ReservaOptions) {
-        const fecha = new Date();
-        let fechaInicio = moment(reserva.fechaInicio).locale("es").format("dddd, DD [de] MMMM [de] YYYY");
-        let horaInicio = moment(reserva.fechaInicio).format("hh:mm a");
-        let nombreCliente = reserva.cliente.nombre;
-        let cancelarAlert = this.alertCtrl.create({
+    public cancelar(slidingItem: ItemSliding, reserva: ReservaOptions) {
+        const fechaServicio = reserva.fechaInicio;
+        const fechaInicio = moment(fechaServicio).locale("es").format("dddd, DD [de] MMMM [de] YYYY");
+        const horaInicio = moment(fechaServicio).format("hh:mm a");
+        const batch = this.afs.firestore.batch();
+        this.alertCtrl.create({
             title: 'Cancelar cita',
-            message: 'Desea cancelar la cita el día: ' + fechaInicio + ' a las ' + horaInicio,
-            buttons: [{
-                text: 'No',
-                role: 'cancel'
-            }, {
-                text: 'Si',
-                handler: () => {
-                    let batch = this.afs.firestore.batch();
-                    let canceladoDoc: AngularFirestoreDocument<ReservaOptions> = this.disponibilidadDoc.collection('cancelados').doc(new Date().getTime().toString());
-                    reserva.estado = DataProvider.ESTADOS_RESERVA.CANCELADO;
-                    batch.set(canceladoDoc.ref, reserva);
-
-                    const idfecha = reserva.fechaInicio.getTime().toString();
-
-                    let disponibilidadCancelarDoc: AngularFirestoreDocument = this.disponibilidadDoc.collection('disponibilidades').doc(idfecha);
-
-                    batch.delete(disponibilidadCancelarDoc.ref);
-
-                    this.disponibilidadDoc.ref.get().then(datosDiarios => {
-                        const pendientesDiarioActual = datosDiarios.get('pendientes');
-                        const pendientesDiario = Number(pendientesDiarioActual) - 1;
-                        batch.update(this.disponibilidadDoc.ref, {
-                            pendientes: pendientesDiario,
-                            fecha: fecha
-                        });
-
-                        let idreserva = reserva.id;
-                        if (idreserva) {
-                            const serviciosDoc = this.afs.doc('servicioscliente/' + idreserva);
-
-                            batch.update(serviciosDoc.ref, {
-                                estado: this.constantes.ESTADOS_RESERVA.CANCELADO,
-                                fechaActualizacion: new Date(),
-                                imagenusuario: this.usuario.imagen,
-                                empresa: this.usuarioService.getEmpresa(),
-                                actualiza: 'usuario'
-                            });
-
-                            const serviciosClienteDoc = this.afs.doc('clientes/' + reserva.cliente.correoelectronico + '/servicios/' + idfecha);
-
-                            batch.update(serviciosClienteDoc.ref, { estado: this.constantes.ESTADOS_RESERVA.CANCELADO });
+            message: 'Desea cancelar la cita de ' + fechaInicio + ' a las ' + horaInicio,
+            buttons: [
+                {
+                    text: 'No',
+                    role: 'cancel'
+                },
+                {
+                    text: 'Si',
+                    handler: () => {
+                        if (reserva.paquete) {
+                            this.eliminarSesionPaquete(batch, reserva, fechaServicio);
+                        } else {
+                            this.eliminar(batch, reserva, fechaServicio);
                         }
-
-                        batch.commit().then(() => {
-                            this.mensaje('La cita con ' + nombreCliente + ' ha sido cancelada');
-                        }).catch(err => alert(err));
-                    });
-                }
-            }],
-        });
-        cancelarAlert.present();
+                    }
+                }],
+        }).present();
+        slidingItem.close();
     }
 
-    cancelar(slidingItem: ItemSliding, reserva: ReservaOptions) {
-        this.eliminar(reserva);
-        slidingItem.close();
+    private eliminarSesionPaquete(batch: firebase.firestore.WriteBatch, reserva: ReservaOptions, fechaServicio: Date) {
+        const idpaquete = reserva.idcarrito.toString();
+        const idsesion = reserva.paquete.sesion;
+        const clienteDoc = this.empresaDoc.collection('clientes').doc(reserva.cliente.id);
+        const paqueteClienteDoc = clienteDoc.collection('paquetes').doc(idpaquete);
+        const sesionPaqueteClienteDoc = paqueteClienteDoc.collection('sesiones').doc(idsesion.toString());
+
+        batch.delete(sesionPaqueteClienteDoc.ref);
+
+        if (idsesion === 1) {
+            batch.delete(paqueteClienteDoc.ref);
+        } else {
+            batch.update(paqueteClienteDoc.ref, { sesion: idsesion - 1 });
+        }
+
+        this.eliminar(batch, reserva, fechaServicio);
+    }
+
+    private eliminar(batch: firebase.firestore.WriteBatch, reserva: ReservaOptions, fechaServicio: Date) {
+        const fecha = new Date();
+        const dia = moment(fechaServicio).startOf('day').toDate().getTime().toString();
+        const disponibilidadDoc = this.usuarioDoc.collection('disponibilidades').doc(dia);
+        const nombreCliente = reserva.cliente.nombre;
+        const canceladoDoc: AngularFirestoreDocument<ReservaOptions> = disponibilidadDoc.collection('cancelados').doc(fecha.getTime().toString());
+        reserva.estado = DataProvider.ESTADOS_RESERVA.CANCELADO;
+        batch.set(canceladoDoc.ref, reserva);
+
+        const disponibilidadCancelarDoc: AngularFirestoreDocument = disponibilidadDoc.collection('disponibilidades').doc(fechaServicio.getTime().toString());
+
+        batch.delete(disponibilidadCancelarDoc.ref);
+
+        this.loading.present();
+
+        disponibilidadDoc.ref.get().then(datosDiarios => {
+            const pendientesDiarioActual = datosDiarios.get('pendientes');
+            const pendientesDiario = Number(pendientesDiarioActual) - 1;
+            batch.update(disponibilidadDoc.ref, {
+                pendientes: pendientesDiario,
+                fecha: fecha
+            });
+
+            const idreserva = reserva.id;
+            if (idreserva) {
+                const serviciosDoc = this.afs.doc('servicioscliente/' + idreserva);
+
+                batch.update(serviciosDoc.ref, {
+                    estado: DataProvider.ESTADOS_RESERVA.CANCELADO,
+                    fechaActualizacion: fecha,
+                    imagenusuario: this.usuario.imagen,
+                    empresa: this.usuarioService.getEmpresa(),
+                    actualiza: 'usuario'
+                });
+
+                const serviciosClienteDoc = this.afs.doc('clientes/' + reserva.cliente.correoelectronico + '/servicios/' + fechaServicio.getTime().toString());
+
+                batch.update(serviciosClienteDoc.ref, { estado: DataProvider.ESTADOS_RESERVA.CANCELADO });
+            }
+
+            batch.commit().then(() => {
+                this.mensaje('La cita con ' + nombreCliente + ' ha sido cancelada');
+                this.loading.dismiss();
+            }).catch(err => {
+                this.loading.dismiss();
+                this.alertCtrl.create({
+                    buttons: [{
+                        text: 'Ok',
+                        role: 'cancel'
+                    }],
+                    message: 'Error: ' + err,
+                    subTitle: 'Ha ocurrido un error al cancelar la reserva',
+                    title: 'Se presentó un error'
+                }).present();
+            });
+        });
     }
 
     configActionSheet(title: string, filtros) {
