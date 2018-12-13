@@ -130,14 +130,14 @@
       </ion-col>
     </ion-row>
 
-    <ion-item *ngFor="let totalesUsuario of totalesUsuarios" (tap)="ver(totalesUsuario.idusuario)">
+    <ion-item *ngFor="let totalesUsuario of totalesUsuarios" (tap)="ver(totalesUsuario.usuario.id)">
       <ion-avatar item-start *ngIf="totalesUsuario.imagenusuario">
         <img [src]="totalesUsuario.imagenusuario">
       </ion-avatar>
 
       <ion-row>
         <ion-col style="text-align: left">
-          <h2>{{totalesUsuario.usuario}}</h2>
+          <h2>{{totalesUsuario.usuario.nombre}}</h2>
         </ion-col>
         <ion-col style="text-align: right; color: #f53d3d">
           <h2>{{totalesUsuario.totalServicios | currency:'USD':'symbol':'4.0'}}</h2>

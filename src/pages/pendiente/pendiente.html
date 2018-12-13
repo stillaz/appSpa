@@ -59,23 +59,25 @@
         <ion-avatar item-start *ngIf="paquete.cliente.imagen">
           <img [src]="paquete.cliente.imagen" />
         </ion-avatar>
-        <h2>{{paquete.cliente.nombre}}</h2>
-        <p>{{paquete.servicio.nombre}}</p>
-        <ion-note style="font-size: small">{{paquete.realizados}} de {{paquete.sesiones}}</ion-note>
-        <ion-note style="font-size: small">- Pagado: {{paquete.pagado | currency : USD: symbol: '4.0'}}</ion-note>
+        <h2><strong>{{paquete.cliente.nombre}}: </strong>{{paquete.paquete.nombre}}</h2>
+        <p>{{paquete.paquete.descripcion}}. Valor: {{paquete.valor | currency : USD: symbol: '4.0'}}</p>
+        <ion-note style="font-size: small">Sesiones {{paquete.sesion}} - Pagado: {{paquete.pago | currency : USD:
+          symbol: '4.0'}}</ion-note>
       </ion-item>
     </ion-item-sliding>
   </ion-list>
 
   <ion-list *ngSwitchCase="'sinpago'">
     <ion-item-sliding *ngFor="let paquete of paquetes" #slidingItem>
-      <ion-avatar item-start *ngIf="paquete.cliente.imagen">
-        <img [src]="paquete.cliente.imagen" />
-      </ion-avatar>
-      <h2>{{paquete.cliente.nombre}}</h2>
-      <p>{{paquete.servicio.nombre}}</p>
-      <ion-note style="font-size: small">{{paquete.realizados}} de {{paquete.sesiones}}</ion-note>
-      <ion-note style="font-size: small">- Pagado: {{paquete.pagado | currency : USD: symbol: '4.0'}}</ion-note>
+      <ion-item>
+        <ion-avatar item-start *ngIf="paquete.cliente.imagen">
+          <img [src]="paquete.cliente.imagen" />
+        </ion-avatar>
+        <h2><strong>{{paquete.cliente.nombre}}: </strong>{{paquete.paquete.nombre}}</h2>
+        <p>{{paquete.paquete.descripcion}}. Valor: {{paquete.valor | currency : USD: symbol: '4.0'}}</p>
+        <ion-note style="font-size: small">Sesiones {{paquete.sesion}} - Pagado: {{paquete.pago | currency : USD:
+          symbol: '4.0'}}</ion-note>
+      </ion-item>
     </ion-item-sliding>
   </ion-list>
 </ion-content>

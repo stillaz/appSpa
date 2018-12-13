@@ -31,8 +31,8 @@
           </ion-buttons>
         </ion-col>
         <ion-col col-10>
-          <ion-select style="width: 100%; max-width: 100%; text-align: center; color: #ffffff; font-weight: bolder;" [(ngModel)]="mesSeleccionado"
-            #C (ionChange)="updateSeleccionado(C.value)">
+          <ion-select style="width: 100%; max-width: 100%; text-align: center; color: #ffffff; font-weight: bolder;"
+            [(ngModel)]="mesSeleccionado" #C (ionChange)="updateSeleccionado(C.value)">
             <ion-option *ngFor="let fecha of fechas" [value]="fecha">{{fecha.texto}}</ion-option>
           </ion-select>
         </ion-col>

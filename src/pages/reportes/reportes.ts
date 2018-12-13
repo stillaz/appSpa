@@ -39,7 +39,7 @@ export class ReportesPage {
   totalesUsuarios: any[];
   total: number;
   cantidad: number;
-  read;
+  read: any;
   totalesDoc: AngularFirestoreDocument;
   constantes = DataProvider;
   filtroSeleccionado: string = 'MENSUAL';
@@ -136,24 +136,24 @@ export class ReportesPage {
   }
 
   updateTotalesDia(fecha: Date) {
-    let fechaInicio = moment(fecha).startOf('day').toDate();
+    const fechaInicio = moment(fecha).startOf('day').toDate();
     this.read = this.usuarioDiarioCollection.valueChanges().subscribe(data => {
       this.totalesUsuarios = [];
       this.total = 0;
       this.cantidad = 0;
       data.forEach(usuario => {
-        let disponibilidadUsuarioDoc = this.afs.doc<any>(this.filePathUsuarios + '/' + usuario.id + '/disponibilidades/' + fechaInicio.getTime().toString());
+        const disponibilidadUsuarioDoc = this.afs.doc<any>(this.filePathUsuarios + '/' + usuario.id + '/disponibilidades/' + fechaInicio.getTime().toString());
         disponibilidadUsuarioDoc.valueChanges().subscribe(totalDia => {
           if (totalDia) {
-            let totalesDia = totalDia.totalServicios;
-            let cantidadesDia = totalDia.cantidadServicios;
+            const totalesDia = totalDia.totalServicios;
+            const cantidadesDia = totalDia.cantidadServicios;
             this.total += totalesDia ? Number(totalesDia) : 0;
             this.cantidad += cantidadesDia ? Number(cantidadesDia) : 0;
-            let totalUsuario = this.totalesUsuarios.find(totalUsuario => totalUsuario.idusuario === totalDia.idusuario);
+            const totalUsuario = this.totalesUsuarios.find(totalUsuario => totalUsuario.idusuario === totalDia.idusuario);
             if (!totalUsuario) {
               this.totalesUsuarios.push(totalDia);
             } else {
-              let item = this.totalesUsuarios.indexOf(totalUsuario);
+              const item = this.totalesUsuarios.indexOf(totalUsuario);
               this.totalesUsuarios.splice(item, 1, totalDia);
             }
           }
@@ -240,10 +240,10 @@ export class ReportesPage {
     while (moment(init).isSameOrBefore(diaFinAno)) {
       let mesInit = moment(init).startOf('month').toDate();
       this.totalesDoc = this.afs.doc(this.filePathEmpresa + '/totalesservicios/' + mesInit.getTime().toString());
-      let totalesServiciosUsuariosCollection: AngularFirestoreCollection<TotalesServiciosOptions> = this.administrador ? this.totalesDoc.collection('totalesServiciosUsuarios') : this.totalesDoc.collection('totalesServiciosUsuarios', ref => ref.where('idusuario', '==', this.usuario.id));
+      let totalesServiciosUsuariosCollection: AngularFirestoreCollection<TotalesServiciosOptions> = this.administrador ? this.totalesDoc.collection('totalesServiciosUsuarios') : this.totalesDoc.collection('totalesServiciosUsuarios', ref => ref.where('usuario.id', '==', this.usuario.id));
       this.read = totalesServiciosUsuariosCollection.valueChanges().subscribe(data => {
         data.forEach(totalData => {
-          if (this.totalesUsuarios.length === 0 || !this.totalesUsuarios.some(usuarioT => usuarioT.idusuario === totalData.usuario.id)) {
+          if (this.totalesUsuarios.length === 0 || !this.totalesUsuarios.some(usuarioT => usuarioT.usuario.id === totalData.usuario.id)) {
             this.totalesUsuarios.push(totalData);
           } else {
             let totalUsuarioEncontrado = this.totalesUsuarios.find(usuarioT => usuarioT.idusuario === totalData.usuario.id);

@@ -33,7 +33,6 @@ export class DetalleReportePage {
   disponibilidades: any[];
   total: number;
   cantidad: number;
-  read;
   modo: string = 'disponibilidades';
 
   constructor(
@@ -69,54 +68,56 @@ export class DetalleReportePage {
 
   updateFechas(fechaSeleccionada: Date) {
     this.fechas = [];
-    let actual = moment(fechaSeleccionada).startOf("month");
-    let fechaInicio = moment(fechaSeleccionada).add(-1, "years");
+    const actual = moment(fechaSeleccionada).startOf("month");
+    const fechaInicio = moment(fechaSeleccionada).add(-1, "years");
     let fecha = actual.startOf("month");
-    let texto = fecha.locale("es").format("MMMM - YYYY").toLocaleUpperCase();
+    const texto = fecha.locale("es").format("MMMM - YYYY").toLocaleUpperCase();
     this.mesSeleccionado = { fecha: actual.toDate(), texto: texto };
 
     this.fechas.push(this.mesSeleccionado);
     while (fecha.diff(fechaInicio) > 0) {
       fecha = fecha.add(-1, "month");
-      let texto = fecha.locale("es").format("MMMM - YYYY").toLocaleUpperCase();
+      const texto = fecha.locale("es").format("MMMM - YYYY").toLocaleUpperCase();
       this.fechas.push({ fecha: fecha.toDate(), texto: texto });
     }
   }
 
-  private updateDisponibilidades(disponibilidadesCollection: AngularFirestoreCollection<DisponibilidadOptions>, dia: DisponibilidadOptions) {
-    return new Promise(resolve => {
-      disponibilidadesCollection.doc(dia.id.toString()).collection<ReservaOptions>(this.modo, ref => ref.orderBy('fechaFin', 'desc')).valueChanges().subscribe(datos => {
-        if (datos && datos[0]) {
-          let fechaData = moment(new Date(dia.id)).locale('es').format('dddd, DD');
-          this.disponibilidades.push({ grupo: fechaData, disponibilidades: datos });
-          this.total += datos.map(c => {
-            return c.pago ? Number(c.pago) : 0;
-          }).reduce((sum, current) => sum + current);
-          this.cantidad += datos.length;
-          resolve('ok');
-        }
+  private loadDisponibilidades(disponibilidadesCollection: AngularFirestoreCollection<DisponibilidadOptions>, dia: DisponibilidadOptions) {
+    const disponibilidadDoc = disponibilidadesCollection.doc(dia.id.toString());
+    const modoCollection = disponibilidadDoc.collection<ReservaOptions>(this.modo, ref => ref.orderBy('fechaFin', 'desc'));
+    return new Promise<any>(resolve => {
+      modoCollection.valueChanges().subscribe(datos => {
+        resolve(datos);
       });
     });
   }
 
   updateServicios(fecha: Date) {
-    let fechaInicio = moment(fecha).startOf('month').toDate();
-    let fechaFin = moment(fecha).endOf('month').toDate();
-    let disponibilidadesCollection: AngularFirestoreCollection<DisponibilidadOptions> = this.usuarioDoc.collection('disponibilidades', ref => ref.where('id', '<=', fechaFin.getTime()).orderBy('id', 'desc').where('id', '>=', fechaInicio.getTime()));
-    this.read = disponibilidadesCollection.valueChanges().subscribe(data => {
+    const fechaInicio = moment(fecha).startOf('month').toDate();
+    const fechaFin = moment(fecha).endOf('month').toDate();
+    const disponibilidadesCollection: AngularFirestoreCollection<DisponibilidadOptions> = this.usuarioDoc.collection('disponibilidades', ref => ref.where('id', '<=', fechaFin.getTime()).orderBy('id', 'desc').where('id', '>=', fechaInicio.getTime()));
+    disponibilidadesCollection.valueChanges().subscribe(data => {
       this.disponibilidades = [];
       this.total = 0;
       this.cantidad = 0;
       if (data) {
         data.forEach(dia => {
-          this.updateDisponibilidades(disponibilidadesCollection, dia);
+          this.loadDisponibilidades(disponibilidadesCollection, dia).then(datos => {
+            if (datos && datos[0]) {
+              const fechaData = moment(new Date(dia.id)).locale('es').format('dddd, DD');
+              this.disponibilidades.push({ grupo: fechaData, disponibilidades: datos });
+              this.total += datos.map(c => {
+                return c.pago ? Number(c.pago) : 0;
+              }).reduce((sum, current) => sum + current);
+              this.cantidad += datos.length;
+            }
+          });
         });
       }
     });
   }
 
   updateFecha(valor: number) {
-    this.read.unsubscribe();
     let fechaNueva = moment(this.mesSeleccionado.fecha).add(valor, 'month').toDate();
     this.updateFechas(fechaNueva);
     this.adelante = moment(new Date()).diff(this.mesSeleccionado.fecha, "month") !== 0;
@@ -125,7 +126,6 @@ export class DetalleReportePage {
   }
 
   updateSeleccionado(seleccionado: FechaOptions) {
-    this.read.unsubscribe();
     this.adelante = moment(new Date()).diff(seleccionado.fecha, "month") !== 0;
     this.atras = moment(seleccionado.fecha).get("month") !== 1;
     this.updateServicios(seleccionado.fecha);

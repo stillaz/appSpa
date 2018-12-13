@@ -9,7 +9,6 @@ import moment from 'moment';
 import { interval, Observable } from 'rxjs';
 import { TotalesServiciosOptions } from '../../interfaces/totales-servicios-options';
 import { ClienteOptions } from '../../interfaces/cliente-options';
-import { PaqueteOptions } from '../../interfaces/paquete-options';
 import { PaqueteClienteOptions } from '../../interfaces/paquete-cliente-options';
 import { SesionPaqueteClienteOptions } from '../../interfaces/sesion-paquete-cliente-options';
 
@@ -36,7 +35,7 @@ export class PendientePage {
   public actual: Date;
   public terms: string = 'pendiente';
   private loading: Loading;
-  public paquetes: PaqueteOptions[];
+  public paquetes: PaqueteClienteOptions[];
   private empresaDoc: AngularFirestoreDocument;
   private clienteNegocioCollection: AngularFirestoreCollection;
   private clientesPendientesCollection: AngularFirestoreCollection;
@@ -78,6 +77,22 @@ export class PendientePage {
     });
   }
 
+  public updateServiciosPendientes() {
+    switch (this.terms) {
+      case 'pendiente':
+        this.updateReservas();
+        break;
+
+      case 'activo':
+        this.updatePaquetes();
+        break;
+
+      case 'sinpago':
+        this.updatePaquetes();
+        break;
+    }
+  }
+
   public loadReservaPendienteDia(iddisponibilidad: string) {
     let reservaCollection = this.disponibilidadCollection.doc(iddisponibilidad).collection<ReservaOptions>('disponibilidades', ref => ref.where('estado', '==', DataProvider.ESTADOS_RESERVA.RESERVADO));
     return new Promise<ReservaOptions[]>(resolve => {
@@ -112,27 +127,27 @@ export class PendientePage {
     });
   }
 
-  /*updatePaquetes() {
+  updatePaquetes() {
     const estado = this.terms === 'activo' ? this.constantes.ESTADOS_PAQUETE.PENDIENTE : this.constantes.ESTADOS_PAQUETE.PENDIENTEPAGO;
     this.updatePaquetesPendientes(estado).subscribe(data => {
       this.paquetes = data.sort((a, b) => {
-        const registroA = a.registro.toDate();
-        const registroB = b.registro.toDate();
+        const registroA = a.idcarrito;
+        const registroB = b.idcarrito;
         if (registroA > registroB) {
           return 1;
-        } else if (a.registro.toDate() < b.registro.toDate()) {
+        } else if (registroA < registroB) {
           return -1;
         } else {
           return 0;
         }
       });
     });
-  }*/
+  }
 
   public updatePaquetesPendientes(estado: string) {
-    return new Observable<PaqueteOptions[]>((observer) => {
+    return new Observable<PaqueteClienteOptions[]>((observer) => {
       this.clientesPendientesCollection.valueChanges().subscribe(dataClientes => {
-        const paquetes: PaqueteOptions[] = [];
+        const paquetes: PaqueteClienteOptions[] = [];
         dataClientes.forEach(cliente => {
           this.loadPaquetesClientes(cliente.id, estado)
             .then(data => {
@@ -149,12 +164,10 @@ export class PendientePage {
   }
 
   private loadPaquetesClientes(idcliente: string, estado: string) {
-    const paqueteCollection = this.clientesPendientesCollection.doc(idcliente).collection<PaqueteOptions>('paquetes', ref => ref.where('estado', '==', estado));
-    return new Promise<PaqueteOptions[]>(resolve => {
-      paqueteCollection.valueChanges().subscribe(dataPaquetes => {
-        const paquetes = dataPaquetes.filter(paquete => {
-          //return this.servicios.some(servicio => servicio.id === paquete.servicio.id);
-        });
+    const clienteDoc = this.clientesPendientesCollection.doc(idcliente);
+    const paqueteCollection = clienteDoc.collection<PaqueteClienteOptions>('paquetes', ref => ref.where('estado', '==', estado));
+    return new Promise<PaqueteClienteOptions[]>(resolve => {
+      paqueteCollection.valueChanges().subscribe(paquetes => {
         resolve(paquetes);
       });
     });
@@ -190,7 +203,7 @@ export class PendientePage {
             }
           }
         }],
-    });
+    }).present();
     slidingItem.close();
   }
 
@@ -203,7 +216,7 @@ export class PendientePage {
 
     batch.delete(sesionPaqueteClienteDoc.ref);
 
-    if(idsesion === 1){
+    if (idsesion === 1) {
       batch.delete(paqueteClienteDoc.ref);
     } else {
       batch.update(paqueteClienteDoc.ref, { sesion: idsesion - 1 });
@@ -224,6 +237,8 @@ export class PendientePage {
     const disponibilidadCancelarDoc: AngularFirestoreDocument = disponibilidadDoc.collection('disponibilidades').doc(fechaServicio.getTime().toString());
 
     batch.delete(disponibilidadCancelarDoc.ref);
+
+    this.loading.present();
 
     disponibilidadDoc.ref.get().then(datosDiarios => {
       const pendientesDiarioActual = datosDiarios.get('pendientes');
@@ -253,7 +268,19 @@ export class PendientePage {
       batch.commit().then(() => {
         this.mensaje('La cita con ' + nombreCliente + ' ha sido cancelada');
         this.updateReservas();
-      }).catch(err => alert(err));
+        this.loading.dismiss();
+      }).catch(err => {
+        this.loading.dismiss();
+        this.alertCtrl.create({
+          buttons: [{
+            text: 'Ok',
+            role: 'cancel'
+          }],
+          message: 'Error: ' + err,
+          subTitle: 'Ha ocurrido un error al cancelar la reserva',
+          title: 'Se presentó un error'
+        }).present();
+      });
     });
   }
 
@@ -499,22 +526,6 @@ export class PendientePage {
         resolve(paquete);
       });
     });
-  }
-
-  updateServiciosPendientes() {
-    switch (this.terms) {
-      case 'pendiente':
-        this.updateReservas();
-        break;
-
-      case 'activo':
-        //this.updatePaquetes();
-        break;
-
-      case 'sinpago':
-        //this.updatePaquetes();
-        break;
-    }
   }
 
 }
