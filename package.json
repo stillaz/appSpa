@@ -66,7 +66,7 @@
     "@ionic/app-scripts": "^3.2.1",
     "typescript": "~2.6.2"
   },
-  "description": "App para barbería",
+  "description": "App para spa",
   "cordova": {
     "plugins": {
       "cordova-plugin-datepicker": {},
